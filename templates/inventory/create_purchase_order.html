@@ -1,0 +1,968 @@
+{% extends "base.html" %}
+{% load static%}
+{% load crispy_forms_tags %}
+{% block title%} Create Purchase Order {% endblock%}
+{% block content %}
+   <div class="inventory">
+        <div class='add-purchase-order'>
+            <div class='purchase-order-nav mt-2  d-flex justify-content-between align-items-center'>
+                <div>
+                    <a href='{% url "inventory:products"%}' class='border btn bx bx-arrow-back fs-5'></a>
+                    <a href='/' class='bx bx-home btn border fs-5 mx-2'></a>
+                    <span class='mt-2 fs-5'>Create Purchase order</span>
+                </div>
+                <div>
+                    <ul class="list-unstyled mt-3">
+                        <li>
+                            <a href="{% url 'inventory:purchase_orders' %}" class="btn border">Purchase Orders</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="row mt-2 border p-2">
+                <div class="col-9">
+                    <div class="d-flex flex-column">
+                        <p id="cart-title">Purchase order Items</p>
+                        <table class="table border rounder p-2" id="cart-table">
+                            <thead>
+                              <th>Product</th>
+                              <th>Unit Price</th>
+                              <th>Quantity</th>
+                              <th class="text-center">Total</th>
+                            </thead>
+                            <tbody id="cart-items"></tbody>
+                            <tfoot>
+                              <tr>
+                                  <td></td>
+                                  <td></td>
+                                  <td class="fw-bold">Subtotal</td>
+                                  <td class="text-center fw-bold" id="subtotal"></td>
+                              </tr>
+                              <tr>
+                                  <td></td>
+                                  <td></td>
+                                  <td class="fw-bold">Discount</td>
+                                  <td>
+                                      <input id="id_discount" class="form-control text-center fw-bold" oninput="calculateTotals()">
+                                  </td>
+                              </tr>
+                              <tr>
+                                  <td></td>
+                                  <td></td>
+                                  <td class="fw-bold">Tax Rate</td>
+                                  <td id="tax_rate" class="fw-bold text-center">15%</td>
+                              </tr>
+                              <tr>
+                                  <td></td>
+                                  <td></td>
+                                  <td class="fw-bold">Tax Total</td>
+                                  <td id="tax" class="fw-bold text-center"></td>
+                              </tr>
+                              <tr>
+                                  <td></td>
+                                  <td></td>
+                                  <td class="fw-bold">Handling Fee</td>
+                                  <td>
+                                      <input id="id_handling" class="form-control text-center fw-bold" oninput="calculateTotals()">
+                                  </td>
+                              </tr>
+                              <tr>
+                                  <td></td>
+                                  <td></td>
+                                  <td class="fw-bold">Other</td>
+                                  <td>
+                                      <input id="id_other" class="form-control text-center fw-bold" oninput="calculateTotals()">
+                                  </td>
+                              </tr>
+                              <tr>
+                                  <td></td>
+                                  <td></td>
+                                  <td class="fw-bold">Total</td>
+                                  <td class="fw-bold text-center" id="id_total"></td>
+                              </tr>
+                            </tfoot>
+                        </table>
+                        <button class="btn btn-danger btn-sm flex" onclick="reload();">Cancel</button>
+                        <button class="btn btn-primary btn-sm flex  mt-1" id="confirm_btn">Confirm</button>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class='mt-2 shadow'>
+                        <form class='d-flex flex-column mt-2 w-100 mt-2 w-100 px-2' method='post'>
+                            {% csrf_token %}
+                            <div class="mb-1">
+                                <label for="id_product" class="form-label requiredField">
+                                    Product
+                                </label> 
+                                <div class="d-flex">
+                                    <select class="select form-select" id='id_product'>
+                                        <option value="">-----</option>
+                                        {% for product in inventory %}
+                                            <option value={{product.product.name}}>{{product.product.name}} [{{ product.quantity }}]</option>
+                                        {% endfor %}
+                                    </select>
+                                    <button type="button" class="btn mx-1 bx bx-plus border" id="id_add_supplier"></button>
+                                </div>
+                            </div>
+                            <div class="mb-1">
+                                <label for="id_product" class="form-label requiredField">
+                                    Supplier
+                                </label>
+                                <div class="d-flex">
+                                    <select class="select form-select" id='id_supplier'>
+                                        <option value="">-----</option>
+                                        {% for supplier in suppliers %}
+                                            <option value={{supplier.id}}>{{supplier.name}}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <button type="button" class="btn mx-1 border bx bx-plus" id="id_add_product"></button>
+                                </div>
+                            </div>
+                            <div id="div_id_price" class="mb-1">
+                                <label for="id_price" class="form-label requiredField">
+                                    Unit price
+                                </label> 
+                                <input  
+                                    type="number" 
+                                    name="price" step="0.01" 
+                                    class="numberinput form-control" 
+                                    required 
+                                    id="id_p_price"
+                                >
+                                <p id="price_error" class="fs-6 text-danger"></p>
+                            </div> 
+                            <div id="div_id_quantity" class="mb-1"> 
+                                <label for="id_p_quantity" class="form-label requiredField">
+                                    Quantity
+                                </label> 
+                                <input 
+                                    type="number" 
+                                    name="quantity"
+                                    value="" 
+                                    min="0" 
+                                    class="numberinput form-control" 
+                                    required id="id_p_quantity"
+                                > 
+                                <p id="quantity_error" class="fs-6 text-danger"></p>
+                                <p id="cart_error" class="text-danger"></p>
+                            </div> 
+                            <div class='d-flex justify-content-end mb-2'>
+                                <button type='button' class='btn btn-secondary btn-sm w-100' id="id_add_to_cart" onclick="addItem();">
+                                  <i class='bx bx-save' ></i>
+                                    save
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal fade" id="addSupplierModal" tabindex="-1" aria-labelledby="loaderModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-body">
+                        <h5 class="fw-bold">Add Supplier</h5>
+                        <form method="post">
+                            {% csrf_token %}
+                            <div id="div_id_name" class="mb-3"> <label for="id_name" class="form-label requiredField">
+                            Name<span class="asteriskField">*</span> </label> <input type="text" name="name" maxlength="255" class="textinput form-control" required="" id="id_sup_name"> </div> <div id="div_id_contact" class="mb-3"> <label for="id_contact" class="form-label requiredField">
+                            Contact Name<span class="asteriskField">*</span> </label> <input type="text" name="contact" maxlength="255" class="textinput form-control" required="" id="id_contact_name"> </div> <div id="div_id_email" class="mb-3"> <label for="id_email" class="form-label requiredField">
+                            Email<span class="asteriskField">*</span> </label> <input type="email" name="email" maxlength="254" class="emailinput form-control" required="" id="id_email"> </div> <div id="div_id_phone" class="mb-3"> <label for="id_phone" class="form-label requiredField">
+                            Phone<span class="asteriskField">*</span> </label> <input type="text" name="phone" maxlength="20" class="textinput form-control" required="" id="id_phone"> </div> <div id="div_id_address" class="mb-3"> <label for="id_address" class="form-label requiredField">
+                            Address<span class="asteriskField">*</span> </label> <textarea name="address" cols="40" rows="10" class="textarea form-control" required="" id="id_address"></textarea> </div>
+                            
+                            <p class="text-danger" id="sup_error"></p>
+                            <div class="d-flex justify-content-end">
+                                <div class="">
+                                    <button type="reset" class="btn btn-danger btn-sm w-100">
+                                        <i class="bx bx-reset"></i>
+                                        Reset
+                                    </button>
+                                </div>
+                                <span class="px-1"></span>
+                                <div class="">
+                                    <button type="button" id="id_submit_supplier" class="btn btn-secondary btn-sm w-100">
+                                        <i class="bx bx-save"></i>
+                                        Save
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="categoryModal" tabindex="-1" aria-labelledby="loaderModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+          <div class="modal-dialog modal-dialog-centered">
+              <div class="modal-content">
+                  <div class="modal-body">
+                      {% include 'inventory/components/category_modal.html'%}
+                  </div>
+              </div>
+          </div>
+      </div>
+
+        <div class="modal fade" id="addProductModal" tabindex="-1" aria-labelledby="loaderModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-body">
+                        <h5 class="fw-bold">Add Product</h5>
+                        <form method="post" class='mt-2 p-2'>
+                          {% csrf_token %} 
+                          <div id="div_id_name" class="mb-3">
+                               <label for="id_name" class="form-label requiredField">
+                                  Name
+                                  <span class="asteriskField">*</span> 
+                              </label> 
+                              <input 
+                                  type="text" 
+                                  name="name" 
+                                  maxlength="255" 
+                                  class="textinput form-control" 
+                                  required id="id_name"
+                              > 
+                          </div>
+                          
+                          <div id="div_id_price" class="mb-3">
+                              <label for="id_price" class="form-label requiredField">
+                                  Price
+                                  <span class="asteriskField">*</span> 
+                              </label> 
+                              <input 
+                                  type="number" 
+                                  name="price" step="0.01" 
+                                  class="numberinput form-control" 
+                                  required 
+                                  id="id_price"
+                              >
+                              <p id="price_error" class="fs-6 text-danger"></p>
+                          </div> 
+                          
+                          <div id="div_id_unit" class="mb-3"> 
+                            <label for="id_unit" class="form-label requiredField">Unit<span class="asteriskField">*</span></label>
+                                <div class="d-flex">
+                                    <select name="unit" class="select form-select" required="" id="id_unit"> 
+                                        <option value="" selected="">---------</option>
+                                    </select>
+                                    <button class='btn small' type="button" id='id_add_unit'>
+                                        <i class='bx bx-plus'></i>
+                                    </button>
+                                </div>
+                          </div>
+                          <div id="div_id_category" class="mb-3"> 
+                              <label for="id_category" class="form-label requiredField">
+                                  Category<span class="asteriskField">*</span> 
+                              </label> 
+                              <div class='d-flex align-items-center'>
+                                  <select name="category" class="select form-select" required id="id_category"> 
+                                      <option value="">---------</option> 
+                                  </select> 
+                                  <button class='btn small' type="button" id='id_add_category'>
+                                      <i class='bx bx-plus'></i>
+                                  </button>
+                              </div>
+                          </div> 
+                          <div id="div_id_portion_multiplier" class="mb-3"> <label for="id_portion_multiplier" class="form-label">
+                            Portion multiplier
+                            </label> <input type="number" name="portion_multiplier" value="1" step="any" class="numberinput form-control" id="id_portion_multiplier"> </div>
+                          <div id="div_id_tax_type" class="mb-3"> 
+                              <label for="id_tax_type" class="form-label requiredField">
+                              Tax type
+                              <span class="asteriskField">*</span> 
+                              </label> 
+                              <select name="tax_type" class="select form-select" required id="id_tax_type"> 
+                                  <option value="" selected>---------</option>
+                                  <option value="exempted">Exempted</option> 
+                                  <option value="standard">Standard</option> 
+                                  <option value="zero rated">Zero Rated</option>
+                              </select> 
+                          </div>
+                          <div id="div_id_min_stock_level" class="mb-3"> 
+                              <label for="id_min_stock_level" class="form-label requiredField">
+                                  Min stock level
+                                  <span class="asteriskField">*</span> 
+                              </label> 
+                              <input 
+                                  type="number" 
+                                  name="min_stock_level" 
+                                  value="0" 
+                                  class="numberinput form-control" 
+                                  required id="id_min_stock_level"
+                              > 
+                          </div>
+                          <div id="div_id_description" class="mb-3"> 
+                              <label for="id_description" class="form-label requiredField">
+                                  Description<span class="asteriskField">*</span> 
+                              </label> 
+                              <textarea 
+                                  name="description" 
+                                  cols="20" 
+                                  rows="2" 
+                                  class="textarea form-control" 
+                                  required id="id_description"
+                              ></textarea> 
+                          </div>
+                          <div class="mb-3"> 
+                              <div id="div_id_raw_material" class="form-check"> 
+                                  <input type="checkbox" name="end_of_day" class="checkboxinput form-check-input" id="id_raw_material"> 
+                                  <label for="id_raw_material" class="form-check-label">
+                                      Raw Material
+                                  </label> 
+                              </div> 
+                          </div>
+                          <div class="mb-3"> 
+                            <div id="div_id_finished_product" class="form-check"> 
+                              <input type="checkbox" name="service" class="checkboxinput form-check-input" id="id_finished_product"> 
+                              <label for="id_service" class="form-check-label">
+                                Finished Product
+                            </label> 
+                          </div> 
+                        </div>
+                        <p class='text-danger' id='error'></p>
+                          <div class="d-flex justify-content-end">
+                              <div class="">
+                                  <button type="reset" class="btn btn-danger btn-sm w-100">
+                                      <i class='bx bx-reset'></i>
+                                      Reset
+                                  </button>
+                              </div>
+                              <span class="px-1"></span>
+                              <div class="">
+                                  <button type="button" id="id_submit_product" class="btn btn-secondary btn-sm w-100">
+                                      <i class='bx bx-save'></i>
+                                      Save
+                                  </button>
+                              </div>
+                          </div>
+                      </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="noteStatusModal" tabindex="-1" aria-labelledby="loaderModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+          <div class="modal-dialog modal-dialog-centered">
+              <div class="modal-content">
+                  <div class="modal-body">
+                    <h5 class="fw-bold">Proceed by filling the Purchase Order form below</h5>
+                    <form class="mt-2">
+                        {{ note_form | crispy}}
+                      <p id="cartError" class="text-danger"></p>
+                      <div class="d-flex justify-content-end">
+                        <div class="">
+                            <button type="reset" class="btn btn-danger btn-sm w-100">
+                                <i class='bx bx-reset'></i>
+                                Reset
+                            </button>
+                        </div>
+                        <span class="px-1"></span>
+                        <div class="">
+                            <button type="button" onclick="processCart();" class="btn btn-secondary btn-sm w-100">
+                                <i class='bx bx-save'></i>
+                                Save
+                            </button>
+                        </div>
+                    </div>
+                    </form>
+                  </div>
+              </div>
+          </div>
+        </div>
+
+        <div class="modal fade" id="unitModal" tabindex="-1" aria-labelledby="loaderModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-body">
+                      <h5 class="fw-bold">Add unit Of Measurement</h5>
+                      <form class="mt-2">
+                          {{ unit_form | crispy}}
+                        <p id="id_error_unit" class="text-danger"></p>
+                        <div class="d-flex justify-content-end">
+                          <div class="">
+                              <button type="reset" class="btn btn-danger btn-sm w-100">
+                                  <i class='bx bx-reset'></i>
+                                  Reset
+                              </button>
+                          </div>
+                          <span class="px-1"></span>
+                          <div class="">
+                              <button type="button" onclick="unitSubmit();" class="btn btn-secondary btn-sm w-100">
+                                  <i class='bx bx-save'></i>
+                                  Save
+                              </button>
+                          </div>
+                      </div>
+                      </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+      
+        <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="loaderModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+          <div class="modal-dialog modal-dialog-centered">
+              <div class="modal-content">
+                  <div class="modal-body text-center" id='payment_content'>
+                    <i class='bx bx-check-circle h1'></i>
+                    <h5>Product Successfully Created</h5>
+                  </div>
+              </div>
+          </div>
+        </div>
+
+        <div class="modal fade" id="supplierSuccessModal" tabindex="-1" aria-labelledby="loaderModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+          <div class="modal-dialog modal-dialog-centered">
+              <div class="modal-content">
+                  <div class="modal-body text-center" id='payment_content'>
+                    <i class='bx bx-check-circle h1'></i>
+                    <h5>Supplier Successfully Created</h5>
+                  </div>
+              </div>
+          </div>
+        </div>
+
+        <div class="modal fade" id="poSuccessModal" tabindex="-1" aria-labelledby="loaderModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+          <div class="modal-dialog modal-dialog-centered">
+              <div class="modal-content">
+                  <div class="modal-body text-center" id='payment_content'>
+                    <i class='bx bx-check-circle h1'></i>
+                    <h5>Purchase Order Successfully Created</h5>
+                  </div>
+              </div>
+          </div>
+        </div>
+   </div>   
+<!-- <script src="{% static 'js/productValidation.js'%}"></script> -->
+<script>
+    let cart = [];
+    let prodData = [];
+    let searchValue = '';
+    let prodQauntity = 0;
+    let prodPrice = 0;
+    let prodCost  = 0;
+    let finalTotal = 0;
+   
+    const errorEl = document.getElementById('error');
+    const addToCartError = document.getElementById('cart_error');
+    const supError = document.getElementById('sup_error');
+    const productBtn = document.getElementById('id_add_product');
+    const supplierBtn = document.getElementById('id_add_supplier');
+
+    const noteModal = new bootstrap.Modal(document.getElementById('noteStatusModal'));
+    const productFormModal = new bootstrap.Modal(document.getElementById('addSupplierModal'));
+    const supplierFormModal = new bootstrap.Modal(document.getElementById('addProductModal'));
+    
+    const poSuccessModal = new bootstrap.Modal(document.querySelector('#poSuccessModal'));
+    const successModal = new bootstrap.Modal(document.querySelector('#successModal'));
+    const categoryModal = new bootstrap.Modal(document.querySelector('#categoryModal'));
+    const unitModal = new bootstrap.Modal(document.getElementById('unitModal'));
+    const supplierSuccessModal = new bootstrap.Modal(document.getElementById('supplierSuccessModal'));
+
+    const productSubmitBtn = document.getElementById('id_submit_product');
+    const supplierSubmitBtn = document.getElementById('id_submit_supplier');
+    const addToCartBtn = document.getElementById('id_add_to_cart');
+    const confirmBtn = document.getElementById('confirm_btn');
+
+    const cartError = document.getElementById('cartError');
+
+    const unitbtn = document.getElementById('id_add_unit')
+
+    unitbtn.addEventListener('click', ()=>{
+        supplierFormModal.hide()
+        unitModal.show()
+    })
+
+    productSubmitBtn.addEventListener('click', ()=>{
+      addProduct()
+    })
+
+    supplierSubmitBtn.addEventListener('click', ()=>{
+      addSupplier()
+    })
+
+    productBtn.addEventListener('click', ()=>{
+        productFormModal.show()
+    })
+
+    confirmBtn.addEventListener('click', ()=>{
+      noteModal.show()
+    })
+
+    document.querySelector('#id_add_category').addEventListener(
+        'click', ()=>{
+            categoryModal.show()
+            supplierFormModal.hide()
+        }
+    ) 
+
+    function isCartEmpty(){
+        if (cart.length === 0){
+            confirmBtn.disabled=true;
+        }else{
+            confirmBtn.disabled=false;
+        }
+    }
+
+    isCartEmpty()
+
+    // cancell button 
+    function reload(){
+      window.location.reload()
+    }
+
+    function unitSubmit(){
+        
+        const data = {name:$('#id_unit_name').val()}
+     
+        fetch("{% url 'inventory:unit_of_measurement' %}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": getCookie("csrftoken"), 
+            },
+            body: JSON.stringify(data),
+            })
+            .then(response => response.json())
+            .then((data) => {
+            if (data.success) {
+                unitModal.hide()
+                supplierFormModal.show()
+                fetchUnits()
+            } else {
+                document.querySelector('#id_error_unit').textContent=data.message
+            }
+            })
+            .catch((error) => {
+                console.error("Error:", error);
+            });
+        }
+      
+      async function fetchUnits(){
+          try {
+              const response = await fetch('{% url "inventory:unit_of_measurement" %}');
+  
+              if (!response.ok) {
+                  throw new Error('Network response was not ok.');
+              }
+              const data = await response.json();
+              updateUnit(data);
+              console.log(data)
+          } catch (error) {
+              console.error('Error fetching categories:', error);
+          } 
+      }
+  
+      fetchUnits()
+  
+      function updateUnit(data){
+          const unitElement = document.querySelector('#id_unit')
+      
+          while(unitElement.options.length > 1){
+              unitElement.remove(1)
+          }
+          data.forEach((data)=>{
+              unitElement.innerHTML += `<option value=${data.id}>${data.unit_name}</option>`
+          })
+      }
+
+    function categorySubmit(){
+        
+      const data = {name:$('#id_category_name').val()}
+        
+      fetch("{% url 'inventory:add_product_category' %}", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": getCookie("csrftoken"), 
+          },
+          body: JSON.stringify(data),
+        })
+          .then((response) => {
+          
+            if (response.error) {
+              document.querySelector('#id_error').textContent=response.error
+            } else {
+              fetchCategories()
+              categoryModal.hide()
+              supplierFormModal.show()
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+
+    async function fetchCategories(){
+        try {
+            const response = await fetch('{% url "inventory:add_product_category" %}');
+
+            if (!response.ok) {
+                throw new Error('Network response was not ok.');
+            }
+            const data = await response.json();
+            updateCategory(data);
+        } catch (error) {
+            console.error('Error fetching categories:', error);
+        } 
+    }
+
+    fetchCategories()
+
+    function updateCategory(data){
+        const catElement = document.querySelector('#id_category')
+    
+        while(catElement.options.length > 1){
+            catElement.remove(1)
+        }
+        data.forEach((category)=>{
+            catElement.innerHTML += `<option value=${category.id}>${category.name}</option>`
+        })
+    }
+
+    function addProduct() {
+        const data = {
+            name: document.getElementById('id_name').value,
+            price: parseFloat(document.getElementById('id_price').value), 
+            cost: 0, 
+            quantity: 0, 
+            category: document.getElementById('id_category').value, 
+            tax_type: document.getElementById('id_tax_type').value, 
+            unit: document.getElementById('id_unit').value, 
+            min_stock_level: parseInt(document.getElementById('id_min_stock_level').value),
+            portion_multiplier: parseInt(document.getElementById('id_portion_multiplier').value) || 1,
+            description: document.getElementById('id_description').value,
+            raw_material:document.getElementById('id_raw_material').checked,
+            finished_product:document.getElementById('id_finished_product').checked
+        };
+        console.log(data)
+        fetch("{% url 'inventory:product' %}", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-CSRFToken": getCookie("csrftoken"), 
+            },
+            body: JSON.stringify(data),
+          })
+          .then(response => response.json())
+          .then(data=>{
+              if (data.success) {
+                successModal.show() 
+                supplierFormModal.hide()
+                fetchProducts()
+                setTimeout(()=>{
+                    successModal.hide()
+                }, 2000)
+              } else {
+                errorEl.textContent=data.message;
+              } 
+            })
+            .catch((error) => {
+              errorEl.textContent=data.error;
+            });
+    } 
+
+    async function fetchProducts(){
+        try {
+            const response = await fetch("{% url 'inventory:product' %}");
+
+            if (!response.ok) {
+                throw new Error('Network response was not ok.');
+            }
+            const data = await response.json();
+            
+            updateProduct(data);
+        } catch (error) {
+            console.error('Error fetching categories:', error);
+        } 
+    }
+
+    function updateProduct(data){
+        const prodElement = document.querySelector('#id_product')
+        prodElement.innerHTML = '<option value="">Select Product</option>';
+        
+        while(prodElement.options.length > 1){
+          prodElement.remove(1)
+      }
+        data.forEach((data)=>{
+            prodElement.innerHTML += `<option value=${data.id}>${data.name}</option>`
+        })
+
+    }
+
+    fetchProducts()
+    
+    supplierBtn.addEventListener('click', ()=>{
+        supplierFormModal.show()
+    })
+
+  
+    $(document).ready(function() {
+      $('#id_product').select2(
+          {placeholder: 'Select Product'}
+      )
+      .on('change', function (e){
+           const pElement = document.getElementById('id_product')
+           const pSelectedOption = pElement.options[pElement.selectedIndex] 
+            let product = pSelectedOption.textContent;
+            product = product.split(' [')[0]
+            console.log(product)
+           fetch(`/inventory/inventory/?name=${product}`)
+          .then(response => response.json())
+          .then(data=>{
+            console.log(prodData)
+            prodData.push(data)
+            console.log(prodData)
+          })
+          .catch(error => console.error('Error:', error))
+      })
+     
+    })
+
+    $(document).ready(function() {
+        $('#id_supplier').select2(
+            {placeholder: 'Select Supplier'}
+        )
+        .on('change', function (e){
+            const pElement = document.getElementById('id_supplier')
+            const pSelectedOption = pElement.options[pElement.selectedIndex] 
+            supplier = pSelectedOption.textContent;
+            console.log(supplier)
+        })
+       
+      })
+      function addSupplier() {
+        const data = {
+            name: document.getElementById('id_sup_name').value,
+            contact: document.getElementById('id_contact_name').value, 
+            email: document.getElementById('id_email').value ,
+            phone: document.getElementById('id_phone').value,
+            address: document.getElementById('id_address').value,
+        };
+
+        fetch("{% url 'inventory:create_supplier' %}", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-CSRFToken": getCookie("csrftoken"), 
+            },
+            body: JSON.stringify(data),
+          })
+          .then(response => response.json())
+          .then(data=>{
+              if (data.success) {
+                supplierSuccessModal.show() 
+                productFormModal.hide()
+                fetchSuppliers()
+                setTimeout(()=>{
+                  supplierSuccessModal.hide()
+                }, 2000)
+              } else {
+                supError.textContent=data.message;
+              } 
+            })
+            .catch((error) => {
+              supError.textContent=data.error;
+            });
+    } 
+
+    async function fetchSuppliers(){
+        try {
+            const response = await fetch("{% url 'inventory:supplier_list_json' %}");
+
+            if (!response.ok) {
+                throw new Error('Network response was not ok.');
+            }
+            const data = await response.json();
+            
+            updateSuppliers(data);
+        } catch (error) {
+            console.error('Error fetching categories:', error);
+        } 
+    }
+
+    function updateSuppliers(data){
+        const supElement = document.querySelector('#id_supplier')
+        supElement.innerHTML = '<option value="">Select Supplier</option>';
+        
+        while(supElement.options.length > 1){
+          supElement.remove(1)
+      }
+        data.forEach((data)=>{
+            supElement.innerHTML += `<option value=${data.id}>${data.name}</option>`
+        })
+
+    }
+
+    document.querySelector('#id_price').addEventListener(
+      'input', ()=>{
+        const price = $('#id_price').val()
+     
+        if (price < prodCost){
+          document.querySelector('#quantity_error').innerHTML=`Selling price cannot be less than cost price ${prodCost}`
+        }else{
+          document.querySelector('#quantity_error').innerHTML=''
+        }
+      }
+    )
+
+    function generateUniqueId() {
+        return Math.floor(Math.random() * 1000000000).toString(36);
+      }
+    
+    function updateCartDisplay() {
+        const cartItemsList = document.getElementById("cart-items");
+        cartItemsList.innerHTML = ""; 
+      
+        let total = 0;
+      
+        cart.forEach((item) => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>
+              <button class="btn" data-id=${item.id} onclick="removeItem(this);">
+                  <i class='bx bx-trash-alt fs-5'></i>
+              </button>
+              <span class='fs-6'>${item.product}</span>
+            </td>
+            <td>${item.price}</td>
+            <td>${item.quantity} ${item.unit} </td>
+            <td class='text-center'>${item.quantity * item.price}</td>
+          `;
+          cartItemsList.appendChild(row);
+        });
+    }
+    
+
+    function addItem() {
+      const pElement = document.getElementById('id_product')
+      const pSelectedOption = pElement.options[pElement.selectedIndex] 
+      let product = pSelectedOption.textContent;
+      product = product.split(' [')[0]
+
+      const supplier = document.getElementById('id_supplier').value;
+      const price = parseFloat(document.getElementById('id_p_price').value);
+      const quantity =  Number(document.getElementById('id_p_quantity').value);
+      
+      console.log(product, supplier, price, quantity)
+      // Validation checks
+      if (!product || !quantity || !price  || !supplier) {
+        addToCartError.textContent='Please fill in all the fields: Product, Quantity, Price and Supplier.';
+          return;
+      }
+      const existingItem = cart.find((item) => item.product === product)
+     
+      if (existingItem) {
+        existingItem.quantity += quantity;
+      } else {
+        const newTransfer = {
+          id:generateUniqueId(),
+          product:product, 
+          unit:prodData[0][0]['unit__unit_name'],
+          quantity: quantity,
+          price:price,
+          supplier:supplier 
+        };
+        cart.push(newTransfer);
+      }
+      updateCartDisplay(); 
+      calculateTotals(); 
+      isCartEmpty()
+    }
+    
+    const removeItem = (el) => {
+        const id = el.dataset.id
+        cart = cart.filter((item) => item.id !== id);
+        updateCartDisplay();
+    }
+    
+    function processCart() {
+
+      const data= {
+        'po_items':cart,
+        'purchase_order':{
+          'supplier':document.getElementById('id_supplier').value,
+          'delivery_date':document.getElementById('id_delivery_date').value,
+          'total_cost': finalTotal,
+          'status':document.getElementById('id_status').value,
+          'notes':document.getElementById('id_notes').value,
+          'discount':parseFloat(document.getElementById('id_discount').value) || 0,
+          'tax_amount':parseFloat(document.getElementById('tax').textContent) || 0,
+          'handling_amount':parseFloat(document.getElementById('id_handling').value) || 0,
+          'other_amount':parseFloat(document.getElementById('id_other').value) || 0
+        }
+      }
+
+      console.log(data, parseFloat(document.getElementById('id_handling').value) || 0,)
+      
+      fetch("{% url 'inventory:create_purchase_order' %}", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": getCookie("csrftoken"), 
+        },
+        body: JSON.stringify(data),
+      })
+      .then(response => response.json())
+      .then(data=>{
+          if (data.success) {
+            noteModal.hide()
+            poSuccessModal.show()
+            cart = []; 
+            updateCartDisplay();
+            setTimeout(()=>{
+              window.location.reload()
+            }, 1000)
+          } else {
+            cartError.textContent=data.message;
+          } 
+        })
+        .catch((error) => {
+          console.error("Error:", error);
+          addToCartError.textContent=data.message;
+        });
+    }
+
+
+    function calculateTotals() {
+      let subtotal = 0;
+      cart.forEach(item => {
+          subtotal += item.price * item.quantity;
+      });
+
+      let discount = parseFloat(document.getElementById('id_discount').value) || 0;
+      let discountedTotal = subtotal - discount;
+
+      let taxRate = 0.15;
+      let tax = discountedTotal * taxRate;
+
+      let handlingFee = parseFloat(document.getElementById('id_handling').value) || 0;
+      let other = parseFloat(document.getElementById('id_other').value) || 0;
+
+      finalTotal = discountedTotal + tax + handlingFee + other;
+
+      // Update the table
+      document.getElementById('subtotal').innerText = subtotal.toFixed(2);
+      document.getElementById('tax').innerText = tax.toFixed(2);
+      document.getElementById('id_total').innerText = finalTotal.toFixed(2);
+    }
+
+    calculateTotals();
+
+    
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== "") {
+        const cookies = document.cookie.split(";");
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.substring(0, name.length + 1) === name + "=") {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    }    
+</script>
+        
+{% endblock content %}

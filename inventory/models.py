@@ -2,22 +2,23 @@ import uuid
 import datetime
 from django.db import models
 from users.models import User
+from django.db.models import F
 
-class FinishedGoodsCategory(models.Model):
+class Category(models.Model):
     name = models.CharField(max_length=255)
     
     def __str__(self):
         return self.name
 
 class UnitOfMeasurement(models.Model):
-    name = models.CharField(max_length=255)
+    unit_name = models.CharField(max_length=255)
     
     def __str__(self) -> str:
-        return self.name
+        return self.unit_name
 
 class Supplier(models.Model):
     name = models.CharField(max_length=255)
-    contact = models.CharField(max_length=255)
+    contact_name = models.CharField(max_length=255)
     email = models.EmailField()
     phone = models.CharField(max_length=20)
     address = models.TextField()
@@ -25,24 +26,28 @@ class Supplier(models.Model):
     def __str__(self):
         return self.name
 
-class RawMaterials(models.Model):
+class Product(models.Model):
+    
+    tax_choices = [
+        ('exempted', 'Exempted'),
+        ('standard', 'Standard'),
+        ('zero rated', 'Zero Rated')
+    ]
+    
     name = models.CharField(max_length=255)
     quantity = models.IntegerField()
     cost = models.DecimalField(max_digits=10, decimal_places=2)
-    unit = models.ForeignKey(UnitOfMeasurement, on_delete=models.CASCADE)
-    portion_multiplier = models.FloatField(default=1)
+    price = models.DecimalField(max_digits=10, decimal_places=2, default=1) 
+    unit = models.ForeignKey(UnitOfMeasurement, on_delete=models.CASCADE, null=True)
+    category = models.ForeignKey(Category, on_delete=models.CASCADE)
+    tax_type = models.CharField(max_length=50, choices=tax_choices)
+    min_stock_level = models.IntegerField(default=0, null=True)
+    portion_multiplier = models.FloatField(default=1, null=True, blank=True)
+    raw_material = models.BooleanField(default=False)
+    finished_product = models.BooleanField(default=False)
     description = models.TextField()
     deactivate = models.BooleanField(default=False)
     
-    def __str__(self) -> str:
-        return self.name
-
-class FinishedProduct(models.Model):
-    name = models.CharField(max_length=255)
-    quantity = models.IntegerField()
-    cost = models.DecimalField(max_digits=10, decimal_places=2)
-    category = models.ForeignKey(FinishedGoodsCategory, on_delete=models.CASCADE)
-    price =models.DecimalField(max_digits=10, decimal_places=2)
     
     def __str__(self) -> str:
         return self.name
@@ -56,9 +61,9 @@ class Production(models.Model):
         return self.date_created
 
 class ProductionItems(models.Model):
-    raw_material = models.ForeignKey(RawMaterials, on_delete=models.SET_NULL, null=True)
+    raw_material = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True)
     quantity = models.FloatField()
-    raw_material = models.ForeignKey(RawMaterials, on_delete=models.SET_NULL, null=True)
+    raw_material = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True)
     sold_quantity = models.IntegerField(null=True)
     wastage = models.IntegerField(null=True)
     left_overs = models.IntegerField(null=True)
@@ -69,6 +74,7 @@ class ProductionItems(models.Model):
 
 
 class PurchaseOrder(models.Model):
+    """Model for purchase orders."""
 
     status_choices = [
         ('pending', 'Pending'),
@@ -80,12 +86,18 @@ class PurchaseOrder(models.Model):
     order_number = models.CharField(max_length=100, unique=True)
     supplier = models.ForeignKey(Supplier, on_delete=models.SET_NULL, null=True)
     order_date = models.DateTimeField(default=datetime.datetime.today())
-    delivery_date = models.DateTimeField(null=True, blank=True)
+    delivery_date = models.DateField(null=True, blank=True)
     total_cost = models.DecimalField(max_digits=15, decimal_places=2, default=0.00)
     status = models.CharField(max_length=50, choices=status_choices, default='pending')
     notes = models.TextField(null=True, blank=True)
-    
-    def generate_order_number(self):
+    discount = models.DecimalField(max_digits=15, decimal_places=2, default=0.00)
+    tax_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0.00)
+    handling_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0.00)
+    other_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0.00)
+    is_partial = models.BooleanField(default=False)  
+    received = models.BooleanField(default=False)
+
+    def generate_order_number():
         return f'PO-{uuid.uuid4().hex[:10].upper()}'
 
     def save(self, *args, **kwargs):
@@ -93,26 +105,50 @@ class PurchaseOrder(models.Model):
             self.order_number = self.generate_order_number()
         super(PurchaseOrder, self).save(*args, **kwargs)
 
+    def check_partial_status(self):
+        partial_items = self.items.filter(received_quantity__lt=F('quantity'))
+        self.is_partial = partial_items.exists()
+        self.save()
+
     def __str__(self):
         return f"PO {self.order_number} - {self.supplier}"
 
 class PurchaseOrderItem(models.Model):
 
     purchase_order = models.ForeignKey(PurchaseOrder, on_delete=models.CASCADE, related_name='items')
-    raw_material = models.ForeignKey(RawMaterials, on_delete=models.SET_NULL, null=True)
-    product = models.ForeignKey(FinishedProduct, on_delete=models.SET_NULL, null=True)
+    product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True)
     quantity = models.IntegerField()
     unit_cost = models.DecimalField(max_digits=10, decimal_places=2)
+    received_quantity = models.IntegerField(default=0) 
+    received = models.BooleanField(default=False, null=True)
+
+    def receive_items(self, quantity):
+       
+        self.received_quantity += quantity
+        if self.received_quantity >= self.quantity:
+            self.received = True
+        self.save()
+        self.purchase_order.check_partial_status()  
+
+    def check_received(self):
+        """
+        Checks if all related items in the purchase order with the same order_number are received and updates the purchase order's "received" flag.
+        """
+        order_number = self.purchase_order.order_number
+        purchase_order_items = PurchaseOrderItem.objects.filter(purchase_order__order_number=order_number)
+
+        all_received = True
+        for item in purchase_order_items:
+            if not item.received:
+                all_received = False
+            break
+
+        purchase_order = PurchaseOrder.objects.get(order_number=order_number)
+        purchase_order.received = all_received
+        purchase_order.save()
 
     def __str__(self):
         return f"{self.product.name} x {self.quantity}"
-
-    def save(self, *args, **kwargs):
-        # Calculate the total cost for the purchase order item
-        self.total_cost = self.quantity * self.unit_cost
-        super().save(*args, **kwargs)
-        # Update the total cost of the purchase order
-        self.purchase_order.update_total_cost()
 
 class Logs(models.Model):
     
@@ -129,8 +165,10 @@ class Logs(models.Model):
         ('removed', 'removed')
     ]
     
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
     user = models.ForeignKey('users.User', on_delete=models.SET_NULL, null=True)
     action = models.CharField(max_length=20, choices=ACTION_CHOICES)
+    purchase_order = models.ForeignKey(PurchaseOrder, null=True, blank=True, on_delete=models.SET_NULL)
     quantity = models.IntegerField()
     total_quantity = models.IntegerField()
     timestamp = models.DateField(auto_now_add=True)

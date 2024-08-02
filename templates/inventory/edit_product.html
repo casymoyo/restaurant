@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% load static%}
+{% load crispy_forms_tags %}
+{% block title%} Edit Inventory {% endblock%}
+{% block content %}
+   <div class="edit-inventory">
+        <div class='add-product-nav d-flex py-2 px-2 align-items-center '>
+            <div class="d-flex justify-content-between align-items-center p-2">
+                <div>
+                    <a href='{% url "inventory:products"%}' class='border btn bx bx-arrow-back fs-5'></a>
+                    <a href='/' class='bx bx-home btn border fs-5 mx-2'></a>
+                    <span class='mt-2 fs-5'>{{ product.name | capfirst }}: Product Activity</span>
+                </div>
+            </div>
+        </div>
+        
+        <form method="post" class="rounded border mt-2 p-2">
+            {% csrf_token %}
+            {{ form | crispy}}
+            <div class="d-flex justify-content-end">
+                <div class="">
+                    <button type="reset" class="btn btn-danger btn-sm w-100">Reset</button>
+                </div>
+                <span class="px-1"></span>
+                <div class="">
+                    <button type="submit" class="btn btn-secondary btn-sm y w-100">Save</button>
+                </div>
+            </div>
+        </form>
+   </div>
+{% endblock content %}

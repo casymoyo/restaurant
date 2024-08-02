@@ -1,0 +1,169 @@
+{% load static%}
+{% block content %}
+<div class="table transfers-table mt-2">
+    {% include 'components/loader.html' %}
+    <div class='table-scroll'>
+    <table class='table table-bordered border table-hover rounded hidden p-2' id='transfers'>
+        <thead class='bg-primary'>
+            <tr>
+                <th>Date</th>
+                <th class='text-center'>Status</th>
+                <th>Trans Ref</th>
+                <th>Description</th>
+                <th>Destination</th>
+                <th>Done by</th>
+                <th>Action</th>
+            </tr>
+            </thead>
+        <tbody>
+                {% for transfer in transfers %}
+               <tr>
+                    <td class='transfer-btn' data-id={{ transfer.id }}><small>{{ transfer.time }} </small></td>
+                    <td class='transfer-btn text-center' data-id={{ transfer.id }}>
+                        <small>
+                            {% if transfer.defective_status %}
+                                <span class='hint--bottom' aria-label='Defective'>
+                                    <i class='bx bxs-circle fs-3 text-defective' ></i>
+                                </span>
+                            {% else %}
+                                {% if transfer.quantity == 0 %}
+                                    <span class='hint--bottom' aria-label='All received'>
+                                        <i class='bx bxs-circle text-received fs-3'></i>
+                                    </span>
+                                {% elif transfer.total_quantity_track < transfer.quantity   and transfer.quantity > 0 %}
+                                    <span class='hint--bottom' aria-label='Partial'>
+                                        <i class='bx bxs-circle text-warning fs-3'></i>
+                                    </span>
+                                {% elif transfer.quantity == transfer.total_quantity_track %}
+                                    <span class='hint--bottom' aria-label='Not yet received'>
+                                        <i class='bx bxs-circle text-danger fs-3'></i>
+                                    </span>
+                                {% endif %}
+                            {% endif %}
+                        </small>
+                    </td>
+                    <td class='transfer-btn' data-id={{ transfer.id }}><small>{{ transfer.transfer_ref }}</small></td>
+                    <td class='transfer-btn' data-id={{ transfer.id }}><small>{{ transfer.description }}</small></td>
+                    <td class='transfer-btn' data-id={{ transfer.id }}><small>{{ transfer.transfer_to }}</small></td>
+                    <td class='transfer-btn' data-id={{ transfer.id }}><small>{{ transfer.user.username }}</small></td>
+                    <td class='transfer-btn' data-id={{ transfer.id }}>
+                        <a href='{% url "inventory:print_transfer" transfer.id %}' class='btn btn-sm'>
+                            <i class='bx bx-printer text-light'></i>
+                        </a>
+                    </td>
+                </tr>
+                <tbody  class='bg-primary'>
+                    {% for item in transfer_items %}
+                        {% if transfer.id == item.transfer.id %}
+                                <tr id="id_items" class="hidden" data-transfer-id="{{ transfer.id }}">
+                                    <td></td>
+                                    <td><small></small></td>
+                                    <td ><small>{{ item.product.name }} x {{ item.quantity }}</small></td>
+                                    <td>
+                                        <small>
+                                            <span>
+                                                (
+                                                    {% if item.declined %}
+                                                        <small class='text-danger'>Declined</small>
+                                                    {% elif item.received %}
+                                                        <small class='text-success'>{{ item.description }}</small>
+                                                    {% else %}
+                                                        <small>Not yet received</small>
+                                                    {% endif %}
+                                                )
+                                            </span>
+                                        </small>
+                                    </td>
+                                </tr>
+                        {% endif %}
+                    {% endfor %}
+                </tbody>
+            {% endfor %}
+            </div>
+        </tbody>
+    </table>
+    <div class="modal fade" id="transferItemsModal" tabindex="-1" aria-labelledby="loaderModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-body">
+                    <h5>Transfered Products</h5>
+                    <table class='table table-striped border rounded p-2'>
+                        <tr>
+                            <thead>
+                                <th>Name</th>
+                                <th>Price</th>
+                                <th>Quantity</th>
+                                <th>Destination</th>
+                                <th>Status</th>
+                            </thead>
+                        </tr>
+                        <tbody id='itemsTransfersTable'></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="loaderModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-body">
+                    <h5>Delete Transfer</h5>
+                    <button class="btn btn-secondary w-100" onclick="deleteTransfer()">Yes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="successDeleteModal" tabindex="-1" aria-labelledby="loaderModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-body text-center">
+                    <h5>Transfer Successfully Deleted</h5>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    let transfer_id = ''
+    const transferBtn = document.querySelectorAll('.transfer-btn');
+    const tranferItemsModal = new bootstrap.Modal(document.getElementById('transferItemsModal'));
+
+    const expandBtn = document.querySelector('#id_expand')
+    const itemsEl = document.querySelectorAll('#id_items')
+
+    const loader = document.querySelector('#loader');
+    const tableEl = document.querySelector('#transfers');
+
+    const transferRows = document.querySelectorAll('.transfer-btn');
+
+    setTimeout(()=>{
+        loader.classList.add('hidden');
+        loader.classList.remove('d-flex')
+        tableEl.classList.remove('hidden')
+    }, 300)
+    
+    transferRows.forEach(row => {
+        row.addEventListener('click', function() {
+
+            const transferId = this.dataset.id;
+            const relatedRows = document.querySelectorAll(`#id_items[data-transfer-id="${transferId}"]`);
+            relatedRows.forEach(relatedRow => {
+                relatedRow.classList.toggle('hidden');
+            });
+        });
+    });
+    
+    expandBtn.addEventListener('click', ()=>{
+        itemsEl.forEach((el)=>{
+            if (el.classList.contains('hidden')){
+                el.classList.remove('hidden')
+            }else{
+                el.classList.add('hidden')
+            }
+        })
+    })
+
+</script>
+{% endblock content %}

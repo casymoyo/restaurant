@@ -1,0 +1,132 @@
+{% load static i18n %}
+{% get_current_language as LANGUAGE_CODE %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="description" content="Techcity Pos System"/>
+    <meta name="Author"content="casy moyo" />
+    <link rel="icon" href="{% static 'images/favicons/favicon.ico' %}"/>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+
+    {% block css %}
+        <link rel="stylesheet" href="{% static 'css/main.css'%}">
+        <link rel="stylesheet" href="{% static 'css/bootstrap/css/bootstrap.min.css'%}">
+        <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+        <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    {% endblock css %}
+
+    <script defer src="{% static 'css/bootstrap/js/bootstrap.min.js'%}"></script>
+    <script src="{% static 'js/jquery.js'%}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    
+    <title>
+        {% block title %}Techcity{% endblock title %}
+    </title>
+</head>
+<style>
+    hr{
+        margin-top:-15px;
+    }
+    .pro{
+        padding-top:19px;
+    }
+    hr{
+        color:black;
+    }
+    .color{
+        color:#3b0b89;
+        font-weight:400;
+    }
+    .header-color{
+        background:#ff6600 !important;
+        height:20px;
+    }
+    .minus-margin{
+        margin-top:-15px;
+    }
+    
+    @media print {
+        header, footer { 
+            display: none; 
+        }
+
+        .print-hide {
+            display: none; 
+        }
+        
+        body { font-size: 12pt; }
+        a { color: black; text-decoration: underline; } 
+    }
+
+    
+</style>
+<body>
+<div class='transfer-ibt px-2'>
+    <div class='content px-2'>
+        <small>{{ date }}</small>
+        <div class='d-flex justify-content-center align-items-center'>
+            <div class='details'>
+                <img src='{% static 'assets/logo.png' %}' width='200px'/>
+            </div>
+        </div>        
+    </div>
+    <div class='mt-3 text-center'>
+        <h2>Internal Branch Transfer To {{ transfer.transfer_to }}</h2>
+    </div>
+
+    <p>Transfer Reference - ({{ transfer.transfer_ref}})</p>
+    <p>Transfered Items</p>
+
+    <div class="mt-3">
+        <table class="table table-bordered table-striped">
+            <thead class="bg-primary">
+                <tr>
+                    <th>Name</th>
+                    <th>Price</th>
+                    <th>Quantity</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for transfer_item in transfer_items %}
+                    <tr>
+                        <td>{{transfer_item.product.name}} -{{ transfer_item.product.description}}</td>
+                        <td>{{transfer_item.price}}</td>
+                        <td id='qty_value' data-qty={{transfer_item.quantity}}>{{transfer_item.quantity}}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td class='fw-bold'>Total product(s) qty</td>
+                    <td></td>
+                    <td id='id_quantity' class='fw-bold'></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+    <div class="mt-2">
+        <p>Processed by<span class="opacity-75">____________________________________________________</span></p>
+        <p>Checked by<span class="opacity-75">______________________________________________________</span></p>
+    </div>
+</div>
+</body>
+<script>
+    let totalQty = 0
+
+    const tdQtyEl = document.querySelectorAll('#qty_value');
+    const totalQtyEl = document.querySelector('#id_quantity');
+
+    tdQtyEl.forEach((td)=>{
+        totalQty += parseInt(td.dataset.qty);
+        console.log(totalQty)
+    })
+    console.log(totalQty, totalQtyEl)
+    totalQtyEl.textContent=totalQty;
+
+    window.print(); 
+</script>
+</html>

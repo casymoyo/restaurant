@@ -1,0 +1,116 @@
+{% load static%}
+{% block content %}
+<style>
+    .number{
+        width:70px;
+    }
+</style>
+{% include 'components/loader.html' %}
+<div class=" mt-2 px-2 w-100">
+    <table class='table table-bordered border table-hover rounded p-2 receive_inv' id='transfers' >
+            <thead class='bg-primary'>
+                <tr>
+                    <th>Date</th>
+                    <th class='text-center'>Status</th>
+                    <th>Trans Ref</th>
+                    <th>Description</th>
+                    <th>Destination</th>
+                    <th>Done by</th>
+                    <th></th>
+                </tr>
+                </thead>
+            <tbody>
+                {% for transfer in transfers %}
+                   <tr>
+                        <td class='transfer-btn' data-id={{ transfer.id }}><small>{{ transfer.time }}</small></td>
+                        <td class='transfer-btn text-center' data-id={{ transfer.id }}>
+                            <small>
+                                {% if transfer.defective_status %}
+                                    <span class='hint--bottom' aria-label='Defective'>
+                                        <i class='bx bxs-circle fs-3 text-defective' ></i>
+                                    </span>
+                                {% else %}
+                                    {% if transfer.total_quantity_track == 0 %}
+                                        <span class='hint--bottom' aria-label='All received'>
+                                            <i class='bx bxs-circle text-received fs-3' ></i>
+                                        </span>
+                                    {% elif transfer.total_quantity_track < transfer.quantity   and transfer.quantity > 0  %}
+                                        <span class='hint--bottom' aria-label='Partial'>
+                                            <i class='bx bxs-circle text-warning fs-3'></i>
+                                        </span>
+                                    {% elif transfer.quantity == transfer.total_quantity_track %}
+                                        <span class='hint--bottom' aria-label='Not yet received'>
+                                            <i class='bx bxs-circle text-danger fs-3'></i>
+                                        </span>
+                                    {% endif %}
+                                {% endif %}
+                            </small>
+                        </td>
+                        <td class='transfer-btn' data-id={{ transfer.id }}><small>{{ transfer.transfer_ref }}</small></td>
+                        <td class='transfer-btn' data-id={{ transfer.id }}><small>{{ transfer.description }}</small></td>
+                        <td class='transfer-btn' data-id={{ transfer.id }}><small>{{ transfer.transfer_to }}</small></td>
+                        <td class='transfer-btn' data-id={{ transfer.id }}><small>{{ transfer.user.username }}</small></td>
+                        <td class='transfer-btn' data-id={{ transfer.id }}><small></small></td>
+                </tr>
+                <tbody>
+                    {% for transfer_r in r_transfers %}
+                        {% if transfer_r.transfer.id == transfer.id %}
+                        <tr id="id_items" class="hidden" data-transfer-id="{{ transfer.id }}">
+                            <td><small>{{transfer_r.date}}</small></td>
+                            <td><small>{{transfer_r.date_received}}</small></td>
+                            <td><small>{{transfer_r.product.name}}</small></td>
+                            <td><small>{{transfer_r.quantity}}</small></td>
+                            <td><small>{{transfer_r.from_branch.name}}</small></td>
+                            <td><small>{{transfer_r.received_by}}</small></td>
+                            <td>
+                                {% if transfer_r.received %}
+                                    {% if transfer_r.quantity_track == 0 %}
+                                        <small class='border rounded bg-success p-1 text-light'><small>Received {{transfer_r.quantity}} - {{transfer_r.quantity}}</small></small>
+                                    {% else %}
+                                        <small class='border rounded bg-warning p-1 text-light'><small>Partialy {{ transfer_r.description }}</small></small>
+                                    {% endif %}
+                                    
+                                {% else %}
+                                    <form method='post' class='px-1 d-flex'>
+                                        {% csrf_token %}
+                                        <input name='id' value={{ transfer_r.id }} type='text' hidden/>
+                                        <input name='received' value='true' type='text' hidden/>
+                                        <input type='number' name='quantity' class='form-control number'/>
+                                        <span class='px-2'></span>
+                                        <button type="submit" class='btn btn-success btn-sm'>accept</button>
+                                    </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endif %}
+                    {% endfor %}
+                </tbody>
+                {% endfor %}
+            </tbody>
+    </table>
+</div>
+<script>
+    const loader = document.querySelector('#loader');
+    const search = document.querySelector('#search');
+
+    const transferRows = document.querySelectorAll('.transfer-btn');
+    transferRows.forEach(row => {
+        row.addEventListener('click', function() {
+
+            const transferId = this.dataset.id;
+            const relatedRows = document.querySelectorAll(`#id_items[data-transfer-id="${transferId}"]`);
+            relatedRows.forEach(relatedRow => {
+                relatedRow.classList.toggle('hidden');
+            });
+        });
+    });
+
+    {% comment %} new DataTable('#transfers')  {% endcomment %}
+
+    setTimeout(()=>{
+        loader.classList.add('hidden');
+        loader.classList.remove('d-flex')
+        {% comment %} tableEl.classList.remove('hidden') {% endcomment %}
+    }, 300)
+</script>
+{% endblock content %}

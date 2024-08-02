@@ -1,290 +1,224 @@
+import json
 from . models import *
-from . forms import (
-    AddUOMForm,
-    AddRawMaterialForm,
-    AddProductCategoryForm,
-    AddFinishedProductForm
-)
+from loguru import logger
+from decimal import Decimal
 from django.views import View    
 from django.contrib import messages 
 from django.http import JsonResponse
 from django.shortcuts import render, redirect 
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db import transaction
+from loguru import logger
+from django.contrib.auth import get_user_model
 
-# inventory logs function
-def log(action, quantity, total_quantity, request, description):
-    Logs.objects.create(
-        user=request.user,
-        quantity=quantity,
-        total_quantity=total_quantity
-        description = description
-    )
+from . forms import (
+    AddProductForm,
+    AddSupplierForm,
+    CreateOrderForm,
+    noteStatusForm,
+    PurchaseOrderStatus,
+    UnitOfMeasurementForm,
+    EditProductForm
+)
 
-class create_unit_of_measurement(LoginRequiredMixin, View):
-    
-    def get(self, request, *args, **kwargs):
-        unit_of_measurements = UnitOfMeasurement.objects.all()
-        return (list(unit_of_measurements), safe=False)
-    
-    def post(self, request, *args, **kwargs):
-        # payload
-        """
-        name
-        """
-        if request.method == 'POST':
-            form = AddUOMForm(request.POST)
 
-            name = form.cleaned_data['name']
-            
-            if UnitOfMeasurement.objects.filter(name=name).exists():
-                return JsonResponse(
-                    {
-                        'success':False,
-                        'message':f'{name.upper()} exists!'
-                    },
-                    status = 400
-                )
-            
-            if form.is_vald():
-                form.save()
-                return JsonResponse(
-                    {
-                        'success':True
-                    },
-                    status = 200
-                )
+# to be removed
+user = get_user_model()
 
-class create_product_category(LoginRequiredMixin, View):
+def unit_of_measurement(request):
+    if request.method == 'GET':
+        units = UnitOfMeasurement.objects.all().values()
+        return JsonResponse(list(units), safe=False)
     
-    def get(self, request, *args, **kwargs):
-        product_categories = FinishedGoodsCategory.objects.all()
-        return (list(product_categories), safe=False)
-    
-    def post(self, request, *args, **kwargs):
-        # payload
-        """
-        name
-        """
-        if request.method == 'POST':
-            form = AddProductCategoryForm(request.POST)
-
-            name = form.cleaned_data['name']
-            
-            if AddProductCategoryForm.objects.filter(name=name).exists():
-                return JsonResponse(
-                    {
-                        'success':False,
-                        'message':f'{name.upper()} exists!'
-                    },
-                    status = 400
-                )
-            
-            if form.is_vald():
-                form.save()
-                return JsonResponse(
-                    {
-                        'success':True
-                    },
-                    status = 200
-                )
-                
-# raw materials views
-class RawMaterials(LoginRequiredMixin, View):
-    form = AddRawMaterialForm()
-    u_o_m_form = AddUOMForm()
-    template_name = 'inventory/raw_materials.html'
-    
-    def get(self, request, *args, **kwargs):
-        raw_materials = RawMaterials.objects.all()
-        
-        return render(request, self.template_name, 
-            {
-                'form':self.form,
-                'u_o_m_form':self.u_o_m_form,
-                'raw_materials':raw_materials,
-            }
-        )
-    
-    def post(self, request, *args, **kwargs):
-        # payload
-        """
-        name
-        quantity
-        unit: e.g kgs, litres, gramms , etc
-        cost: per unit
-        portion multiplier
-        description: (optional)
-        """
-        
-        if request.method == 'POST':
-            form = AddRawMaterialForm(request.POST)
-            
-            name = form.cleaned_data['name']
-            quantity = form.cleaned_dat['quantity']
-            
-            if form.is_valid():
-                form.save()
-                
-                log('stock in', quantity, quantity, 'raw material stock in')
-                
-                return JsonResponse(
-                    {
-                        'success':True,
-                        'message':f'{name.upper()}, successfully created'
-                    },
-                    status = 200
-                )
-            
-            return JsonResponse(
-                    {
-                        'success':True,
-                        'message':'invalid form data'
-                    },
-                    status = 400
-                )
-
-def edit_raw_material(request, raw_material_id):
     if request.method == 'POST':
+        # payload 
+        """"
+            name
+        """
         try:
-            raw_material = RawMaterials.get(id=raw_material_id)
+            data = json.loads(request.body)
+            unit_name = data.get('name')
         except Exception as e:
-            messages.warning(request, f'{e}')
-            return redirect('inventory:inventory')
+            return JsonResponse({'success':False, 'message':'Invalid Json data'}, status=400)
         
-        form = AddRawMaterialForm(request.POST, instance=raw_material)
-        
-        name = form.cleaned_data['name']
-        quantity = form.cleaned_dat['quantity']
-        
-        if form.is_valid():
+        if unit_name:
+            unit_name = unit_name.lower()
             
-            log('edit', quantity, quantity, f'stock edited from {raw_material.quantity} to {quantity}')
-             
-            form.save()
+            #validation for existance
+            if UnitOfMeasurement.objects.filter(unit_name=unit_name).exists():
+                logger.info(f'{unit_name}, exists')
+                return JsonResponse({'success':False, 'message':f'Unit of Measurement with the name {unit_name} exists'}, status=400)
             
-            messages.success(request, f'{name.upper()}, successfully edited')
-            return render(request, 'inventory/raw_materials.html')
+            unit_obj = UnitOfMeasurement(
+                unit_name=unit_name
+            )
+            unit_obj.save()
+            logger.info(f'{unit_obj.unit_name}, successfully created')
+            return JsonResponse({'success':True}, status=200)
         
-        messages.warning(request, 'Invalid form data')
-        return render(request, 'inventory/edit_raw_materials.html')
-
-def delete_raw_material(request, raw_material_id):
-    try:
-        raw_material = RawMaterials.get(id=raw_material_id)
-    except Exception as e:
-        messages.warning(request, f'{e}')
-        return redirect('inventory:inventory')
+        logger.info(f'unit of measurement -> bad request')
+        return JsonResponse({'success':False, 'message':'Unit of measurement is invalid'}, status=400)
     
-    raw_material.deactivate = True
-    return JsonResponse(
+    logger.info(f'unit of measurement -> bad request')
+    return JsonResponse({'success':False, 'message':'Invalid request'}, status=400)
+                  
+
+# @login_required
+def products(request):
+    
+    raw_materials = Product.objects.filter(raw_material=True, quantity__gt=0)
+    finished_goods = Product.objects.filter(finished_product=True, quantity__gt=0)
+    
+    return render(request, 'inventory/products.html', 
         {
-            'success':True,
-            'message':f'{raw_material.name.uper()}, successfully deleted'
-        },
-        status = 200
+            'raw_materials':raw_materials,
+            'finished_goods':finished_goods
+        }
     )
-    
-                
-# finished products views
-class FinishedProducts(LoginRequiredMixin, View):
-    form = AddFinishedProductForm()
-    product_category_form = AddProductCategoryForm()
-    template_name = 'inventory/products.html'
-    
-    def get(self, request, *args, **kwargs):
-        products = FinishedProduct.objects.all()
+
+# @login_required
+def inventory(request):
+    product_name = request.GET.get('name', '')
+    if product_name:
         
-        return render(request, self.template_name, 
-            {
-                'form':self.form,
-                'u_o_m_form':self.u_o_m_form,
-                'product_category_form':self.product_category_form,
-                'products':products,
-            }
-        )
+        return JsonResponse(list(Product.objects.filter(name=product_name).values(
+                'unit__unit_name',
+                'name',
+                'id'
+            )), safe=False)
+    return JsonResponse({'error':'product doesnt exists'})
+
+
+def add_product_category(request):
+    categories = Category.objects.all().values()
     
-    def post(self, request, *args, **kwargs):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        category_name = data['name']
+        
+        if Category.objects.filter(name=category_name).exists():
+            return JsonResponse({'error', 'Category Exists'})
+        
+        Category.objects.create(
+            name=category_name
+        )
+    return JsonResponse(list(categories), safe=False)   
+
+def product(request):
+
+    if request.method == 'POST':
         # payload
         """
-        name
-        quantity
-        cost: per unit
-        category
-        description: (also to be printed on the receipt)
+            name,
+            price: float,
+            cost: float,
+            unit of measurement: int,
+            quantity: int,
+            category,
+            tax_type,
+            min_stock_level,
+            portion_multiplier: int
+            description
+            raw_material:bool,
+            finished_product:bool
         """
-        
-        if request.method == 'POST':
-            form = AddRawMaterialForm(request.POST)
-            
-            name = form.cleaned_data['name']
-            quantity = form.cleaned_dat['quantity']
-            
-            if form.is_valid():
-                form.save()
-                
-                log('stock in', quantity, quantity, 'product stock in')
-                
-                return JsonResponse(
-                    {
-                        'success':True,
-                        'message':f'{name.upper()}, successfully created'
-                    },
-                    status = 200
-                )
-            
-            return JsonResponse(
-                    {
-                        'success':True,
-                        'message':'invalid form data'
-                    },
-                    status = 400
-                )
-
-def edit_product(request, product_id):
-    if request.method == 'POST':
         try:
-            product = FinishedProduct.get(id=product_id)
+            data = json.loads(request.body)
         except Exception as e:
-            messages.warning(request, f'{e}')
-            return redirect('inventory:inventory')
+            return JsonResponse({'success':False, 'message':'Invalid data'})
         
-        form = AddFinishedProductForm(request.POST, instance=product)
         
-        name = form.cleaned_data['name']
-        quantity = form.cleaned_dat['quantity']
+        # validation for existance
+        if Product.objects.filter(name=data['name']).exists():
+            return JsonResponse({'success':False, 'message':f'Product {data['name']} exists'})
+
+        try:
+            category = Category.objects.get(id=data['category'])
+        except Category.DoesNotExist:
+            return JsonResponse({'success':False, 'message':f'Category Doesnt Exists'})
+        
+        try: 
+            unit = UnitOfMeasurement.objects.get(id=int(data['unit']))
+        except Exception as e:
+            return JsonResponse({'success':False, 'message':f'Unit of Measurement Doesnt Exists'})
+        
+        product = Product.objects.create(
+            name = data['name'],
+            price = data['price'],
+            cost = data['cost'],
+            quantity = data['quantity'],
+            category = category,
+            tax_type = data['tax_type'],
+            min_stock_level = data['min_stock_level'],
+            description = data['description'], 
+            raw_material = True if data['raw_material'] else False,
+            finished_product = True if data['finished_product'] else False,
+            unit = unit,
+            portion_multiplier = data['portion_multiplier']
+        )
+        product.save()
+        logger.info(f'product saved')
+        return JsonResponse({'success':True})
+            
+    if request.method == 'GET':
+        products = Product.objects.all().values(
+            'id',
+            'name',
+        )
+        return JsonResponse(list(products), safe=False)
+    
+    return JsonResponse({'success':False, 'message':'Invalid request'})
+
+def product_detail(request, product_id):
+    try: 
+        product = Product.objects.get(id=product_id)
+    except Product.DoesNotExist:
+        messages.warning(request, f'Product with ID: {product_id} doesnt exists')
+        
+    logs = Logs.objects.filter(product=product)
+
+    return render(request, 'inventory/product_detail.html', 
+        {
+            'product': product,
+            'logs': logs,
+        }
+    )
+
+def edit_inventory(request, product_id):
+    
+    try: 
+        product = Product.objects.get(id=product_id)
+    except Product.DoesNotExist:
+        messages.warning(request, f'Product with ID: {product_id} doesnt exists')
+        
+    form = EditProductForm(instance=product)
+
+    if request.method == 'POST':
+        form = EditProductForm(request.POST, instance=product)
         
         if form.is_valid():
-            
-            log('edit', quantity, quantity, f'stock edited from {product.quantity} to {quantity}')
-             
             form.save()
             
-            messages.success(request, f'{name.upper()}, successfully edited')
-            return render(request, 'inventory/products.html')
+        Logs.objects.create(
+            user=user.objects.get(id=1), #to be removed
+            action= 'Edit',
+            product=product,
+            quantity=product.quantity,
+            total_quantity=product.quantity,
+        )
         
-        messages.warning(request, 'Invalid form data')
-        return render(request, 'inventory/edit_product.html')
-
-def delete_product(request, product_id):
-    try:
-        product = FinishedProduct.get(id=product_id)
-    except Exception as e:
-        messages.warning(request, f'{e}')
+        messages.success(request, f'{product.name} update succesfully')
         return redirect('inventory:products')
     
-    product.deactivate = True
-    return JsonResponse(
-        {
-            'success':True,
-            'message':f'{product.name.uper()}, successfully deleted'
-        },
-        status = 200
-    )
-    
-# purchase order views
+    return render(request, 'inventory/edit_product.html', 
+            {
+                'form':form,
+                'product':product
+            }
+        )
 
-@login_required
+# @login_required
 def suppliers(request):
     form = AddSupplierForm()
     suppliers = Supplier.objects.all()
@@ -295,7 +229,15 @@ def suppliers(request):
         }
     )
 
-@login_required
+# @login_required
+def supplier_list_json(request):
+    suppliers = Supplier.objects.all().values(
+        'id',
+        'name'
+    )
+    return JsonResponse(list(suppliers), safe=False)
+
+# @login_required
 def create_supplier(request):
     #payload
     """
@@ -322,7 +264,7 @@ def create_supplier(request):
         
         supplier = Supplier(
             name = name,
-            contact = contact,
+            contact_name = contact,
             email = email,
             phone = phone,
             address = address
@@ -331,7 +273,7 @@ def create_supplier(request):
         logger.info(f'Supplier successfully created {supplier.name}')
         return JsonResponse({'success': True}, status=200)
         
-@login_required
+# @login_required
 def edit_supplier(request, supplier_id):
     # payload
     """
@@ -355,80 +297,234 @@ def edit_supplier(request, supplier_id):
             return JsonResponse({'success': True}, status=400)
     return JsonResponse({'success': True})
 
-@login_required
+# @login_required
 def purchase_orders(request):
     form = CreateOrderForm()
-    orders = PurchaseOrder.objects.filter(branch = request.user.branch)
-    return render(request, 'inventory/suppliers/purchase_orders.html', 
+    status_form = PurchaseOrderStatus()
+    orders = PurchaseOrder.objects.filter()
+    return render(request, 'inventory/purchase_orders.html', 
         {
             'form':form,
-            'orders':orders
+            'orders':orders,
+            'status_form':status_form 
         }
     )
     
-
-@login_required
+# @login_required
 def create_purchase_order(request):
+    
+    # include the vat account and the purchase order account and the cash account
+    
+    if request.method == 'GET':
+        supplier_form = AddSupplierForm()
+        product_form = AddProductForm()
+        suppliers = Supplier.objects.all()
+        note_form = noteStatusForm()
+        unit_form = UnitOfMeasurementForm()
+        
+        return render(request, 'inventory/create_purchase_order.html',
+            {
+                'product_form':product_form,
+                'supplier_form':supplier_form,
+                'suppliers':suppliers,
+                'note_form':note_form,
+                'unit_form':unit_form
+            }
+        )
+
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            purchase_order_data = data.get('purchase_order', {})
+            purchase_order_items_data = data.get('po_items', [])
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'message': 'Invalid JSON payload'}, status=400)
+
+        supplier_id = purchase_order_data['supplier']
+        delivery_date = purchase_order_data['delivery_date']
+        status = purchase_order_data['status']
+        notes = purchase_order_data['notes']
+        total_cost = Decimal(purchase_order_data['total_cost'])
+        discount = Decimal(purchase_order_data['discount'])
+        handling_amount = Decimal(purchase_order_data['handling_amount'])
+        tax_amount = Decimal(purchase_order_data['tax_amount'])
+        other_amount = Decimal(purchase_order_data['other_amount'])
+    
+        if not all([supplier_id, delivery_date, status, total_cost, tax_amount]):
+            return JsonResponse({'success': False, 'message': 'Missing required fields'}, status=400)
+
+        try:
+            supplier = Supplier.objects.get(id=supplier_id)
+        except Supplier.DoesNotExist:
+            return JsonResponse({'success': False, 'message': f'Supplier with ID {supplier_id} not found'}, status=404)
+
+        try:
+            with transaction.atomic():
+                purchase_order = PurchaseOrder(
+                    order_number=PurchaseOrder.generate_order_number(),
+                    supplier=supplier,
+                    delivery_date=delivery_date,
+                    status=status,
+                    notes=notes,
+                    total_cost=total_cost,
+                    discount=discount,
+                    tax_amount=tax_amount,
+                    handling_amount=handling_amount,
+                    other_amount=other_amount,
+                    is_partial = False,
+                    received = False
+                )
+                purchase_order.save()
+
+                for item_data in purchase_order_items_data:
+                    product_name = (item_data['product'])
+                    quantity = int(item_data['quantity'])
+                    unit_cost = Decimal(item_data['price'])
+
+                    if not all([product_name, quantity, unit_cost]):
+                        transaction.set_rollback(True)
+                        return JsonResponse({'success': False, 'message': 'Missing fields in item data'}, status=400)
+
+                    try:
+                        product = Product.objects.get(name=product_name)
+                    except Product.DoesNotExist:
+                        transaction.set_rollback(True)
+                        return JsonResponse({'success': False, 'message': f'Product with Name {product_name} not found'}, status=404)
+
+                    PurchaseOrderItem.objects.create(
+                        purchase_order=purchase_order,
+                        product=product,
+                        quantity=quantity,
+                        unit_cost=unit_cost,
+                        received_quantity=0,
+                        received=False
+                    )
+
+                    # update finance accounts vat input account and the PurchasesAccount
+                    # if purchase_order.status == 'received':
+                    #     # change currency (first initial to be default ??)
+                    #     try:
+                    #         currency = Currency.objects.get(default=True)
+                            
+                    #         PurchaseOrderAccount.objects.create(
+                    #             purchase_order = purchase_order,
+                    #             amount = purchase_order.total_cost - purchase_order.tax_amount,
+                    #             balance = 0,
+                    #             expensed = False
+                    #         )
+                            
+                    #     except Currency.DoesNotExist:
+                    #         return JsonResponse({'success':False, 'message':f'currency doesnt exists'})
+                        
+                    #     try:
+                    #         rate = VATRate.objects.get(status=True)
+                    #         logger.info(f'rate -> {rate}')
+                    #         VATTransaction.objects.create(
+                    #             purchase_order = purchase_order,
+                    #             vat_type='Input',
+                    #             vat_rate = rate.rate,
+                    #             tax_amount = tax_amount
+                    #         )
+                            
+                    #     except VATRate.DoesNotExist:
+                    #         return JsonResponse({'success':False, 'message':f'Make sure you have a stipulated vat rate in the system'})
+          
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+        return JsonResponse({'success': True, 'message': 'Purchase order created successfully'})
+    
+# @login_required
+@transaction.atomic
+def change_purchase_order_status(request, order_id):
+    try:
+        purchase_order = PurchaseOrder.objects.get(id=order_id)
+    except PurchaseOrder.DoesNotExist:
+        return JsonResponse({'error': f'Purchase order with ID: {order_id} does not exist'}, status=404)
 
     try:
         data = json.loads(request.body)
-        purchase_order_data = data.get('purchase_order', {})
-        purchase_order_items_data = data.get('items', [])
+        status = data['status']
+        
+        if status:
+            purchase_order.status=status
+            if purchase_order.status == 'received':
+            #     try:
+            #         currency = Currency.objects.get(default=True)
+                    
+            #         PurchaseOrderAccount.objects.create(
+            #             purchase_order = purchase_order,
+            #             amount = purchase_order.total_cost - purchase_order.tax_amount,
+            #             balance = 0,
+            #             expensed = False
+            #         )
+                    
+            #     except Currency.DoesNotExist:
+            #         return JsonResponse({'success':False, 'message':f'currency doesnt exists'})
+                
+            #     try:
+            #         rate = VATRate.objects.get(status=True)
+                    
+            #         VATTransaction.objects.create(
+            #             purchase_order = purchase_order,
+            #             vat_type='Input',
+            #             vat_rate = rate.rate,
+            #             tax_amount = purchase_order.tax_amount
+            #         )
+                    
+            #     except VATRate.DoesNotExist:
+            #         return JsonResponse({'success':False, 'message':f'Make sure you have a stipulated vat rate in the system'})
+                purchase_order.save()
+            
+            return JsonResponse({'success':True}, status=200)
+        else:
+            return JsonResponse({'success':False, 'message':'Status is required'}, status=400)
     except json.JSONDecodeError:
         return JsonResponse({'success': False, 'message': 'Invalid JSON payload'}, status=400)
 
-    supplier_id = purchase_order_data.get('supplier_id')
-    delivery_date = purchase_order_data.get('delivery_date')
-    status = purchase_order_data.get('status')
-    notes = purchase_order_data.get('notes')
-
-    if not all([supplier_id, delivery_date, status]):
-        return JsonResponse({'success': False, 'message': 'Missing required fields'}, status=400)
-
+# @login_required
+def print_purchase_order(request, order_id):
     try:
-        supplier = Supplier.objects.get(id=supplier_id)
-    except Supplier.DoesNotExist:
-        return JsonResponse({'success': False, 'message': f'Supplier with ID {supplier_id} not found'}, status=404)
-
+        purchase_order = PurchaseOrder.objects.get(id=order_id)
+    except PurchaseOrder.DoesNotExist:
+        messages.warning(request, f'Purchase order with ID: {order_id} does not exists')
+        return redirect('inventory:purchase_orders')
+    
     try:
-        with transaction.atomic():
-            purchase_order = PurchaseOrder(
-                order_number=PurchaseOrder.generate_order_number(),
-                supplier=supplier,
-                delivery_date=delivery_date,
-                status=status,
-                notes=notes
-            )
-            purchase_order.save()
+        purchase_order_items = PurchaseOrderItem.objects.filter(purchase_order=purchase_order)
+    except PurchaseOrderItem.DoesNotExist:
+        messages.warning(request, f'Purchase order with ID: {order_id} does not exists')
+        return redirect('inventory:purchase_orders')
+    
+    return render(request, 'inventory/print_purchase_order.html', 
+        {
+            'orders':purchase_order_items,
+            'purchase_order':purchase_order
+        }
+    )
 
-            for item_data in purchase_order_items_data:
-                product_id = item_data.get('product')
-                quantity = item_data.get('quantity')
-                unit_cost = item_data.get('unit_cost')
-
-                if not all([product_id, quantity, unit_cost]):
-                    transaction.set_rollback(True)
-                    return JsonResponse({'success': False, 'message': 'Missing fields in item data'}, status=400)
-
-                try:
-                    product = Product.objects.get(id=product_id)
-                except Product.DoesNotExist:
-                    transaction.set_rollback(True)
-                    return JsonResponse({'success': False, 'message': f'Product with ID {product_id} not found'}, status=404)
-
-                PurchaseOrderItem.objects.create(
-                    purchase_order=purchase_order,
-                    product=product,
-                    quantity=quantity,
-                    unit_cost=unit_cost
-                )
-
-    except Exception as e:
-        return JsonResponse({'success': False, 'message': str(e)}, status=500)
-
-    return JsonResponse({'success': True, 'message': 'Purchase order created successfully'})
-
-@login_required
+# @login_required
+def purchase_order_detail(request, order_id):
+    try:
+        purchase_order = PurchaseOrder.objects.get(id=order_id)
+    except PurchaseOrder.DoesNotExist:
+        messages.warning(request, f'Purchase order with ID: {order_id} does not exists')
+        return redirect('inventory:purchase_orders')
+    
+    try:
+        purchase_order_items = PurchaseOrderItem.objects.filter(purchase_order=purchase_order)
+    except PurchaseOrderItem.DoesNotExist:
+        messages.warning(request, f'Purchase order with ID: {order_id} does not exists')
+        return redirect('inventory:purchase_orders')
+    
+    return render(request, 'inventory/purchase_order_detail.html', 
+        {
+            'orders':purchase_order_items,
+            'purchase_order':purchase_order
+        }
+    )
+    
+# @login_required
 def delete_purchase_order(request, purchase_order_id):
     if request.method != "DELETE":
         return JsonResponse({'success': False, 'message': 'Invalid request method'}, status=405)
@@ -443,3 +539,77 @@ def delete_purchase_order(request, purchase_order_id):
         return JsonResponse({'success': True, 'message': 'Purchase order deleted successfully'})
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+# @login_required
+def receive_order(request, order_id):
+    try:
+        purchase_order = PurchaseOrder.objects.get(id=order_id)
+    except PurchaseOrder.DoesNotExist:
+        messages.warning(request, f'Purchase order with ID: {order_id} does not exists')
+        return redirect('inventory:purchase_orders')
+    
+    try:
+        purchase_order_items = PurchaseOrderItem.objects.filter(purchase_order=purchase_order)
+    except PurchaseOrderItem.DoesNotExist:
+        messages.warning(request, f'Purchase order with ID: {order_id} does not exists')
+        return redirect('inventory:purchase_orders')
+    
+    return render(request, 'inventory/receive_order.html', 
+        {
+            'orders':purchase_order_items,
+            'purchase_order':purchase_order
+        }
+    )
+    
+# @login_required
+@transaction.atomic
+def process_received_order(request):
+    
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'message': 'Invalid JSON payload'}, status=400)
+
+        order_item_id = data.get('id')
+        quantity = data.get('quantity', 0)
+
+        if not order_item_id or not isinstance(quantity, int) or quantity <= 0:
+            return JsonResponse({'success': False, 'message': 'Invalid data'}, status=400)
+
+        try:
+            order_item = PurchaseOrderItem.objects.get(id=order_item_id)
+        except PurchaseOrderItem.DoesNotExist:
+            return JsonResponse({'success': False, 'message': f'Purchase Order Item with ID: {order_item_id} does not exist'}, status=404)
+
+        try:
+            purchase_order = PurchaseOrder.objects.get(order_number=order_item.purchase_order.order_number)
+        except PurchaseOrderItem.DoesNotExist:
+            return JsonResponse({'success': False, 'message': f'Purchase Order Item with Order number: {order_item.order.purchase_order.order_number} does not exist'}, status=404)
+        
+        try:
+            product = Product.objects.get(id=order_item.product.id)
+            product.quantity += int(quantity)
+            product.cost = order_item.unit_cost
+            product.save()
+        except Product.DoesNotExist:
+            return JsonResponse({'success': False, 'message': f'Product with ID: {order_item.product.id} does not exist'}, status=404)
+            
+        
+        Logs.objects.create(
+            purchase_order = purchase_order,
+            user= user.objects.get(id=1),  #to be removed,
+            action= 'stock in',
+            product=product,
+            quantity=quantity,
+            description=f'Stock in from {order_item.purchase_order.order_number}',
+            total_quantity=product.quantity 
+        )
+        
+        order_item.receive_items(quantity) 
+        order_item.check_received()
+        
+        return JsonResponse({'success': True, 'message': 'Inventory updated successfully'}, status=200)
+            
+            
+        

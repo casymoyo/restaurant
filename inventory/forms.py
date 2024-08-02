@@ -1,27 +1,46 @@
 from . models import (
-    RawMaterials,
-    UnitOfMeasurement,
-    FinishedGoodsCategory
+    Product, 
+    Supplier,
+    PurchaseOrder, 
+    UnitOfMeasurement
 )
-from django.forms import forms
+from django import forms
 
-class AddRawMaterialForm(forms.Model):
+class AddProductForm(forms.ModelForm):
     class Meta:
-        model = RawMaterials
+        model = Product
+        exclude = ['deactivate']
+
+class AddSupplierForm(forms.ModelForm):   
+    class Meta :
+        model = Supplier
         fields = '__all__'
+
+class CreateOrderForm(forms.ModelForm):
+    class Meta:
+        model =  PurchaseOrder
+        exclude = ['order_number', 'branch']
         
-class AddUOMForm(forms.Model):
+class noteStatusForm(forms.ModelForm):
+    class Meta:
+        model =  PurchaseOrder
+        fields = ['status', 'delivery_date', 'notes']
+        
+        widgets = {
+            'delivery_date': forms.DateInput(attrs={'type': 'date'}),
+        }
+        
+class PurchaseOrderStatus(forms.ModelForm):
+    class Meta:
+        model = PurchaseOrder
+        fields = ['status']
+        
+class UnitOfMeasurementForm(forms.ModelForm):
     class Meta:
         model = UnitOfMeasurement
         fields = '__all__'
-
-class AddProductCategoryForm(forms.Model):
+        
+class EditProductForm(forms.ModelForm):
     class Meta:
-        model = FinishedGoodsCategory
-        fields = '__all__'
-
-class AddFinishedProductForm(forms.Model):
-    class Meta:
-        model = RawMaterials
-        fields = '__all__'
-
+        model = Product
+        exclude = ['quantity']

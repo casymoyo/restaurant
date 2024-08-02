@@ -1,0 +1,34 @@
+from django.urls import path
+from .views import *
+
+
+app_name = 'inventory'
+
+urlpatterns = [
+    path('products/', products, name='products'),
+    path('create/product/', product, name='product'),
+    path('edit/product/<int:product_id>/', edit_inventory, name='edit_inventory'),
+    path('product/detail/<int:product_id>/', product_detail, name='product_detail'),
+    path('add/product/category/', add_product_category, name='add_product_category'),
+
+    path('inventory/', inventory, name='inventory_list'),
+    
+    # unit of measurement 
+    path('unit_of_measurement/', unit_of_measurement, name='unit_of_measurement'),
+    
+    # supplier
+    path('suppliers/list', suppliers, name='suppliers'),
+    path('edit/supplier/', edit_supplier, name='edit_supplier'),
+    path('create/supplier/', create_supplier, name='create_supplier'),
+    path('supplier/json/list/', supplier_list_json, name='supplier_list_json'),
+    
+    # ppurchase orders
+    path('purchase_orders/list/', purchase_orders, name='purchase_orders'),
+    path('print/purchase_order/<int:order_id>/', print_purchase_order, name='print_purchase_order'),
+    path('purchase_order/create/', create_purchase_order, name='create_purchase_order'),
+    path('purchase_order/receive/<int:order_id>/', receive_order, name='receive_order'),
+    path('process/purchase_order/', process_received_order, name='process_received_order'),
+    path('purchase_order/detail/<int:order_id>/', purchase_order_detail, name='purchase_order_detail'),
+    path('purchase_order/delete/<int:purchase_order_id>/', delete_purchase_order, name='delete_purchase_order'),
+    path('purchase_orders/status/<int:order_id>/', change_purchase_order_status, name='change_purchase_order_status'),
+]

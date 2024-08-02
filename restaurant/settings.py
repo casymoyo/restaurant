@@ -32,7 +32,8 @@ DJANGO_APPS = [
 ]
 
 THIRD_PARTY_APPS = [
-  
+  "crispy_forms",
+  "crispy_bootstrap5",
 ]
 
 LOCAL_APPS = [
@@ -163,5 +164,8 @@ LOGGING = {
     "root": {"level": "INFO", "handlers": ["console"]},
 }
 
+# crispy forms
+CRISPY_TEMPLATE_PACK = "bootstrap5"
+CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
