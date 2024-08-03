@@ -717,7 +717,7 @@ def yeseterdays_left_overs(request):
         
 
         if is_yesterday_sunday:
-            logger.info(f'Date: {'sunday'} few meals cooked no, balances')
+            logger.info(f'Date: sunday few meals cooked no, balances')
             return JsonResponse(
                 {
                     'success':True, 
