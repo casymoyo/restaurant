@@ -132,7 +132,7 @@ def product(request):
         
         # validation for existance
         if Product.objects.filter(name=data['name']).exists():
-            return JsonResponse({'success':False, 'message':f'Product {data['name']} exists'})
+            return JsonResponse({'success':False, 'message':f'Product exists'})
 
         try:
             category = Category.objects.get(id=data['category'])
