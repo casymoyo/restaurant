@@ -3,7 +3,7 @@ from .views import *
 
 
 app_name = 'inventory'
-
+#fdk
 urlpatterns = [
     path('products/', products, name='products'),
     path('create/product/', product, name='product'),
