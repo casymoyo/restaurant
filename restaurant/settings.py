@@ -43,8 +43,10 @@ LOCAL_APPS = [
 
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
-CSRF_TRUSTED_ORIGINS = ['https://restaurant-production-e103.up.railway.app/']
+
+CSRF_TRUSTED_ORIGINS = ['https://restaurant-production-e103.up.railway.app']
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
