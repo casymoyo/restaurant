@@ -25,6 +25,13 @@ class Supplier(models.Model):
 
     def __str__(self):
         return self.name
+    
+class Meal(models.Model):
+    name = models.CharField(max_length=255)
+    # to but the dishes which makes the meal
+    
+    def __str__(self) -> str:
+        return self.name
 
 class Product(models.Model):
     
@@ -52,25 +59,81 @@ class Product(models.Model):
     def __str__(self) -> str:
         return self.name
 
-
 class Production(models.Model):
     date_created = models.DateField(auto_now_add=True)
     status = models.BooleanField(default=False)
+    production_plan_number = models.CharField(max_length=10, unique=True, default='')
+
+    def save(self, *args, **kwargs):
+        if not self.production_plan_number:
+            self.production_plan_number = self.generate_production_plan_number()
+        super().save(*args, **kwargs)
+    
+    @staticmethod
+    def generate_production_plan_number():
+        return f'PP-{uuid.uuid4().hex[:5].upper()}'
 
     def __str__(self) -> str:
-        return self.date_created
+        return self.production_plan_number
 
+    
 class ProductionItems(models.Model):
-    raw_material = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True)
+    production = models.ForeignKey(Production, on_delete=models.CASCADE)
+    raw_material = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.FloatField()
-    raw_material = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True)
-    sold_quantity = models.IntegerField(null=True)
-    wastage = models.IntegerField(null=True)
-    left_overs = models.IntegerField(null=True)
-    variance = models.IntegerField(null=True)
-        
+    dish = models.ForeignKey('inventory.dish', on_delete=models.CASCADE)
+    
     def __str__(self) -> str:
         return f'{self.raw_material} ({self.quantity})'
+
+class Dish(models.Model):
+    name = models.CharField(max_length=100)
+    raw_material =  models.ForeignKey(Product, on_delete=models.CASCADE)
+    
+    def __str__(self) -> str:
+        return self.name
+    
+class DeclaredRawMaterial(models.Model):
+    raw_material = models.ForeignKey(Product, on_delete=models.CASCADE)
+    quantity = models.FloatField()
+    date = models.DateField(auto_now_add=True)
+    
+    def __str__(self) -> str:
+        return f'{self.raw_material} ({self.quantity})'
+
+class DeclaredWastageMeal(models.Model):
+    meal = models.ForeignKey(Meal, on_delete=models.CASCADE)
+    portion = models.IntegerField()
+    date = models.DateField(auto_now_add=True)
+    
+    def __str__(self) -> str:
+        return f'{self.meal} ({self.date})'
+
+class DeclaredLeftOverDish(models.Model):
+    dish = models.ForeignKey(Dish, on_delete=models.CASCADE)
+    portion = models.IntegerField()
+    date = models.DateField(auto_now_add=True)
+    
+    def __str__(self) -> str:
+        return f'{self.dish} ({self.date})'
+
+class SalePortion(models.Model):
+    meal = models.ForeignKey(Meal, on_delete=models.CASCADE)
+    portion = models.IntegerField()
+    date = models.DateField(auto_now_add=True)
+    
+    def __str__(self) -> str:
+        return f'{self.meal} ({self.date})'
+    
+
+# class today(models.Model):
+#     production = models.ForeignKey(Production, on_delete=models.CASCADE)
+#     declared_raw_material = models.ForeignKey(DeclaredRawMaterial, on_delete=models.CASCADE)
+#     declared_wastage = models.ForeignKey(DeclaredWastageMeal, on_delete=models.CASCADE)
+#     declared_sale = models.ForeignKey(SalePortion, on_delete=models.CASCADE)
+    
+#     def __str__(self) -> str:
+#         return 
 
 
 class PurchaseOrder(models.Model):
@@ -173,6 +236,14 @@ class Logs(models.Model):
     total_quantity = models.IntegerField()
     timestamp = models.DateField(auto_now_add=True)
     description = models.CharField(max_length=255, null=True)
+    
+class ProductionPlanInline(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    dish = models.ForeignKey(Dish, on_delete=models.CASCADE)
+    quantity = models.IntegerField()
+    rm_carried_forward_quantity = models.IntegerField()
+    lf_carried_forward_quantity = models.IntegerField()
+    actual_quantity = models.IntegerField()
 
 
 

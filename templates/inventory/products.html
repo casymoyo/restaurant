@@ -76,7 +76,8 @@
             </tbody>
         </table>
 
-        <table class="table table-hover table-responsive prod hidden" id="raw_materials_table" style="width: 100%;">
+        <div class="prod hidden">
+            <table class="table table-hover table-responsive prod hidden" id="products_table" style="width: 100%;">
             <thead class="bg-primary">
                 <th>Name</th>
                 <th>Quantity</th>
@@ -85,10 +86,10 @@
                 <th>Action</th>
             </thead>
             <tbody>
-                {% for product in products %}
+                {% for product in finished_products %}
                     <tr>
                         <td><small>{{ product.name }}</small></td>
-                        <td><small>{{ product.quantity }} {{ raw_material.unit }}</small></td>
+                        <td><small>{{ product.quantity }}</small></td>
                         <td><small>{{ product.cost}}</small></td>
                         <td><small>{{ product.price }}</small></td>
                         <td>
@@ -115,12 +116,14 @@
             </tbody>
         </table>
     </div>
+        </div>
 </div>
 <script>
     new DataTable('#raw_materials_table')
+    new DataTable('#products_table')
     const navButtons = document.querySelectorAll('.inv-item');
-const rawMaterials = document.getElementsByClassName('raw');
-const products = document.getElementById('prod');
+    const rawMaterials = document.getElementsByClassName('raw');
+    const products = document.getElementById('prod');
 
     navButtons.forEach((btn) => {
         btn.addEventListener('click', (event) => {

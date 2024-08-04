@@ -19,7 +19,8 @@ from . forms import (
     noteStatusForm,
     PurchaseOrderStatus,
     UnitOfMeasurementForm,
-    EditProductForm
+    EditProductForm,
+    ProductionPlanInlineForm
 )
 
 
@@ -68,12 +69,12 @@ def unit_of_measurement(request):
 def products(request):
     
     raw_materials = Product.objects.filter(raw_material=True, quantity__gt=0)
-    finished_goods = Product.objects.filter(finished_product=True, quantity__gt=0)
-    
+    finished_products = Product.objects.filter(raw_material=False)
+    logger.info(finished_products)
     return render(request, 'inventory/products.html', 
         {
             'raw_materials':raw_materials,
-            'finished_goods':finished_goods
+            'finished_products':finished_products
         }
     )
 
@@ -610,6 +611,167 @@ def process_received_order(request):
         order_item.check_received()
         
         return JsonResponse({'success': True, 'message': 'Inventory updated successfully'}, status=200)
+    
+def production_plans(request):
+    plans = Production.objects.all()
+    return render(request, 'inventory/production_plans.html', {'plans':plans})
+
+
+def create_production_plan(request):
+    
+    if request.method == 'POST':
+        # Payload
+        """
+        {
+            "items": [
+                {
+                    "raw_material": id,
+                    "quantity": int,
+                    "dish": id
+                }
+            ]
+        }
+        """
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError as e:
+            return JsonResponse({'success': False, 'message': f'Invalid JSON data: {e}'}, status=400)
+        
+        items = data.get('items')
+        
+        if not items or not isinstance(items, list):
+            return JsonResponse({'success': False, 'message': 'Invalid data: items should be a list'}, status=400)
+        
+        for item in items:
+            raw_material_id = item.get('raw_material')
+            quantity = item.get('quantity')
+            dish_id = item.get('dish')
             
+            if not raw_material_id or not quantity or not dish_id:
+                return JsonResponse({'success': False, 'message': 'Missing data: raw material, quantity, or dish'}, status=400)
             
+            try:
+                raw_material = Product.objects.get(id=raw_material_id)
+            except Product.DoesNotExist:
+                return JsonResponse({'success': False, 'message': f'Raw Material with ID: {raw_material_id} does not exist'}, status=404)
+                
+            try:
+                dish = Dish.objects.get(id=dish_id)
+            except Dish.DoesNotExist:
+                return JsonResponse({'success': False, 'message': f'Dish with ID: {dish_id} does not exist'}, status=404)
+            
+            # Create and save the production plan
+            production_plan = Production(status=False)
+            production_plan.save()
+            
+            ProductionItems.objects.create(
+                production=production_plan,
+                raw_material=raw_material,
+                quantity=quantity,
+                dish=dish
+            )
+        
+        return JsonResponse({'success': True, 'message': 'Production plans created successfully'}, status=201)
+    
+    if request.method == 'GET':
+        form = ProductionPlanInlineForm()
+        return render (request, 'inventory/create_production_plan.html', 
+                {
+                    'form':form
+                }
+            )
+    
+    return JsonResponse({'success': False, 'message': 'Invalid HTTP method'}, status=405)
+
+
+def yeseterdays_left_overs(request):
+    # payload
+    """
+    raw_material:id 
+    
+    """
+    
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            logger.info(f'data->{data}')
+        except json.JSONDecodeError as e:
+            return JsonResponse({'success': False, 'message': f'Invalid JSON data: {e}'}, status=400)
+        
+        raw_material_id = data.get('raw_material')
+        
+        if not raw_material_id:
+            return JsonResponse({'success': False, 'message': 'Missing data: raw material'}, status=400)
+        
+        try:
+            raw_material = Product.objects.get(id=raw_material_id)
+        except Product.DoesNotExist:
+            return JsonResponse({'success': False, 'message': f'Raw Material with ID: {raw_material_id} does not exist'}, status=404)
+            
+        # check yesterday if they are left raw materials
+        
+        yesterday = datetime.date.today() - datetime.timedelta(days=1)
+
+        is_yesterday_sunday = yesterday.weekday() == 6 
+        
+        
+
+        if is_yesterday_sunday:
+            logger.info(f'Date: {'sunday'} few meals cooked no, balances')
+            return JsonResponse(
+                {
+                    'success':True, 
+                    'data':{
+                        'raw_material_dif':0,
+                        'left_over_portion_diff':0
+                    }
+                }
+            )
+        else:
+            if DeclaredRawMaterial.objects.all().exists():
+                logger.info('here')
+                yesterday_raw_materiral = DeclaredRawMaterial.objects.get(raw_material=raw_material, date=yesterday)
+                
+                try:
+                    yesterday_left_over = DeclaredLeftOverDish.objects.get(dish__raw_material=raw_material, date=yesterday)
+                except DeclaredLeftOverDish.DoesNotExist:
+                    return JsonResponse({'success':False, 'message':f'Left over dish with DATE: {yesterday}, doesnt exists'})
+            
+                try:
+                    production = Production.objects.get(id=1)  #to be changed
+                    production_plan_item = ProductionItems.objects.get(production=production, raw_material=raw_material)
+                except Production.DoesNotExist:
+                    return JsonResponse({'success':False, 'message':f'Production with DATE: {yesterday}, doesnt exists'})
+                
+                # calculate yesterday's quantity to be carried forward
+        
+                yesterday_raw_material_quantity_diff = production_plan_item.quantity - yesterday_raw_materiral.quantity
+                
+                logger.info(yesterday_raw_materiral)
+                yesterday_left_over_portion_quantity = (yesterday_left_over.portion * \
+                                                        (yesterday_raw_materiral.quantity * raw_material.portion_multiplier) ) \
+                                                        / production_plan_item.quantity 
+                logger.info(yesterday_left_over_portion_quantity)
+                return JsonResponse(
+                    {
+                        'success':True, 
+                        'data':{
+                            'raw_material_dif':yesterday_raw_material_quantity_diff,
+                            'left_over_portion_diff':yesterday_left_over_portion_quantity 
+                        }
+                    }
+                )
+            else:
+                logger.info('hereee')
+                return JsonResponse(
+                    {
+                        'success':True, 
+                        'data':{
+                            'raw_material_dif':0,
+                            'left_over_portion_diff':0 
+                        }
+                    }
+                )
+        
+        
         

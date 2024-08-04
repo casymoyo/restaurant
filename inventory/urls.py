@@ -16,6 +16,11 @@ urlpatterns = [
     # unit of measurement 
     path('unit_of_measurement/', unit_of_measurement, name='unit_of_measurement'),
     
+    # production plan 
+    path('production/plan/list', production_plans, name='production_plans'),
+    path('create/production/plan', create_production_plan, name='create_production_plan'),
+    path('yesterdays/left/overs/', yeseterdays_left_overs, name='yeseterdays_left_overs'),
+    
     # supplier
     path('suppliers/list', suppliers, name='suppliers'),
     path('edit/supplier/', edit_supplier, name='edit_supplier'),

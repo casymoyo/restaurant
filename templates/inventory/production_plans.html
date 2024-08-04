@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% load static%}
+{% load crispy_forms_tags %}
+{% block title%} Production Plan {% endblock%}
+{% block content %}
+   <div class="inventory">
+        <div class="inventory-navbar">
+            <nav class="d-flex justify-content-between align-items-center p-2">
+                <div class='fw-bold d-flex'>
+                    <a href='{% url "inventory:products"%}' class='border btn bx bx-arrow-back fs-5'></a>
+                    <a href='/' class='bx bx-home btn border fs-5 mx-2'></a>
+                    <span class='fs-5'>Production Plan</span>
+                </div>
+                <div>
+                    <ul class="list-unstyled mt-2">
+                        <li class="btn border">
+                            <a href="{% url 'inventory:create_production_plan' %}">Create Production Plan</a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+        </div>
+        <div>
+            <div class=" mt-2 w-100">
+                <table class='table border table-hover rounded p-2' id='order_table' style="width: 100%;" >
+                        <thead class='bg-primary'>
+                            <tr>
+                                <th>Date</th>
+                                <th>PP Number</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                            </thead>
+                        <tbody>
+                            {% for plan in production_plans %}
+                                <tr>
+                                    <td><small>{{ plan.date }}</small></td>
+                                    <td><small>{{ plan.production_plan_number }}</small></td>
+                                    <td><small>{{ plan.status}}</small></td>
+                                    <td>
+                                        <small>
+                                            <a href="" class="bx bx-show"></a>
+                                            <a href="" class="bx bx-printer"></a>
+                                        </small>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="modal fade" id="statusFormModal" tabindex="-1" aria-labelledby="loaderModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-body">
+                        <h5 class="fw-bold">Change Status</h5>
+                        <form action="">
+                            {% csrf_token %}
+                            {{ status_form | crispy }}
+                            <div class="d-flex justify-content-end">
+                                <div class="">
+                                    <button type="reset" class="btn btn-danger btn-sm w-100">
+                                        <i class='bx bx-reset'></i>
+                                        Reset
+                                    </button>
+                                </div>
+                                <span class="px-1"></span>
+                                <div class="">
+                                    <button type="button" onclick="changeStatus()" class="btn btn-secondary btn-sm w-100">
+                                        <i class='bx bx-save'></i>
+                                        change
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="loaderModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-body text-center">
+                        <h5 class="fw-bold">Status Successfully Changed and Related Accounts updated</h5>
+                    </div>
+                </div>
+            </div>
+        </div>
+   </div> 
+   <script>
+        new DataTable('#production_table');
+   </script>
+{% endblock content %}
