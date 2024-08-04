@@ -22,7 +22,7 @@
         </div>
         <div>
             <div class=" mt-2 w-100">
-                <table class='table border table-hover rounded p-2' id='order_table' style="width: 100%;" >
+                <table class='table border table-hover rounded p-2' id='production_table' style="width: 100%;" >
                         <thead class='bg-primary'>
                             <tr>
                                 <th>Date</th>
@@ -32,14 +32,23 @@
                             </tr>
                             </thead>
                         <tbody>
-                            {% for plan in production_plans %}
+                            {% for plan in plans %}
                                 <tr>
-                                    <td><small>{{ plan.date }}</small></td>
+                                    <td><small>{{ plan.date_created }}</small></td>
                                     <td><small>{{ plan.production_plan_number }}</small></td>
-                                    <td><small>{{ plan.status}}</small></td>
                                     <td>
                                         <small>
-                                            <a href="" class="bx bx-show"></a>
+                                            {% if plan.status %}
+                                                <small class="bg-success fw-bold text-light p-2 rounded text-center w-100">Confirmed</small>
+                                            {%else %}
+                                                <a href="{% url 'inventory:confirm_production_plan' plan.id %}" class="bg-secondary fw-bold text-light p-2 rounded text-center w-100">Waiting Confirmation</a>
+                                            {% endif %}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <small>
+                                            <a href="{% url 'inventory:production_plan_detail' plan.id %}" class="bx bx-show"></a>
+                                            <a href="{% url 'inventory:update_production_plan' plan.id %}" class="bx bx-edit text-primary mx-2"></a>
                                             <a href="" class="bx bx-printer"></a>
                                         </small>
                                     </td>

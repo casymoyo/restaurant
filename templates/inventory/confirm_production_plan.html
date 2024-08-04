@@ -1,0 +1,70 @@
+
+{% extends "base.html" %}
+{% load static %}
+{% load crispy_forms_tags %}
+{% block title %} 
+    {% if confirm %}
+        Confirm Production Plan
+    {% else %}
+        Production Plan Detail
+    {% endif %}
+ {% endblock %}
+{% block content %}
+
+<div class="inventory">
+    <div class='add-production-plan'>
+        <div class='production-plan mt-2 d-flex justify-content-between align-items-center'>
+            <div>
+                <a href='{% url "inventory:production_plans" %}' class='border btn bx bx-arrow-back fs-5'></a>
+                <a href='/' class='bx bx-home btn border fs-5 mx-2'></a>
+                {% if confirm %}
+                    <span class='mt-2 fs-5'>Confirm Production Plan : {{ production_plan.production_plan_number }}</span>
+                {% else %}
+                    <span class='mt-2 fs-5'>Production Plan : {{ production_plan.production_plan_number }} Detail</span>
+                {% endif %}
+              </div>
+            <div>
+                <ul class="list-unstyled mt-3">
+                    <li>
+                        <a href="{% url 'inventory:production_plans' %}" class="btn border">Production Plan</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <div class="row">
+            <div class="">
+                <table class="table">
+                    <thead class="bg-primary">
+                        <th>Raw Material</th>
+                        <th>Dish</th>
+                        <th>Quantity</th>
+                        <th>Total Cost</th>
+                        <th>RM B/F quantity</th>
+                        <th>LF B/f quantity</th>
+                        <th>Actual quantity</th>
+                        <th>PC Time</th>
+                    </thead>
+                    <tbody>
+                        {% for item in production_plan_items  %}
+                          <td><small>{{ item.raw_material }}</small></td>
+                          <td><small>{{ item.dish.name }}</small></td>
+                          <td><small>{{ item.quantity }} {{ item.raw_material.unit }}</small></td>
+                          <td><small>{{ item.total_cost }}</small></td>
+                          <td><small>{{ item.rm_carried_forward_quantity }} {{ item.raw_material.unit }}</small></td>
+                          <td><small>{{ item.lf_carried_forward_quantity }} {{ item.raw_material.unit }}</small></td>
+                          <td><small>{{ item.actual_quantity }} {{ item.raw_material.unit }}</small></td>
+                          <td><small>{{ item.production_completion_time }}</small></td>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% if confirm %}
+                    <div class="d-flex justify-content-end">
+                        <a href="{% url 'inventory:process_production_plan' production_plan.id %}" class="btn-primary text-light btn w-100 bx bx-save"></a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+  
+{% endblock content %}

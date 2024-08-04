@@ -20,6 +20,10 @@ urlpatterns = [
     path('production/plan/list', production_plans, name='production_plans'),
     path('create/production/plan', create_production_plan, name='create_production_plan'),
     path('yesterdays/left/overs/', yeseterdays_left_overs, name='yeseterdays_left_overs'),
+    path('update_production_plan/<int:pp_id>/', update_production_plan, name='update_production_plan'),
+    path('production_plan/detail/<int:pp_id>/', production_plan_detail, name='production_plan_detail'),
+    path('confirm/production_plan/<int:pp_id>/', confirm_production_plan, name='confirm_production_plan'),
+    path('processs/production_plan/<int:pp_id>/', process_production_plan_confirmation, name='process_production_plan'),
     
     # supplier
     path('suppliers/list', suppliers, name='suppliers'),

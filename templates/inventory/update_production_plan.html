@@ -9,7 +9,7 @@
             <div>
                 <a href='{% url "inventory:production_plans" %}' class='border btn bx bx-arrow-back fs-5'></a>
                 <a href='/' class='bx bx-home btn border fs-5 mx-2'></a>
-                <span class='mt-2 fs-5'>Create Production Plan</span>
+                <span class='mt-2 fs-5'>Update Production Plan : {{ production_plan.production_plan_number }}</span>
             </div>
             <div>
                 <ul class="list-unstyled mt-3">
@@ -69,11 +69,45 @@ $(document).ready(function() {
         product = e.target.value;
     });
 
-    //reset button
-    $('#id_reset').on('click', function(){
-      cart = []
-      updateCartTable()
-    })
+
+    //get data
+    fetch('{% url "inventory:update_production_plan" production_plan.id %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': $('input[name="csrfmiddlewaretoken"]').val()
+            },
+            body: JSON.stringify({'production_id'})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success){
+                for (item in data){
+                    const cartItem = {
+                        raw_material: item.raw_material__name,
+                        dish: item.dish__name,
+                        quantity: item.quantity,
+                        total_cost: item.total_cost, 
+                        rm_bf_quantity: item.rm_carried_forward_quantity,
+                        lf_bf_quantity: item.lf_carried_forward_quantity,
+                        actual_quantity: item.actual_quantity,
+                        timeout: item.production_completion_time
+                    };
+                }
+                cart.push(cartItem)
+            } else {
+                Swal.fire({
+                    title: "Error",
+                    text: data.message,
+                    icon: "error"
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error posting product data:', error);
+        });
+
+    updateCartTable();
 
     // submit button 
     $('#id_submit').on('click', function(){

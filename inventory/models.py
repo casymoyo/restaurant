@@ -82,6 +82,11 @@ class ProductionItems(models.Model):
     raw_material = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.FloatField()
     dish = models.ForeignKey('inventory.dish', on_delete=models.CASCADE)
+    rm_carried_forward_quantity = models.IntegerField()
+    lf_carried_forward_quantity = models.IntegerField()
+    actual_quantity = models.IntegerField()
+    production_completion_time = models.TimeField(null=True)
+    total_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     
     def __str__(self) -> str:
         return f'{self.raw_material} ({self.quantity})'
@@ -237,13 +242,6 @@ class Logs(models.Model):
     timestamp = models.DateField(auto_now_add=True)
     description = models.CharField(max_length=255, null=True)
     
-class ProductionPlanInline(models.Model):
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)
-    dish = models.ForeignKey(Dish, on_delete=models.CASCADE)
-    quantity = models.IntegerField()
-    rm_carried_forward_quantity = models.IntegerField()
-    lf_carried_forward_quantity = models.IntegerField()
-    actual_quantity = models.IntegerField()
 
 
 
