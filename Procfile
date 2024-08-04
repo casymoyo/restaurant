@@ -1,1 +1,1 @@
-web: gunicorn techcity.wsgi  
+web: gunicorn restaurant.wsgi  
