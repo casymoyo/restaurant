@@ -26,9 +26,6 @@ class Supplier(models.Model):
     def __str__(self):
         return self.name
     
-class Meal(models.Model):
-    name = models.CharField(max_length=255)
-    # to put the dishes which makes the meal
     
     def __str__(self) -> str:
         return self.name
@@ -130,7 +127,7 @@ class PurchaseOrder(models.Model):
 
     order_number = models.CharField(max_length=100, unique=True)
     supplier = models.ForeignKey(Supplier, on_delete=models.SET_NULL, null=True)
-    order_date = models.DateTimeField(default=datetime.datetime.today())
+    order_date = models.DateTimeField(auto_now_add=True)
     delivery_date = models.DateField(null=True, blank=True)
     total_cost = models.DecimalField(max_digits=15, decimal_places=2, default=0.00)
     status = models.CharField(max_length=50, choices=status_choices, default='pending')

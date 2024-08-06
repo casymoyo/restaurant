@@ -20,14 +20,14 @@ class Sale(models.Model):
     date = models.DateField(auto_now_add=True)
     
     def __str__(self) -> str:
-        return f'{self.meal} -> ({self.total_amount})'
+        return f'{self.cashier} -> ({self.total_amount})'
     
 class SaleItem(models.Model):
-    sale = sale = models.ForeignKey(Sale, on_delete=models.CASCADE, null=True)
-    meal = models.ForeignKey(Meal, on_delete=models.CASCADE),
-    quantity = models.IntegerField(),
+    sale = models.ForeignKey(Sale, on_delete=models.CASCADE)
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0) 
     time = models.TimeField(auto_now_add=True)
+    meal = models.ForeignKey(Meal, on_delete=models.CASCADE)
+    quantity = models.IntegerField()
     
 class CashBook(models.Model):
     sale = models.ForeignKey(Sale, on_delete=models.CASCADE, null=True)

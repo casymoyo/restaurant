@@ -5,6 +5,7 @@ from loguru import logger
 import json
 from finance.models import Sale, SaleItem, CashBook
 from django.contrib.auth import get_user_model
+from django.db import transaction
 
 user = get_user_model()
 
@@ -31,19 +32,22 @@ def meal_detail_json(request, meal_id):
         
         return JsonResponse({'success':True, 'data': meal_data})
 
+@transaction.atomic
 def process_sale(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
-            received_amount = data['received_amount']
             items = data['items']
 
             sub_total = sum(item['price'] * item['quantity'] for item in items)
             logger.info(sub_total)
+            
             tax = sub_total * 0.15 #to be dynamically stipulated
             logger.info(tax)
+            
             total_amount = sub_total + tax
             logger.info(total_amount)
+            
             sale = Sale.objects.create(
                 total_amount=total_amount,
                 tax=tax,
@@ -62,10 +66,12 @@ def process_sale(request):
                 )
                 
                 CashBook.objects.create(
-                    sale=sale_item, 
+                    sale=sale, 
                     amount = meal.price,
                     debit=True
                 )
+                
+                # adjust the inventory, todays made portions
             logger.info(f'Sale: Processed')
             return JsonResponse({'success': True, 'sale_id': sale.id}, status=201)
         except Exception as e:

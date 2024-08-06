@@ -77,10 +77,10 @@
                         <span id="total">$0.00</span>
                     </div>
                     <div class="mt-3">
-                        <button class="btn btn-outline-danger w-100">Cancel</button>
+                        <button class="btn btn-outline-danger w-100" id="cancelBtn">Cancel</button>
                     </div>
                     <div class="d-flex justify-content-center mt-3">
-                        <button class="btn btn-success w-100" id="chargeButton" data-bs-toggle="modal" data-bs-target="#chargeModal">Charge $0.00</button>
+                        <button class="btn btn-success w-100" id="chargeButton">Charge $0.00</button>
                     </div>
                 </div>
             </section>
@@ -89,7 +89,7 @@
 
     <!-- Modal -->
     <div class="modal fade" id="chargeModal" tabindex="-1" aria-labelledby="chargeModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
+        <div class="modal-dialog  modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="chargeModalLabel">Finalize Sale</h5>
@@ -117,6 +117,30 @@
     <script>
         const VAT_RATE = 0.15;
         let cart = [];
+
+        const chargeModal = new bootstrap.Modal(document.getElementById('chargeModal'))
+
+        document.getElementById('cancelBtn').addEventListener('click', ()=>{
+            cart = []
+            updateOrderDetails();
+            Swal.fire({
+                title: "Success",
+                text: "Order Cart Refreshed",
+                icon: "success"
+            });
+        })
+
+        document.getElementById('chargeButton').addEventListener('click', ()=>{
+            if (cart.length === 0){
+                Swal.fire({
+                    title: "Error",
+                    text: "Empty Order",
+                    icon: "error"
+                });
+            }else{
+                chargeModal.show()
+            }
+        })
     
         function addToCart(id, name, price) {
           const existingMeal = cart.find(meal => meal.id === id);
@@ -184,6 +208,15 @@
         const total = parseFloat(document.getElementById('total').innerText.slice(1));
         const change = totalAmountInput - total;
         document.getElementById('changeDisplay').value = `$${change.toFixed(2)}`;
+
+        if(!totalAmountInput){
+            Swal.fire({
+                title: "Error",
+                text: "Please Insert Amount.",
+                icon: "error"
+            });
+            return;
+        }
     
         const saleData = {
             received_amount: totalAmountInput,
@@ -206,9 +239,21 @@
         .then(data => {
             if (data.success) {
                 console.log('Sale processed successfully:', data);
-                // Optionally, redirect to a receipt page or clear the cart
+                Swal.fire({
+                    title: "Success",
+                    text: "Processing Receipt",
+                    icon: "success"
+                });
+                cart = []
+                updateOrderDetails();
+                chargeModal.hide()
             } else {
-                console.error('Error processing sale:', data.message);
+                Swal.fire({
+                    title: "Error",
+                    text: data.message,
+                    icon: "error"
+                });
+                chargeModal.hide()
             }
         })
         .catch(error => {
