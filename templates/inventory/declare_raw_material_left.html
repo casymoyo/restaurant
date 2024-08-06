@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% load static %}
+{% load crispy_forms_tags %}
+{% block title %} 
+    Prodoction Plan Declaration
+{% endblock %}
+{% block content %}
+
+<div class="inventory">
+    <div class='add-production-plan'>
+        <div class='production-plan mt-2 d-flex justify-content-between align-items-center'>
+            <div>
+                <a href='{% url "inventory:production_plans" %}' class='border btn bx bx-arrow-back fs-5'></a>
+                <a href='/' class='bx bx-home btn border fs-5 mx-2'></a>
+                <span class='mt-2 fs-5'>Production Plan : {{ production_plan.production_plan_number }} Declaration</span>
+            </div>
+            <div>
+                <ul class="list-unstyled mt-3 d-flex align-items-center">
+                    <li>
+                        <a href="{% url 'inventory:production_plans' %}" class="mx-2 btn border">Production Plan</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <div class="row">
+            <div class="">
+                <table class="table">
+                    <thead class="bg-primary">
+                        <th>Raw Material</th>
+                        <th>Dish</th>
+                        <th>Actual quantity</th>
+                        <th>Used Quantity</th>
+                        <th>Remaining Quantity</th>
+                    </thead>
+                    <tbody>
+                        {% for item in production_plan_items %}
+                            <tr data-item-id="{{ item.id }}">
+                                <td><small>{{ item.raw_material }}</small></td>
+                                <td><small>{{ item.dish.name }}</small></td>
+                                <td><small>{{ item.actual_quantity }} {{ item.raw_material.unit }}</small></td>
+                                <td>
+                                    <small>
+                                        <input type="number" class="form-control used-quantity" min="0" data-actual-quantity="{{ item.actual_quantity }}" />
+                                    </small>
+                                </td>
+                                <td><small class="remaining-quantity"></small></td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <div class="d-flex justify-content-end">
+                    <button id="id_confirm" class="btn-primary text-light btn bx bx-save"></button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const inputElements = document.querySelectorAll('.used-quantity');
+
+        inputElements.forEach(input => {
+            input.addEventListener('keydown', function (event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    const tr = input.closest('tr');
+                    const itemId = tr.getAttribute('data-item-id');
+                    const actualQuantity = parseFloat(input.getAttribute('data-actual-quantity'));
+                    const usedQuantity = parseFloat(input.value);
+
+                    if (isNaN(usedQuantity) || usedQuantity < 0) {
+                        Swal.fire({
+                            title: "Error",
+                            text: 'Please enter a valid quantity.',
+                            icon: "error"
+                        });
+                        return;
+                    }
+
+                    if (usedQuantity > actualQuantity) {
+                        Swal.fire({
+                            title: "Error",
+                            text: 'Quantity used can\'t be greater than Actual Quantity.',
+                            icon: "error"
+                        });
+                        return;
+                    }
+
+                    const remainingQuantity = actualQuantity - usedQuantity;
+                    tr.querySelector('.remaining-quantity').textContent = remainingQuantity + ' grams';
+
+                    fetch("{% url 'inventory:declare_production_plan' production_plan.id %}", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': '{{ csrf_token }}'
+                        },
+                        body: JSON.stringify({
+                            production_plan_item: itemId,
+                            quantity_used: usedQuantity
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (!data.success) {
+                            Swal.fire({
+                                title: "Error",
+                                text: data.message,
+                                icon: "error"
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                    });
+                }
+            });
+        });
+
+        document.getElementById('id_confirm').addEventListener('click', function () {
+            fetch("{% url 'inventory:confirm_declaration' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    production_plan: {{ production_plan.id }}
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        title: "Success",
+                        text: data.message,
+                        icon: "success"
+                    }).then(() => {
+                        window.location.href = "{% url 'inventory:production_plans' %}";
+                    });
+                } else {
+                    Swal.fire({
+                        title: "Error",
+                        text: data.message,
+                        icon: "error"
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        });
+    });
+</script>
+
+{% endblock content %}

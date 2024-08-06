@@ -613,7 +613,7 @@ def process_received_order(request):
         return JsonResponse({'success': True, 'message': 'Inventory updated successfully'}, status=200)
     
 def production_plans(request):
-    plans = Production.objects.all().order_by('-date_created')
+    plans = Production.objects.all().order_by('-date_created') 
     return render(request, 'inventory/production_plans.html', {'plans':plans})
 
 
@@ -642,14 +642,19 @@ def create_production_plan(request):
         if not items or not isinstance(items, list):
             return JsonResponse({'success': False, 'message': 'Invalid data: items should be a list'}, status=400)
         
+        # Create and save the production plan
+        production_plan = Production(status=False, declared=False)
+        production_plan.save()
+            
         for item in items:
             raw_material_name = item.get('raw_material')
             quantity = item.get('quantity')
             dish_name = item.get('dish')
-            rm_cf_quantity = item.get('rm_bf_quantity')
-            lf_cf_quantity = item.get('lf_bf_quantity')
+            # rm_cf_quantity = item.get('rm_bf_quantity')
+            # lf_cf_quantity = item.get('lf_bf_quantity')
             actual_quantity = item.get('actual_quantity')
-            pct = item.get('production_completion_')
+            pct = item.get('timeout')
+            total_cost = item.get('total_cost')
             
             if not raw_material_name or not quantity or not dish_name:
                 return JsonResponse({'success': False, 'message': 'Missing data: raw material, quantity, or dish'}, status=400)
@@ -664,11 +669,13 @@ def create_production_plan(request):
             except Dish.DoesNotExist:
                 return JsonResponse({'success': False, 'message': f'Dish with ID: {dish_name} doesn\'t exist'}, status=404)
             
-            # Create and save the production plan
-            production_plan = Production(status=False)
-            production_plan.save()
+            if (quantity - actual_quantity) >= 0:
+                logger.info(f'here:')
+                rm_cf_quantity = 0
+                lf_cf_quantity = 0
+                
             
-            ProductionItems.objects.create(
+            production_item = ProductionItems.objects.create(
                 production=production_plan,
                 raw_material=raw_material,
                 quantity=quantity,
@@ -676,8 +683,10 @@ def create_production_plan(request):
                 rm_carried_forward_quantity=rm_cf_quantity,
                 lf_carried_forward_quantity=lf_cf_quantity,
                 actual_quantity=actual_quantity,
-                production_completion_time=pct
+                production_completion_time=pct,
+                total_cost = total_cost
             )
+            logger.info(f'{production_item} : Saved successfully')
         
         return JsonResponse({'success': True, 'message': 'Production plans created successfully'}, status=201)
     
@@ -688,7 +697,6 @@ def create_production_plan(request):
                     'form':form
                 }
             )
-    
     return JsonResponse({'success': False, 'message': 'Invalid HTTP method'}, status=405)
 
 
@@ -723,84 +731,39 @@ def yeseterdays_left_overs(request):
             dish = Dish.objects.get(id=dish_id)
         except Dish.DoesNotExist:
             return JsonResponse({'success': False, 'message': f'Dish with ID: {dish_id} doesn\'t exist'}, status=404)
-             
-        # check yesterday if they are left raw materials
         
-        yesterday = datetime.date.today() - datetime.timedelta(days=1)
+        try:
+            latest_plan = Production.objects.latest('time_created')
+            try:
+                latest_production_item = ProductionItems.objects.get(production=latest_plan, raw_material=raw_material, dish=dish)
+                logger.info(f'product: {latest_production_item}')
+                latest_raw_material_quantity = latest_production_item.remaining_raw_material or 0
+                
+                latest_left_over_portion_quantity = (latest_production_item.left_overs * latest_production_item.quantity) / \
+                                                    (latest_production_item.quantity  * latest_production_item.raw_material.portion_multiplier) or 0
+            except ProductionItems.DoesNotExist:
+                logger.warning("No Production Items found for the latest plan.")
+                latest_raw_material_quantity = 0
+                latest_left_over_portion_quantity = 0
 
-        is_yesterday_sunday = yesterday.weekday() == 6 
-        
-        
+        except Production.DoesNotExist:
+            logger.warning("No Production Plans found.")
+            latest_raw_material_quantity = 0
+            latest_left_over_portion_quantity = 0
 
-        if is_yesterday_sunday:
-            logger.info(f'Date: sunday few meals cooked no, balances')
-            return JsonResponse(
-                {
-                    'success':True, 
-                    'data':{
-                        'raw_material_dif':0,
-                        'left_over_portion_diff':0
-                    }
+       
+        return JsonResponse(
+            {
+                'success':True, 
+                'data':{
+                    'raw_material_dif':float(latest_raw_material_quantity),
+                    'left_over_portion_diff':float(latest_left_over_portion_quantity),
+                    'unit_cost':float(raw_material.cost),
+                    'unit_of_measurement': raw_material.unit.unit_name
                 }
-            )
-        else:
-            if DeclaredRawMaterial.objects.all().exists():
-                logger.info('here')
-                yesterday_raw_materiral = DeclaredRawMaterial.objects.get(raw_material=raw_material, date=yesterday)
-                
-                try:
-                    yesterday_left_over = DeclaredLeftOverDish.objects.get(dish__raw_material=raw_material, date=yesterday)
-                except DeclaredLeftOverDish.DoesNotExist:
-                    return JsonResponse({'success':False, 'message':f'Left over dish with DATE: {yesterday}, doesn\'t exists'})
-            
-                try:
-                    production = Production.objects.get(id=1)  #to be changed
-                    production_plan_item = ProductionItems.objects.get(production=production, raw_material=raw_material, dish=dish)
-                    logger.info(f"Production item: {production_plan_item}")
-                except Production.DoesNotExist:
-                    return JsonResponse({'success':False, 'message':f'Production with DATE: {yesterday}, doesn\'t exists'})
-                
-                # calculate yesterday's quantity to be carried forward
-        
-                yesterday_raw_material_quantity_diff = production_plan_item.quantity - yesterday_raw_materiral.quantity
-                
-                logger.info(yesterday_raw_materiral)
-                
-                yesterday_left_over_portion_quantity = (yesterday_left_over.portion * yesterday_raw_materiral.quantity) / \
-                                                        (production_plan_item.quantity  * raw_material.portion_multiplier) 
-                                                        
-                
-                logger.info(f" rm-df : {yesterday_raw_material_quantity_diff}")
-                logger.info(f"ylo_portion: {yesterday_left_over.portion}")
-                logger.info(f"yrm_q : {yesterday_raw_materiral.quantity}")
-                logger.info(f"yrm_q : { raw_material.portion_multiplier}")
-                logger.info(f"rmp_m : {yesterday_raw_materiral.quantity}")
-                logger.info(f"pi_q : {production_plan_item.quantity }")
-                
-                logger.info(f"ylop_q : {yesterday_left_over_portion_quantity}")
-                
-                return JsonResponse(
-                    {
-                        'success':True, 
-                        'data':{
-                            'raw_material_dif':float(yesterday_raw_material_quantity_diff),
-                            'left_over_portion_diff':float(yesterday_left_over_portion_quantity ),
-                            'unit_cost':float(raw_material.cost),
-                            'unit_of_measurement': raw_material.unit.unit_name
-                        }
-                    }
-                )
-            else:
-                logger.info('hereee')
-                return JsonResponse(
-                    {
-                        'success':True, 
-                        'data':{
-                            'raw_material_dif':0,
-                            'left_over_portion_diff':0 
-                        }
-                    }
-                )
+            }
+        )
+           
     return JsonResponse({'success': False, 'message': 'Invalid HTTP method'}, status=405)
 
 def production_plan_detail(request, pp_id):
@@ -829,6 +792,7 @@ def confirm_production_plan(request, pp_id):
         except Exception as e:
             messages.warning(request, f'Production Plan With ID: {pp_id}, doesnt exists.')
         
+        logger.info(production_plan_items)
         return render(request, 'inventory/confirm_production_plan.html', 
             {
                 'production_plan':production_plan,
@@ -905,4 +869,100 @@ def update_production_plan(request, pp_id):
             return JsonResponse({'success': False, 'messages': f'Production plan wit ID: {production_plan_id} doesn\'t exists.'})
         
         return JsonResponse(list(production_plan_items), safe=False)
+
+
+def declare_production_plan(request, pp_id):
+    if request.method == 'GET':
+        try:
+            production_plan = Production.objects.select_related().get(id=pp_id)
+            production_plan_items = ProductionItems.objects.filter(production=production_plan).select_related('raw_material')
+        except Production.DoesNotExist:
+            messages.warning(request, f'Production Plan With ID: {pp_id} doesn\'t exist.')
+            return redirect('inventory:production_plan_detail', pp_id)
+        
+        return render(request, 'inventory/declare_raw_material_left.html', {
+            'production_plan': production_plan,
+            'production_plan_items': production_plan_items,
+        })
+    
+    elif request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError as e:
+            return JsonResponse({'success': False, 'message': f'Invalid JSON data: {e}'}, status=400)
+        
+        pp_item_id = data.get('production_plan_item')
+        raw_material_used = data.get('quantity_used')
+        
+        if not pp_item_id:
+            return JsonResponse({'success': False, 'message': 'Missing Data: Production plan item'}, status=400)
+        
+        if raw_material_used is None:
+            return JsonResponse({'success': False, 'message': 'Missing Data: Raw Material quantity used'}, status=400)
+        
+        try:
+            production_plan_item = ProductionItems.objects.get(id=pp_item_id)
+        except ProductionItems.DoesNotExist:
+            return JsonResponse({'success': False, 'message': f'Production Plan Item with ID: {pp_item_id} doesn\'t exist'}, status=404)
+
+        production_plan_item.remaining_raw_material = production_plan_item.actual_quantity - raw_material_used
+        production_plan_item.declared = True
+        production_plan_item.save()
+        
+        logger.info(f'Production plan line: {production_plan_item.raw_material.name} successfully saved')
+        
+        return JsonResponse({'success': True}, status=201)
+
+    else:
+        return JsonResponse({'success': False, 'message': 'Invalid request method'}, status=405)
+
+def confirm_declaration(request):
+    if request.method == 'POST':
+        # payload
+        """
+            production_plan:id (int)
+        """
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError as e:
+            return JsonResponse({'success': False, 'message': f'Invalid JSON data: {e}'}, status=400)
+        
+        pp_id = data.get('production_plan')
+        
+        if not pp_id:
+            return JsonResponse({'success': False, 'message': 'Missing Data: Production Plan ID'}, status=400)
+        
+        try:
+            production = Production.objects.get(id=pp_id)  
+            production_plan_item = ProductionItems.objects.filter(production=production)
+            logger.info(f"Production item: {production_plan_item}")
+        except Production.DoesNotExist:
+            return JsonResponse({'success':False, 'message':f'Production with ID: {pp_id}, doesn\'t exists'})
+        
+        declaration_flag = True
+        
+        for item in production_plan_item:
+            if item.declared == False:
+                declaration_flag = False
+                break
+        
+        if declaration_flag:
+            
+            production.declared =True
+            production.save()
+            
+            return JsonResponse(
+                {
+                    'success':True, 
+                    'message':f'Production Plan: {production.production_plan_number} successfully declared'
+                }
+            )
+        else:
+            return JsonResponse(
+                {
+                    'success':False, 
+                    'message':f'Production Plan: {production.production_plan_number} declaration failed, Plesase check if you have declared each line'
+                }
+            )
+    return JsonResponse({'success': False, 'message': 'Invalid request method'}, status=405)
         

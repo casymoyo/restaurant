@@ -24,10 +24,21 @@
                 {% endif %}
               </div>
             <div>
-                <ul class="list-unstyled mt-3">
+                <ul class="list-unstyled mt-3 d-flex align-items-center">
                     <li>
-                        <a href="{% url 'inventory:production_plans' %}" class="btn border">Production Plan</a>
+                        <a href="{% url 'inventory:production_plans' %}" class="mx-2 btn border">Production Plan</a>
                     </li>
+                    {% if not production_plan.declared %}
+                        {% if not confirm %}
+                            <li>
+                                <a href="{% url 'inventory:declare_production_plan' production_plan.id %}" class="btn border btn-dark text-light">Declare production plan</a>
+                            </li>
+                        {% endif %}
+                    {% else %}
+                        <li>
+                            <button class="btn border btn-primary text-light" disabled>Production Plan Declared</pf=>
+                        </li>
+                    {% endif %}
                 </ul>
             </div>
         </div>
@@ -46,14 +57,16 @@
                     </thead>
                     <tbody>
                         {% for item in production_plan_items  %}
-                          <td><small>{{ item.raw_material }}</small></td>
-                          <td><small>{{ item.dish.name }}</small></td>
-                          <td><small>{{ item.quantity }} {{ item.raw_material.unit }}</small></td>
-                          <td><small>{{ item.total_cost }}</small></td>
-                          <td><small>{{ item.rm_carried_forward_quantity }} {{ item.raw_material.unit }}</small></td>
-                          <td><small>{{ item.lf_carried_forward_quantity }} {{ item.raw_material.unit }}</small></td>
-                          <td><small>{{ item.actual_quantity }} {{ item.raw_material.unit }}</small></td>
-                          <td><small>{{ item.production_completion_time }}</small></td>
+                          <tr>
+                            <td><small>{{ item.raw_material }}</small></td>
+                            <td><small>{{ item.dish.name }}</small></td>
+                            <td><small>{{ item.quantity }} {{ item.raw_material.unit }}</small></td>
+                            <td><small>{{ item.total_cost }}</small></td>
+                            <td><small>{{ item.rm_carried_forward_quantity }} {{ item.raw_material.unit }}</small></td>
+                            <td><small>{{ item.lf_carried_forward_quantity }} {{ item.raw_material.unit }}</small></td>
+                            <td><small>{{ item.actual_quantity }} {{ item.raw_material.unit }}</small></td>
+                            <td><small>{{ item.production_completion_time }}</small></td>
+                          </tr>
                         {% endfor %}
                     </tbody>
                 </table>

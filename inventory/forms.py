@@ -72,3 +72,4 @@ class ProductionPlanInlineForm(forms.ModelForm):
         super(ProductionPlanInlineForm, self).__init__(*args, **kwargs)
         self.fields['raw_material'].queryset = Product.objects.filter(raw_material=True)
 
+

@@ -28,7 +28,7 @@ class Supplier(models.Model):
     
 class Meal(models.Model):
     name = models.CharField(max_length=255)
-    # to but the dishes which makes the meal
+    # to put the dishes which makes the meal
     
     def __str__(self) -> str:
         return self.name
@@ -61,8 +61,10 @@ class Product(models.Model):
 
 class Production(models.Model):
     date_created = models.DateField(auto_now_add=True)
+    time_created = models.TimeField(auto_now_add=True)
     status = models.BooleanField(default=False)
     production_plan_number = models.CharField(max_length=10, unique=True, default='')
+    declared = models.BooleanField(default=False)
 
     def save(self, *args, **kwargs):
         if not self.production_plan_number:
@@ -82,11 +84,15 @@ class ProductionItems(models.Model):
     raw_material = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.FloatField()
     dish = models.ForeignKey('inventory.dish', on_delete=models.CASCADE)
-    rm_carried_forward_quantity = models.IntegerField()
-    lf_carried_forward_quantity = models.IntegerField()
-    actual_quantity = models.IntegerField()
+    rm_carried_forward_quantity = models.FloatField()
+    lf_carried_forward_quantity = models.FloatField()
+    actual_quantity = models.FloatField()
     production_completion_time = models.TimeField(null=True)
     total_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    remaining_raw_material = models.FloatField(default=0, null=True, blank=True)
+    declared = models.BooleanField(default=False)
+    left_overs = models.FloatField(default=0, null=True, blank=True)
+    wastage =models.FloatField(default=0, null=True, blank=True)
     
     def __str__(self) -> str:
         return f'{self.raw_material} ({self.quantity})'
@@ -98,48 +104,19 @@ class Dish(models.Model):
     def __str__(self) -> str:
         return self.name
     
-class DeclaredRawMaterial(models.Model):
-    raw_material = models.ForeignKey(Product, on_delete=models.CASCADE)
-    quantity = models.FloatField()
-    date = models.DateField(auto_now_add=True)
+class Meal(models.Model):
+    name = models.CharField(max_length=255)
+    price = models.CharField(max_length=255)
     
     def __str__(self) -> str:
-        return f'{self.raw_material} ({self.quantity})'
-
-class DeclaredWastageMeal(models.Model):
+        return self.name
+    
+class MealDish(models.Model):
     meal = models.ForeignKey(Meal, on_delete=models.CASCADE)
-    portion = models.IntegerField()
-    date = models.DateField(auto_now_add=True)
-    
-    def __str__(self) -> str:
-        return f'{self.meal} ({self.date})'
-
-class DeclaredLeftOverDish(models.Model):
     dish = models.ForeignKey(Dish, on_delete=models.CASCADE)
-    portion = models.IntegerField()
-    date = models.DateField(auto_now_add=True)
     
     def __str__(self) -> str:
-        return f'{self.dish} ({self.date})'
-
-class SalePortion(models.Model):
-    meal = models.ForeignKey(Meal, on_delete=models.CASCADE)
-    portion = models.IntegerField()
-    date = models.DateField(auto_now_add=True)
-    
-    def __str__(self) -> str:
-        return f'{self.meal} ({self.date})'
-    
-
-# class today(models.Model):
-#     production = models.ForeignKey(Production, on_delete=models.CASCADE)
-#     declared_raw_material = models.ForeignKey(DeclaredRawMaterial, on_delete=models.CASCADE)
-#     declared_wastage = models.ForeignKey(DeclaredWastageMeal, on_delete=models.CASCADE)
-#     declared_sale = models.ForeignKey(SalePortion, on_delete=models.CASCADE)
-    
-#     def __str__(self) -> str:
-#         return 
-
+        return self.meal.name
 
 class PurchaseOrder(models.Model):
     """Model for purchase orders."""

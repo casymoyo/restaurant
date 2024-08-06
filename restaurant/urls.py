@@ -7,6 +7,7 @@ from django.urls import include, path
 from django.views import defaults as default_views
 
 urlpatterns = [
+    path('pos', include('pos.urls', namespace='pos')),
     path('', Dashboard, name='dashborad'),
     path("admin/", admin.site.urls),
     path('users/', include('users.urls', namespace='users')),

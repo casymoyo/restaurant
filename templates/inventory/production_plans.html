@@ -16,6 +16,9 @@
                         <li class="btn border">
                             <a href="{% url 'inventory:create_production_plan' %}">Create Production Plan</a>
                         </li>
+                        <li class="btn border">
+                            <a href="{% url 'inventory:declared_production_plan' %}">Declared Production Plans</a>
+                        </li>
                     </ul>
                 </div>
             </nav>
@@ -27,14 +30,15 @@
                             <tr>
                                 <th>Date</th>
                                 <th>PP Number</th>
-                                <th>Status</th>
+                                <th>Confirmation Status</th>
+                                <th>Declaration Status</th>
                                 <th>Actions</th>
                             </tr>
                             </thead>
                         <tbody>
                             {% for plan in plans %}
                                 <tr>
-                                    <td><small>{{ plan.date_created }}</small></td>
+                                    <td><small>{{ plan.date_created }} {{ plan.time_created }}</small></td>
                                     <td><small>{{ plan.production_plan_number }}</small></td>
                                     <td>
                                         <small>
@@ -47,8 +51,20 @@
                                     </td>
                                     <td>
                                         <small>
+                                            {% if plan.declared %}
+                                                <small class="bg-success fw-bold text-light p-2 rounded text-center w-100" disabled>Declared</small>
+                                            {% else %}
+                                                {% if plan.status %}
+                                                    <a href="{% url 'inventory:declare_production_plan' plan.id %}" class="bg-secondary fw-bold text-light p-2 rounded text-center w-100">Waiting declaration</a>
+                                                {% else %}
+                                                    <small class="bg-primary fw-bold text-light p-2 rounded text-center w-100" disabled>Awaiting production plan confirmation</small>
+                                                {% endif %}
+                                            {% endif %}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <small>
                                             <a href="{% url 'inventory:production_plan_detail' plan.id %}" class="bx bx-show"></a>
-                                            <a href="{% url 'inventory:update_production_plan' plan.id %}" class="bx bx-edit text-primary mx-2"></a>
                                             <a href="" class="bx bx-printer"></a>
                                         </small>
                                     </td>
