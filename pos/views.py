@@ -38,6 +38,8 @@ def process_sale(request):
         try:
             data = json.loads(request.body)
             items = data['items']
+            
+            logger.info(items)
 
             sub_total = sum(item['price'] * item['quantity'] for item in items)
             logger.info(sub_total)
@@ -45,8 +47,7 @@ def process_sale(request):
             tax = sub_total * 0.15 #to be dynamically stipulated
             logger.info(tax)
             
-            total_amount = sub_total + tax
-            logger.info(total_amount)
+            total_amount = sub_total 
             
             sale = Sale.objects.create(
                 total_amount=total_amount,
@@ -58,7 +59,7 @@ def process_sale(request):
             for item in items:
                 meal = get_object_or_404(Meal, id=item['meal_id'])
                 
-                sale_item = SaleItem.objects.create(
+                SaleItem.objects.create(
                     sale=sale,
                     meal=meal,
                     quantity=item['quantity'],
@@ -68,10 +69,10 @@ def process_sale(request):
                 CashBook.objects.create(
                     sale=sale, 
                     amount = meal.price,
-                    debit=True
+                    debit=True,
+                    description=f'Sale (Receipt number: {sale.receipt_number})'
                 )
                 
-                # adjust the inventory, todays made portions
             logger.info(f'Sale: Processed')
             return JsonResponse({'success': True, 'sale_id': sale.id}, status=201)
         except Exception as e:

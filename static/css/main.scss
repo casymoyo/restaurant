@@ -75,5 +75,14 @@
         background: #333;
         color: white !important;
     }
- 
+
+    .finance{
+        .card{
+            border:none;
+        }
+        select{
+            border:none;
+        }
+    }
+        
 }

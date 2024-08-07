@@ -20,4 +20,10 @@
 .Urban-Eat .activate {
   background: #333;
   color: white !important;
+}
+.Urban-Eat .finance .card {
+  border: none;
+}
+.Urban-Eat .finance select {
+  border: none;
 }/*# sourceMappingURL=main.css.map */

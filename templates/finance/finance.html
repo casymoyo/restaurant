@@ -1,0 +1,328 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %} Finance {% endblock title %}
+{% block content %}
+    <div class="finance">
+        <div class="container-fluid">
+            <div class="row">
+                <section class="col-3 col-md-3 bg-light sidebar">
+                    <div class="row flex-column">
+                        <div class="card mb-4">
+                            <div class="card-body">
+                                <div class="">
+                                    <small class="text-muted">Current month: </small>
+                                    <small class="card-text text-muted"id="id_income_month"></small>
+                                </div>
+                                <div>
+                                    <h1 class="h6">Income</h1>
+                                    <h2 id="id_income" class="text-center">$3000.00</h2>
+                                </div>
+                            </div>
+                        </div>
+    
+                        <div class="card mb-4">
+                            <div class="card-body ">
+                                <h1 class="h6">Total Expenses</h1>
+                                <h2 class="text-center" id="id_expense">$4000.00</h2>
+                            </div>
+                        </div>
+    
+                        <div class="card mb-4">
+                            <div class="card-body">
+                                <h1 class="h6">P&L Overview</h1>
+                                <h2 class="text-center">$5000.00</h2>
+
+                                <table class="table">
+                                    <thead>
+                                        <th>Metrices</th>
+                                        <th>Value</th>
+                                        <th>vs prev</th>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>Income</td>
+                                            <td>3000</td>
+                                            <td>
+                                                <span class="bg-success rounded p-1">
+                                                    <i class='bx bxs-up-arrow text-light'></i>
+                                                    <span class="mx-1">1%</span>
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>Income</td>
+                                            <td>3000</td>
+                                            <td>
+                                                <span class="bg-danger rounded p-1">
+                                                    <i class='bx bxs-down-arrow text-light'></i>
+                                                    <span class="mx-1 text-light">2%</span>
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>Income</td>
+                                            <td>3000</td>
+                                            <td></td>
+                                        </tr>
+                                        <tr>
+                                            <td>Income</td>
+                                            <td>3000</td>
+                                            <td></td>
+                                        </tr>
+                                        <tr>
+                                            <td>Income</td>
+                                            <td>3000</td>
+                                            <td></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+    
+                    </div>
+                </section>
+                <main role="main" class="col-9 col-md-9 ml-sm-auto mt-2 px-4">
+                    <nav class="d-flex justify-content-between align-items-center">
+                        <h1>Finance</h1>
+                        <div>
+                            <a href="{% url 'finance:cashbook' %}" class="btn btn-outline-dark">Cashbook</a>
+                            <a class="btn btn-outline-dark mx-2">Sales</a>
+                            <a href="{% url 'finance:expenses' %}" class="btn btn-outline-dark">Expenses</a>
+                        </div>
+                    </nav>
+                    <div class="row">
+                        <div class="col">
+                            <div class="card mb-4 box-shadow">
+                                <div class="card-body">
+                                    <div class>
+                                        <canvas id="incomeChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col">
+                            <div class="card mb-4 box-shadow">
+                                <div class="card-body">
+                                    <div class="">
+                                        <canvas id="expenseChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- <div class="row">
+                        <div class="col">
+                            <div class="card mb-4 box-shadow">
+                                <div class="card-body">
+                                    <small class="card-text text-muted">Year to Date</small>
+                                    <div class="">
+                                        <h1 class="h6 text-center">Expenses per category</h1>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col">
+                            <div class="card mb-4 box-shadow">
+                                <div class="card-body">
+                                    <small class="card-text text-muted">Year to Date</small>
+                                    <div class="">
+                                        <h1 class="h6 text-center">Income by category</h1>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div> -->
+
+                    <div class="row">
+                        <div class="col">
+                            <div class="card mb-4 box-shadow">
+                                <div class="card-body">
+                                    <h1 class="card-text text-muted h6">Sales transactions</h1>
+                                    <div class="">
+                                        <table class="table table-light rounded table-borderless table-repsonsive table-hover">
+                                            <thead>
+                                                <th>Date</th>
+                                                <th>Receipt</th>
+                                                <th>Amount</th>
+                                            </thead>
+                                            <tbody>
+                                                {% for sale in sales %}
+                                                  <tr>
+                                                    <td><small>{{ sale.date }}</small></td>
+                                                    <td><small>{{ sale.receipt_number }}</small></td>
+                                                    <td>{{ sale.total_amount }}
+                                                  </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col">
+                            <div class="card mb-4 box-shadow">
+                                <div class="card-body">
+                                    <h1 class="card-text text-muted h6">Expenses transactions</h1>
+                                    <div class="">
+                                        <table class="table table-light rounded table-borderless table-repsonsive table-hover">
+                                            <thead class="">
+                                                <th>Date</th>
+                                                <th>Description</th>
+                                                <th>Amount</th>
+                                            </thead>
+                                            <tbody>
+                                                {% for expense in expenses %}
+                                                  <tr>
+                                                    <td class="{% if expense.cancel %}text-decoration-line-through text-danger{% endif %}"><small>{{ expense.date }}</small></td>
+                                                    <td class="{% if expense.cancel %}text-decoration-line-through text-danger{% endif %}"><small>{{ expense.description }}</small></td>
+                                                    <td class="{% if expense.cancel %}text-decoration-line-through text-danger{% endif %}">{{ expense.amount }}
+                                                  </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        </div>
+    </div>
+    <!-- Modal -->   
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const monthSelect = document.createElement('select');
+            const months = [
+                'January', 'February', 'March', 'April', 'May', 'June',
+                'July', 'August', 'September', 'October', 'November', 'December'
+            ];
+
+            const currentMonth = new Date().getMonth(); 
+
+            const currentMonthOption = document.createElement('option');
+            currentMonthOption.value = currentMonth + 1;
+            currentMonthOption.text = months[currentMonth];
+            currentMonthOption.selected = true;
+            monthSelect.appendChild(currentMonthOption);
+
+            months.forEach((month, index) => {
+                if (index !== currentMonth) {
+                    const option = document.createElement('option');
+                    option.value = index + 1;
+                    option.text = month;
+                    monthSelect.appendChild(option);
+                }
+            });
+
+            const incomeMonthElement = document.getElementById('id_income_month');
+            incomeMonthElement.innerHTML = '';
+            incomeMonthElement.appendChild(monthSelect);
+
+            monthSelect.addEventListener('change', function() {
+                const selectedMonth = monthSelect.value;
+
+                fetch(`/finance/income_json?month=${selectedMonth}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        total_sales = parseFloat(data.sales_total)
+                        document.getElementById('id_income').innerText = `$${total_sales.toFixed(2)}`;
+                    });
+
+                fetch(`/finance/expense_json?month=${selectedMonth}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        total_expenses = parseFloat(data.expense_total)
+                        document.getElementById('id_expense').innerText = `$${total_expenses.toFixed(2)}`;
+                    });
+            });
+            monthSelect.dispatchEvent(new Event('change'));
+
+
+        // graphs
+
+        Chart.register({
+            id: 'customCanvasBackgroundColor',
+            beforeDraw: (chart) => {
+                const ctx = chart.canvas.getContext('2d');
+                ctx.save();
+                ctx.globalCompositeOperation = 'destination-over';
+                ctx.fillStyle = chart.config.options.plugins.customCanvasBackgroundColor.color || '#ffffff';
+                ctx.fillRect(0, 0, chart.width, chart.height);
+                ctx.color
+                ctx.restore();
+            }
+        });
+
+        const monthLabels = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+        function fetchAndRenderChart(url, ctx, chartLabel) {
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    const chartData = monthLabels.map((label, index) => data[index + 1] || 0);
+                    new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: monthLabels,
+                            datasets: [{
+                                label: chartLabel,
+                                data: chartData,
+                                backgroundColor: 'transparent', 
+                                borderColor: '#dedede',
+                                borderWidth: 1,
+                                pointRadius: 0, // Remove the dots
+                                pointHoverRadius: 0 // Remove the hover effect on points
+                            }]
+                        },
+                        options: {
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: {
+                                        color: 'white' 
+                                    },
+                                    grid: {
+                                        color: '#111' 
+                                    }
+                                },
+                                x: {
+                                    ticks: {
+                                        color: '#fff' 
+                                    },
+                                    grid: {
+                                        color: '#111' 
+                                    }
+                                }
+                            },
+                            plugins: {
+                                legend: {
+                                    labels: {
+                                        color: 'white' // Color of legend text
+                                    }
+                                },
+                                customCanvasBackgroundColor: {
+                                    color: '#111' // Background color of the chart area
+                                }
+                            },
+                            responsive: true,
+                            maintainAspectRatio: false
+                        }
+                    });
+                });
+        }
+
+        const incomeCtx = document.getElementById('incomeChart').getContext('2d');
+        fetchAndRenderChart('/finance/income_graph/', incomeCtx, 'Monthly Income');
+
+        const expenseCtx = document.getElementById('expenseChart').getContext('2d');
+        fetchAndRenderChart('/finance/expense_graph/', expenseCtx, 'Monthly Expenses');
+
+
+    });
+    </script>
+{% endblock %}

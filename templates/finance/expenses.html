@@ -1,0 +1,427 @@
+{% extends "base.html" %}
+{% load static%}
+{% load crispy_forms_tags %}
+{% block title%} Expenses {% endblock%}
+{% block content %}
+<div class="Finance">
+    <nav class="d-flex justify-content-between align-items-center rounded mb-2 p-2">
+        <div>
+            <a href='{% url "finance:finance"%}' class='border btn bx bx-arrow-back fs-5'></a>
+            <a href='/' class='bx bx-home btn border fs-5 mx-2'></a>
+            <span class='mt-2 fs-5'>Expenses</span>
+        </div>
+        <div>
+            <a href="" class="btn btn-outline-dark"  data-bs-toggle="modal" data-bs-target="#AddExpenseModal">
+                Add Expense
+            </a>
+        </div>
+    </nav>
+    <table class="table table-hover" id="expense_table" style="width: 100%;">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Description</th>
+                <th>Category</th>
+                <th>Amount</th>
+                <th>By</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for expense in expenses  %}
+              <tr>
+                <td class="{% if expense.cancel %}text-decoration-line-through text-danger{% endif %}"><small>{{ expense.date }}</small></td>
+                <td class="{% if expense.cancel %}text-decoration-line-through text-danger{% endif %}"><small>{{ expense.description }}</small></td>
+                <td class="{% if expense.cancel %}text-decoration-line-through text-danger{% endif %}"><small>{{ expense.category.name }}</small></td>
+                <td class="{% if expense.cancel %}text-decoration-line-through text-danger{% endif %}"><small>{{ expense.amount }}</small></td>
+                <td class="{% if expense.cancel %}text-decoration-line-through text-danger{% endif %}"><small>{{ expense.user.username }}</small></td>
+                <td>
+                    {% if expense.cancel %}
+                      <span class="text-decoration-line-through text-danger">Cancelled</span>
+                      {% else %}
+                        <span class='mx-3'>
+                        <button onclick="openEditModal({{ expense.id }})" class="btn">
+                            <i class='bx bx-edit-alt'></i>
+                        </button>
+                        </span>
+                        <span>
+                            <button class="btn" id='delete' onclick="deleteExpense({{ expense.id}})" class="text-dark">
+                                <i class='bx bx-trash-alt'></i>
+                            </button>
+                        </span>
+                    {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="modal fade" id="editExpenseModal" tabindex="-1" aria-labelledby="editExpenseModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editExpenseModalLabel">Edit Expense</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div id="div_id_category" class="mb-3">
+                            <label for="id_category" class="form-label requiredField">Category<span class="asteriskField">*</span></label>
+                            <div class="d-flex">
+                                <select name="category" class="select form-select" required="" id="id_e_category">
+                                    <option value="" selected="">---------</option>
+                                    {% for category in categories %}
+                                        <option value="{{ category.id }}">{{ category.name }}</option>
+                                    {% endfor %}
+                                </select>
+                                <button type="button" class="btn btn-outline-dark bx bx-plus ml-1" data-bs-toggle="modal" data-bs-target="#AddCategoryModal"></button>
+                            </div>
+                        </div>
+                        <div id="div_id_amount" class="mb-3">
+                            <label for="id_e_amount" class="form-label requiredField">Amount<span class="asteriskField">*</span></label>
+                            <input type="number" name="amount" value="0" step="0.01" class="numberinput form-control" required="" id="id_amount">
+                        </div>
+                        <div id="div_id_description" class="mb-3">
+                            <label for="id__e_description" class="form-label requiredField">Description<span class="asteriskField">*</span></label>
+                            <input type="text" name="description" maxlength="255" class="textinput form-control" required="" id="id_e_description">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="saveExpenseBtn">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- modals -->
+
+    <div class="modal fade" id="AddCategoryModal" tabindex="-1" aria-labelledby="editExpenseModalLabel" aria-hidden="true">
+        <div class="modal-dialog-centered modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editExpenseModalLabel">Add Category</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    {{ cat_form | crispy}}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="categorySubmit();">
+                        <i class="bx bx-save"></i>
+                        Save
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="AddExpenseModal" tabindex="-1" aria-labelledby="editExpenseModalLabel" aria-hidden="true">
+        <div class="modal-dialog-centered modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editExpenseModalLabel">Expense</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form method="post"
+                        {% csrf_token %}
+                        <div id="div_id_category" class="mb-3">
+                            <label for="id_category" class="form-label requiredField">Category<span class="asteriskField">*</span></label>
+                            <div class="d-flex">
+                                <select name="category" class="select form-select" required="" id="id_category">
+                                    <option value="" selected="">---------</option>
+                                    {% for category in categories %}
+                                        <option value="{{ category.id }}">{{ category.name }}</option>
+                                    {% endfor %}
+                                </select>
+                                <button type="button" class="btn btn-outline-dark bx bx-plus ml-1" data-bs-toggle="modal" data-bs-target="#AddCategoryModal"></button>
+                            </div>
+                        </div>
+                        <div id="div_id_amount" class="mb-3">
+                            <label for="id_amount" class="form-label requiredField">Amount<span class="asteriskField">*</span></label>
+                            <input type="number" name="amount" value="0" step="0.01" class="numberinput form-control" required="" id="id_amount">
+                        </div>
+                        <div id="div_id_description" class="mb-3">
+                            <label for="id_description" class="form-label requiredField">Description<span class="asteriskField">*</span></label>
+                            <input type="text" name="description" maxlength="255" class="textinput form-control" required="" id="id_description">
+                        </div>
+                    </form>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="submitExpenseForm()">Submit</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        new DataTable('#expense_table')
+
+        const addModal = new bootstrap.Modal(document.getElementById('AddExpenseModal'))
+        const categoryModal = new bootstrap.Modal(document.getElementById('AddCategoryModal'))
+
+        function categorySubmit(){
+        
+            const data = {name:$('#id_name').val()}
+            console.log(data)
+              
+            fetch("{% url 'finance:add_expense_category' %}", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "X-CSRFToken": getCookie("csrftoken"), 
+                },
+                body: JSON.stringify(data),
+              })
+              .then(response => response.json())
+              .then(data => {
+                  if (data.success) {
+                    fetchCategories()
+                    categoryModal.hide()
+                    addModal.show()
+                  } else {
+                    Swal.fire({
+                        title: "Error",
+                        text: data.message,
+                        icon: "error"
+                    });
+                  }
+                })
+                .catch((error) => {
+                  console.error("Error:", error);
+                });
+            }
+      
+        async function fetchCategories(){
+            try {
+                const response = await fetch('{% url "finance:add_expense_category" %}');
+    
+                if (!response.ok) {
+                    throw new Error('Network response was not ok.');
+                }
+                const data = await response.json();
+                updateCategory(data);
+                console.log(data)
+            } catch (error) {
+                console.error('Error fetching categories:', error);
+            } 
+        }
+    
+        fetchCategories()
+    
+        function updateCategory(data){
+            const catElement = document.querySelector('#id_category')
+        
+            while(catElement.options.length > 1){
+                catElement.remove(1)
+            }
+            data.forEach((category)=>{
+                catElement.innerHTML += `<option value=${category.id}>${category.name}</option>`
+            })
+        }
+
+
+    //edit modal data
+    function openEditModal(expenseId) {
+        const url = `/finance/get_expense/${expenseId}/`;
+
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const expense = data.data;
+                    document.getElementById('id_category').value = expense.category;
+                    document.getElementById('id_amount').value = expense.amount;
+                    document.getElementById('id_description').value = expense.description;
+                    document.getElementById('saveExpenseBtn').setAttribute('data-expense-id', expense.id);
+                    $('#editExpenseModal').modal('show');
+                } else {
+                    Swal.fire({
+                        title: 'Error!',
+                        text: data.message,
+                        icon: 'error',
+                        confirmButtonText: 'OK'
+                    });
+                }
+            })
+            .catch(error => {
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'An error occurred while fetching expense data.',
+                    icon: 'error',
+                    confirmButtonText: 'OK'
+                });
+            });
+    }
+
+    document.getElementById('saveExpenseBtn').addEventListener('click', function() {
+        const expenseId = this.getAttribute('data-expense-id');
+        const url = "{% url 'finance:add_or_edit_expense' %}";
+
+        const expenseData = {
+            id: expenseId,
+            category: document.getElementById('id_category').value,
+            amount: document.getElementById('id_amount').value,
+            description: document.getElementById('id_description').value,
+        };
+
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+            body: JSON.stringify(expenseData),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                Swal.fire({
+                    title: 'Success!',
+                    text: data.message,
+                    icon: 'success',
+                    confirmButtonText: 'OK'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        location.reload();
+                    }
+                });
+            } else {
+                Swal.fire({
+                    title: 'Error!',
+                    text: data.message,
+                    icon: 'error',
+                    confirmButtonText: 'OK'
+                });
+            }
+        })
+        .catch(error => {
+            Swal.fire({
+                title: 'Error!',
+                text: 'An error occurred while saving the expense.',
+                icon: 'error',
+                confirmButtonText: 'OK'
+            });
+        });
+    });
+
+    // submit expenses
+
+    function submitExpenseForm() {
+        const category = document.getElementById('id_category').value;
+        const amount = document.getElementById('id_amount').value;
+        const description = document.getElementById('id_description').value;
+
+        const data = {
+            category: category,
+            amount: amount,
+            description: description,
+        };
+
+        console.log(data)
+
+        const url = "{% url 'finance:expenses' %}";
+
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+            body: JSON.stringify(data),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                Swal.fire({
+                    title: 'Success!',
+                    text: 'Expense category added successfully.',
+                    icon: 'success',
+                    confirmButtonText: 'OK'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        location.reload();
+                    }
+                });
+            } else {
+                Swal.fire({
+                    title: 'Error!',
+                    text: data.message || 'An error occurred while adding the expense category.',
+                    icon: 'error',
+                    confirmButtonText: 'OK'
+                });
+            }
+        })
+        .catch(error => {
+            Swal.fire({
+                title: 'Error!',
+                text: 'An error occurred while processing your request.',
+                icon: 'error',
+                confirmButtonText: 'OK'
+            });
+        });
+    }
+
+    // delete expense
+    function deleteExpense(expenseId) {
+        const url = `/finance/delete_expense/${expenseId}/`;
+
+        fetch(url, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                Swal.fire({
+                    title: 'Deleted!',
+                    text: data.message,
+                    icon: 'success',
+                    confirmButtonText: 'OK'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        location.reload();
+                    }
+                });
+            } else {
+                Swal.fire({
+                    title: 'Error!',
+                    text: data.message,
+                    icon: 'error',
+                    confirmButtonText: 'OK'
+                });
+            }
+        })
+        .catch(error => {
+            Swal.fire({
+                title: 'Error!',
+                text: 'An error occurred while deleting the expense.',
+                icon: 'error',
+                confirmButtonText: 'OK'
+            });
+        });
+    }
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    </script>    
+</div>
+{% endblock %}
