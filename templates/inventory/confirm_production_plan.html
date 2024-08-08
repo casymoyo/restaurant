@@ -44,7 +44,7 @@
         </div>
         <div class="row">
             <div class="">
-                <table class="table">
+                <table class="table" id='plan_item_table' style="width:100%;">
                     <thead class="bg-primary">
                         <th>Raw Material</th>
                         <th>Dish</th>
@@ -54,6 +54,7 @@
                         <th>LF B/f quantity</th>
                         <th>Actual quantity</th>
                         <th>PC Time</th>
+                        <th>Portions</th>
                     </thead>
                     <tbody>
                         {% for item in production_plan_items  %}
@@ -66,6 +67,9 @@
                             <td><small>{{ item.lf_carried_forward_quantity }} {{ item.raw_material.unit }}</small></td>
                             <td><small>{{ item.actual_quantity }} {{ item.raw_material.unit }}</small></td>
                             <td><small>{{ item.production_completion_time }}</small></td>
+                            {% if not confirm %}
+                                <td><small>{{ item.portions }} portions</small></td>
+                            {% endif %}
                           </tr>
                         {% endfor %}
                     </tbody>
@@ -79,5 +83,7 @@
         </div>
     </div>
 </div>
-  
+<script>
+    new DataTable('#plan_item_table')
+</script>
 {% endblock content %}

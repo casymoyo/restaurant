@@ -13,7 +13,14 @@ from django.db import transaction
 from django.utils import timezone
 from django.db.models import Q
 from datetime import  timedelta
+from decimal import Decimal
 
+# to calculate cost of sales
+
+def get_previous_month():
+    first_day_of_current_month = datetime.datetime.now().replace(day=1)
+    last_day_of_previous_month = first_day_of_current_month - timedelta(days=1)
+    return last_day_of_previous_month.month
 
 def get_current_month():
     return datetime.datetime.now().month
@@ -123,20 +130,26 @@ def add_or_edit_expense(request):
 
             if expense_id:  
                 expense = get_object_or_404(Expense, id=expense_id)
+                before_amount = expense.amount
+                
                 expense.amount = amount
                 expense.description = description
                 expense.category = category
                 expense.save()
                 message = 'Expense successfully updated'
-            else:  
-                expense = Expense.objects.create(
-                    amount=amount,
-                    description=description,
-                    category=category,
-                    user=request.user,  
-                )
-                message = 'Expense successfully created'
-
+                
+                try:
+                    cashbook_expense = CashBook.objects.get(expense=expense)
+                    expense_amount = Decimal(expense.amount)
+                    if cashbook_expense.amount < expense_amount:
+                        cashbook_expense.amount = expense_amount
+                        cashbook_expense.description = cashbook_expense.description + f'Expense (update from {before_amount} to {cashbook_expense.amount})'
+                    else:
+                        cashbook_expense.amount -= cashbook_expense.amount - expense_amount
+                        cashbook_expense.description = cashbook_expense.description + f'(update from {before_amount} to {cashbook_expense.amount})'
+                    cashbook_expense.save()
+                except Exception as e:
+                    return JsonResponse({'success': False, 'message': str(e)}, status=400)
             return JsonResponse({'success': True, 'message': message}, status=201)
         except Exception as e:
             return JsonResponse({'success': False, 'message': str(e)}, status=400)
@@ -232,4 +245,48 @@ def expense_graph(request):
     current_year = get_current_year()
     monthly_expenses = Expense.objects.filter(date__year=current_year).values('date__month').annotate(total=Sum('amount')).order_by('date__month')
     data = {month['date__month']: month['total'] for month in monthly_expenses}
+    return JsonResponse(data)
+
+
+def calculate_percentage_change(current_value, previous_value):
+    if previous_value == 0:
+        return 0 if current_value == 0 else 100
+    return ((current_value - previous_value) / previous_value) * 100
+
+def pl_overview(request):
+    current_month = get_current_month()
+    previous_month = get_previous_month()
+    current_year = get_current_year()
+
+    current_month_sales = Sale.objects.filter(date__year=current_year, date__month=current_month).aggregate(total_sales=Sum('total_amount'))['total_sales'] or 0
+    current_month_expenses = Expense.objects.filter(date__year=current_year, date__month=current_month, cancel=False).aggregate(total_expenses=Sum('amount'))['total_expenses'] or 0
+
+    previous_month_sales = Sale.objects.filter(date__year=current_year, date__month=previous_month).aggregate(total_sales=Sum('total_amount'))['total_sales'] or 0
+    previous_month_expenses = Expense.objects.filter(date__year=current_year, date__month=previous_month, cancel=False).aggregate(total_expenses=Sum('amount'))['total_expenses'] or 0
+
+    current_net_income = current_month_sales - current_month_expenses
+    previous_net_income = previous_month_sales - previous_month_expenses
+
+    current_gross_profit = current_month_sales - current_month_expenses
+    previous_gross_profit = previous_month_sales - previous_month_expenses
+
+    current_gross_profit_margin = (current_gross_profit / current_month_sales * 100) if current_month_sales != 0 else 0
+    previous_gross_profit_margin = (previous_gross_profit / previous_month_sales * 100) if previous_month_sales != 0 else 0
+    
+    net_income_change = calculate_percentage_change(current_net_income, previous_net_income)
+    gross_profit_change = calculate_percentage_change(current_gross_profit, previous_gross_profit)
+    gross_profit_margin_change = calculate_percentage_change(current_gross_profit_margin, previous_gross_profit_margin)
+
+    data = {
+        'current_net_income': current_net_income,
+        'previous_net_income': previous_net_income,
+        'net_income_change': net_income_change,
+        'current_gross_profit': current_gross_profit,
+        'previous_gross_profit': previous_gross_profit,
+        'gross_profit_change': gross_profit_change,
+        'current_gross_profit_margin': current_gross_profit_margin,
+        'previous_gross_profit_margin': previous_gross_profit_margin,
+        'gross_profit_margin_change': gross_profit_margin_change,
+    }
+    logger.info(data)
     return JsonResponse(data)

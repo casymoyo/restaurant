@@ -46,7 +46,6 @@ class Product(models.Model):
     category = models.ForeignKey(Category, on_delete=models.CASCADE)
     tax_type = models.CharField(max_length=50, choices=tax_choices)
     min_stock_level = models.IntegerField(default=0, null=True)
-    portion_multiplier = models.FloatField(default=1, null=True, blank=True)
     raw_material = models.BooleanField(default=False)
     finished_product = models.BooleanField(default=False)
     description = models.TextField()
@@ -90,30 +89,37 @@ class ProductionItems(models.Model):
     declared = models.BooleanField(default=False)
     left_overs = models.FloatField(default=0, null=True, blank=True)
     wastage =models.FloatField(default=0, null=True, blank=True)
+    portions = models.IntegerField(default=0, null=True)
+    portions_sold = models.IntegerField(default=0, null=True)
     
     def __str__(self) -> str:
         return f'{self.raw_material} ({self.quantity})'
 
 class Dish(models.Model):
     name = models.CharField(max_length=100)
-    raw_material =  models.ForeignKey(Product, on_delete=models.CASCADE)
-    
+    portion_multiplier = models.FloatField(default=1, null=True, blank=True)
+    raw_material = models.ForeignKey(Product, on_delete=models.CASCADE)
+
+    def __str__(self) -> str:
+        return self.name
+
+class Ingredient(models.Model):
+    dish = models.ForeignKey(Dish, on_delete=models.CASCADE, null=True)
+    name = models.CharField(max_length=100)
+    quantity = models.FloatField()
+    raw_material = models.ForeignKey(Product, on_delete=models.CASCADE)
+
     def __str__(self) -> str:
         return self.name
     
 class Meal(models.Model):
     name = models.CharField(max_length=255)
     price = models.CharField(max_length=255)
+    dish = models.ManyToManyField(Dish, related_name='dishes')
+    deactivate = models.BooleanField(default=False)
     
     def __str__(self) -> str:
         return self.name
-    
-class MealDish(models.Model):
-    meal = models.ForeignKey(Meal, on_delete=models.CASCADE)
-    dish = models.ForeignKey(Dish, on_delete=models.CASCADE)
-    
-    def __str__(self) -> str:
-        return self.meal.name
 
 class PurchaseOrder(models.Model):
     """Model for purchase orders."""

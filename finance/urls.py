@@ -5,6 +5,7 @@ app_name = 'finance'
 
 urlpatterns = [
     path('', finance, name='finance'),
+    path('pl_overview/', pl_overview, name='pl_overview'),
     path('income_json/', income_json, name='income_json'),
     path('expense_json/', expense_json, name='expense_json'),
     path('income_graph/', income_graph, name='income_graph'),
@@ -16,6 +17,7 @@ urlpatterns = [
     path('add/expense/', add_expense_category, name='add_expense_category'),
     path('edit/expense/', add_or_edit_expense, name='add_or_edit_expense'),
     path('delete_expense/<int:expense_id>/', delete_expense, name='delete_expense'),
+    
     
     # cashbook 
     path('cashbook/', cashbook, name='cashbook')

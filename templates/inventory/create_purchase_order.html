@@ -263,9 +263,6 @@
                                   </button>
                               </div>
                           </div> 
-                          <div id="div_id_portion_multiplier" class="mb-3"> <label for="id_portion_multiplier" class="form-label">
-                            Portion multiplier
-                            </label> <input type="number" name="portion_multiplier" value="1" step="any" class="numberinput form-control" id="id_portion_multiplier"> </div>
                           <div id="div_id_tax_type" class="mb-3"> 
                               <label for="id_tax_type" class="form-label requiredField">
                               Tax type
@@ -629,7 +626,6 @@
             tax_type: document.getElementById('id_tax_type').value, 
             unit: document.getElementById('id_unit').value, 
             min_stock_level: parseInt(document.getElementById('id_min_stock_level').value),
-            portion_multiplier: parseInt(document.getElementById('id_portion_multiplier').value) || 1,
             description: document.getElementById('id_description').value,
             raw_material:document.getElementById('id_raw_material').checked,
             finished_product:document.getElementById('id_finished_product').checked

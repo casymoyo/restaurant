@@ -1,6 +1,6 @@
 from django.http import JsonResponse
 from django.shortcuts import render, get_object_or_404
-from inventory.models import MealDish, Meal
+from inventory.models import Meal
 from loguru import logger
 import json
 from finance.models import Sale, SaleItem, CashBook
@@ -10,8 +10,7 @@ from django.db import transaction
 user = get_user_model()
 
 def pos(request):
-    meals = Meal.objects.all()
-    logger.info(f'meals: {meals.values()}')
+    meals = Meal.objects.filter(deactivate=False)
     return render(request, 'pos.html', 
         {
             'meals':meals

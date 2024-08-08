@@ -1,6 +1,9 @@
 from . models import (
+    Dish, 
     Product, 
+    Meal,
     Supplier,
+    Ingredient,
     PurchaseOrder, 
     UnitOfMeasurement,
     ProductionItems
@@ -71,5 +74,24 @@ class ProductionPlanInlineForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(ProductionPlanInlineForm, self).__init__(*args, **kwargs)
         self.fields['raw_material'].queryset = Product.objects.filter(raw_material=True)
+
+class DishForm(forms.ModelForm):
+    class Meta:
+        model = Dish
+        fields = ['name', 'portion_multiplier', 'raw_material']
+
+class IngredientForm(forms.ModelForm):
+    class Meta:
+        model = Ingredient
+        fields = ['name', 'quantity', 'raw_material']
+
+class MealForm(forms.ModelForm):
+    class Meta:
+        model = Meal
+        fields = ['name', 'price', 'dish']
+        widgets = {
+            'dish': forms.SelectMultiple(attrs={'class': 'form-control'}),
+        }
+
 
 

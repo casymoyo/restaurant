@@ -5,14 +5,23 @@ from decimal import Decimal
 from django.views import View    
 from django.contrib import messages 
 from django.http import JsonResponse
-from django.shortcuts import render, redirect 
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import transaction
 from loguru import logger
 from django.contrib.auth import get_user_model
+from .models import Dish, Ingredient
+from django.views import View
+
+from finance.models import (
+    CashBook,
+    Expense, 
+    ExpenseCategory
+)
 
 from . forms import (
+    MealForm,
     AddProductForm,
     AddSupplierForm,
     CreateOrderForm,
@@ -20,7 +29,9 @@ from . forms import (
     PurchaseOrderStatus,
     UnitOfMeasurementForm,
     EditProductForm,
-    ProductionPlanInlineForm
+    ProductionPlanInlineForm,
+    DishForm, 
+    IngredientForm
 )
 
 
@@ -156,7 +167,6 @@ def product(request):
             raw_material = True if data['raw_material'] else False,
             finished_product = True if data['finished_product'] else False,
             unit = unit,
-            portion_multiplier = data['portion_multiplier']
         )
         product.save()
         logger.info(f'product saved')
@@ -401,35 +411,26 @@ def create_purchase_order(request):
                         received=False
                     )
 
-                    # update finance accounts vat input account and the PurchasesAccount
-                    # if purchase_order.status == 'received':
-                    #     # change currency (first initial to be default ??)
-                    #     try:
-                    #         currency = Currency.objects.get(default=True)
-                            
-                    #         PurchaseOrderAccount.objects.create(
-                    #             purchase_order = purchase_order,
-                    #             amount = purchase_order.total_cost - purchase_order.tax_amount,
-                    #             balance = 0,
-                    #             expensed = False
-                    #         )
-                            
-                    #     except Currency.DoesNotExist:
-                    #         return JsonResponse({'success':False, 'message':f'currency doesnt exists'})
-                        
-                    #     try:
-                    #         rate = VATRate.objects.get(status=True)
-                    #         logger.info(f'rate -> {rate}')
-                    #         VATTransaction.objects.create(
-                    #             purchase_order = purchase_order,
-                    #             vat_type='Input',
-                    #             vat_rate = rate.rate,
-                    #             tax_amount = tax_amount
-                    #         )
-                            
-                    #     except VATRate.DoesNotExist:
-                    #         return JsonResponse({'success':False, 'message':f'Make sure you have a stipulated vat rate in the system'})
-          
+                    # consider to put expenses
+                if purchase_order.status == 'received':
+                    category, _ = ExpenseCategory.objects.get_or_create(
+                        name = 'Inventory'
+                    )
+                    
+                    expense = Expense.objects.create(
+                        category = category,
+                        amount = purchase_order.total_cost,
+                        user = User.objects.get(id=1),
+                        description = f'Expense purchase order{purchase_order.order_number}',
+                        cancel = False
+                    )
+                    
+                    CashBook.objects.create(
+                        amount = purchase_order.total_cost,
+                        expense = expense,
+                        credit = True,
+                        description = f'Expense purchase order{purchase_order.order_number}',
+                    )
         except Exception as e:
             return JsonResponse({'success': False, 'message': str(e)}, status=500)
 
@@ -450,32 +451,26 @@ def change_purchase_order_status(request, order_id):
         if status:
             purchase_order.status=status
             if purchase_order.status == 'received':
-            #     try:
-            #         currency = Currency.objects.get(default=True)
-                    
-            #         PurchaseOrderAccount.objects.create(
-            #             purchase_order = purchase_order,
-            #             amount = purchase_order.total_cost - purchase_order.tax_amount,
-            #             balance = 0,
-            #             expensed = False
-            #         )
-                    
-            #     except Currency.DoesNotExist:
-            #         return JsonResponse({'success':False, 'message':f'currency doesnt exists'})
-                
-            #     try:
-            #         rate = VATRate.objects.get(status=True)
-                    
-            #         VATTransaction.objects.create(
-            #             purchase_order = purchase_order,
-            #             vat_type='Input',
-            #             vat_rate = rate.rate,
-            #             tax_amount = purchase_order.tax_amount
-            #         )
-                    
-            #     except VATRate.DoesNotExist:
-            #         return JsonResponse({'success':False, 'message':f'Make sure you have a stipulated vat rate in the system'})
                 purchase_order.save()
+                
+                category, _ = ExpenseCategory.objects.get_or_create(
+                    name = 'Inventory'
+                )
+                
+                expense = Expense.objects.create(
+                    category = category,
+                    amount = purchase_order.total_cost,
+                    user = User.objects.get(id=1),
+                    description = f'Expense purchase order{purchase_order.order_number}',
+                    cancel = False
+                )
+                
+                CashBook.objects.create(
+                    amount = purchase_order.total_cost,
+                    expense = expense,
+                    credit = True,
+                    description = f'Expense purchase order{purchase_order.order_number}',
+                )
             
             return JsonResponse({'success':True}, status=200)
         else:
@@ -607,7 +602,7 @@ def process_received_order(request):
             total_quantity=product.quantity 
         )
         
-        order_item.receive_items(quantity) 
+        order_item.receive_items(quantity)
         order_item.check_received()
         
         return JsonResponse({'success': True, 'message': 'Inventory updated successfully'}, status=200)
@@ -703,8 +698,10 @@ def create_production_plan(request):
 def yeseterdays_left_overs(request):
     # payload
     """
-    raw_material:id 
-    dish:id
+    {
+        raw_material:id, 
+        dish:id
+    }
     """
     
     if request.method == 'POST':
@@ -728,7 +725,7 @@ def yeseterdays_left_overs(request):
             return JsonResponse({'success': False, 'message': f'Raw Material with ID: {raw_material_id} doesn\t exist'}, status=404)
         
         try:
-            dish = Dish.objects.get(id=dish_id)
+            dish = Dish.objects.get(id=dish_id, raw_material=raw_material)
         except Dish.DoesNotExist:
             return JsonResponse({'success': False, 'message': f'Dish with ID: {dish_id} doesn\'t exist'}, status=404)
         
@@ -740,7 +737,7 @@ def yeseterdays_left_overs(request):
                 latest_raw_material_quantity = latest_production_item.remaining_raw_material or 0
                 
                 latest_left_over_portion_quantity = (latest_production_item.left_overs * latest_production_item.quantity) / \
-                                                    (latest_production_item.quantity  * latest_production_item.raw_material.portion_multiplier) or 0
+                                                    (latest_production_item.quantity  * dish.portion_multiplier) or 0
             except ProductionItems.DoesNotExist:
                 logger.warning("No Production Items found for the latest plan.")
                 latest_raw_material_quantity = 0
@@ -893,6 +890,7 @@ def declare_production_plan(request, pp_id):
         
         pp_item_id = data.get('production_plan_item')
         raw_material_used = data.get('quantity_used')
+        portions =  data.get('portions')
         
         if not pp_item_id:
             return JsonResponse({'success': False, 'message': 'Missing Data: Production plan item'}, status=400)
@@ -907,6 +905,7 @@ def declare_production_plan(request, pp_id):
 
         production_plan_item.remaining_raw_material = production_plan_item.actual_quantity - raw_material_used
         production_plan_item.declared = True
+        production_plan_item.portions = int(portions)
         production_plan_item.save()
         
         logger.info(f'Production plan line: {production_plan_item.raw_material.name} successfully saved')
@@ -965,4 +964,223 @@ def confirm_declaration(request):
                 }
             )
     return JsonResponse({'success': False, 'message': 'Invalid request method'}, status=405)
+
+
+class DishListView(View):
+    def get(self, request):
+        dishes = Dish.objects.all()
+        ingredients = Ingredient.objects.all()
+        logger.info(ingredients)
+        return render(request, 'inventory/dish_list.html', 
+            {
+                'dishes': dishes,
+                'ingredients':ingredients
+            }
+        )
+
+class DishCreateView(View):
+    def get(self, request):
+        form = DishForm()
+        return render(request, 'inventory/dish_form.html', {'form': form})
+
+    def post(self, request):
+        form = DishForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('inventory:dish_list')
+        return render(request, 'inventory/dish_form.html', {'form': form})
+
+class DishUpdateView(View):
+    
+    def get(self, request, pk):
+        dish = get_object_or_404(Dish, pk=pk)
+        form = DishForm(instance=dish)
+        return render(request, 'inventory/dish_form.html', {'form': form, 'dish': dish})
+
+    def post(self, request, pk):
+        dish = get_object_or_404(Dish, pk=pk)
+        form = DishForm(request.POST, instance=dish)
+        if form.is_valid():
+            form.save()
+            return redirect('inventory:dish_list')
+        return render(request, 'inventory/dish_form.html', {'form': form, 'dish': dish})
+
+class DishDeleteView(View):
+    
+    def get(self, request, pk):
+        dish = get_object_or_404(Dish, pk=pk)
+        dish.delete()
+        return redirect('inventory:dish_list')
+
+# Ingredient Views
+class IngredientListView(View):
+    
+    def get(self, request):
+        ingredients = Ingredient.objects.all()
+        return render(request, 'inventory/ingredient_list.html', {'ingredients': ingredients})
+
+class IngredientCreateView(View):
+    
+    def get(self, request):
+        form = IngredientForm()
+        return render(request, 'inventory/ingredient_form.html', {'form': form})
+
+    def post(self, request):
+        form = IngredientForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('inventory:ingredient_list')
+        return render(request, 'inventory/ingredient_form.html', {'form': form})
+
+class IngredientUpdateView(View):
+    
+    def get(self, request, pk):
+        ingredient = get_object_or_404(Ingredient, pk=pk)
+        form = IngredientForm(instance=ingredient)
+        return render(request, 'inventory/ingredient_form.html', {'form': form, 'ingredient': ingredient})
+
+    def post(self, request, pk):
+        ingredient = get_object_or_404(Ingredient, pk=pk)
+        form = IngredientForm(request.POST, instance=ingredient)
+        if form.is_valid():
+            form.save()
+            return redirect('inventory:ingredient_list')
+        return render(request, 'inventory/ingredient_form.html', {'form': form, 'ingredient': ingredient})
+
+class IngredientDeleteView(View):
+    
+    def get(self, request, pk):
+        ingredient = get_object_or_404(Ingredient, pk=pk)
+        ingredient.delete()
+        return redirect('inventory:ingredient_list')
+
+
+def add_ingredient(request, dish_id):
+    form = IngredientForm()
+    
+    if request.method == 'GET':
         
+        dish = Dish.objects.get(id=dish_id)
+        
+        return render(request, 'inventory/ingredient_form.html', 
+            {
+                'dish':dish,
+                'form':form
+            }
+        )
+    
+    if request.method == 'POST':
+        # payload
+        """
+        {
+            "cart": [
+                {
+                    "name":(str)
+                    "raw_material": name (str),
+                    "quantity": int,
+                    "dish_id": id (int)
+                }
+            ]
+        }
+        """
+        try:
+            
+            data = json.loads(request.body)
+            cart = data.get('cart')
+            dish_id = data.get('dish_id')
+            
+        except json.JSONDecodeError as e:
+            return JsonResponse({'success': False, 'message': f'Invalid JSON data: {e}'}, status=400)
+        
+        try:
+            dish = Dish.objects.get(id=dish_id)
+            
+            for item in cart:
+                name =item.get('raw_material')
+                raw_material = Product.objects.get(name=item.get('raw_material'))
+                logger.info(name)
+                Ingredient.objects.create(
+                    dish=dish,
+                    name=item.get('name'),
+                    raw_material=raw_material,
+                    quantity=int(item.get('quantity')),
+                )
+
+        except Exception as e:
+            return JsonResponse({'success':False, 'message':f'{e}'})
+        return JsonResponse({'success':True, 'meessage':f'Ingridient successfully added'})
+
+def meal_list(request):
+    meals = Meal.objects.filter(deactivate=False)
+    
+    return render(request, 'inventory/meal_list.html', 
+        {
+            'meals':meals,
+        }
+    )
+    
+def add_meal(request):
+    if request.method == 'POST':
+        form = MealForm(request.POST)
+        
+        if form.is_valid():
+            name = form.cleaned_data['name']
+            price = form.cleaned_data['price']
+            
+            # validation
+            if Meal.objects.filter(name=name).exists():
+                messages.warning(request, f'Meal: {name.upper()} exists.')
+                return redirect('inventory:add_meal')
+            
+            if price < 0:
+                messages.warning(request, f'Price can\'t be less than zero.')
+                return redirect('inventory:add_meal')
+            
+            form.save()
+            messages.success(request, 'Meal successfully added.')
+            return redirect('inventory:meal_list')  
+    else:
+        form = MealForm()
+    return render(request, 'inventory/add_meal.html', 
+        {
+            'form': form
+        }
+    )
+
+def edit_meal(request, meal_id):
+    meal = get_object_or_404(Meal, id=meal_id)
+    if request.method == 'POST':
+        form = MealForm(request.POST, instance=meal)
+        if form.is_valid():
+            name = form.cleaned_data['name']
+            price = form.cleaned_data['price']
+            
+            # validation
+            if Meal.objects.filter(name=name).exists():
+                messages.warning(request, f'Meal: {name.upper()} exists.')
+                return redirect('inventory:add_meal')
+            
+            if float(price) < 0:
+                messages.warning(request, f'Price can\'t be less than zero.')
+                return redirect('inventory:add_meal')
+            
+            form.save()
+            return redirect('inventory:meal_list')  
+    else:
+        form = MealForm(instance=meal)
+
+    return render(request, 'inventory/edit_meal.html', 
+        {
+            'form': form, 
+            'meal': meal
+        }
+    )
+    
+def delete_meal(request, meal_id):
+    try:
+        meal = Meal.objects.get(id=meal_id)
+        meal.deactivate = True
+        meal.save()
+        return JsonResponse({'success': True}, status=200)
+    except Meal.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Meal does not exist'}, status=400)

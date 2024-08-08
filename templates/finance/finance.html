@@ -3,7 +3,7 @@
 {% block title %} Finance {% endblock title %}
 {% block content %}
     <div class="finance">
-        <div class="container-fluid">
+        <div class="container-fluid mt-4">
             <div class="row">
                 <section class="col-3 col-md-3 bg-light sidebar">
                     <div class="row flex-column">
@@ -30,60 +30,68 @@
                         <div class="card mb-4">
                             <div class="card-body">
                                 <h1 class="h6">P&L Overview</h1>
-                                <h2 class="text-center">$5000.00</h2>
-
+                                <h2 class="text-center" id="pl_overview_total">$0.00</h2>
+                        
                                 <table class="table">
                                     <thead>
-                                        <th>Metrices</th>
-                                        <th>Value</th>
-                                        <th>vs prev</th>
+                                        <tr>
+                                            <th>Metrics</th>
+                                            <th>Value</th>
+                                            <th>vs Prev</th>
+                                        </tr>
                                     </thead>
                                     <tbody>
                                         <tr>
-                                            <td>Income</td>
-                                            <td>3000</td>
+                                            <td>Net Income</td>
+                                            <td id="net_income_amount">0.00</td>
                                             <td>
-                                                <span class="bg-success rounded p-1">
+                                                <span id="net_income_change" class="bg-success rounded p-1">
                                                     <i class='bx bxs-up-arrow text-light'></i>
-                                                    <span class="mx-1">1%</span>
+                                                    <span class="mx-1">0%</span>
                                                 </span>
                                             </td>
                                         </tr>
                                         <tr>
-                                            <td>Income</td>
-                                            <td>3000</td>
+                                            <td>Expenses</td>
+                                            <td id="id_expense_metrix_amount">0.00</td>
                                             <td>
-                                                <span class="bg-danger rounded p-1">
+                                                <span id="expense_change" class="bg-danger rounded p-1">
                                                     <i class='bx bxs-down-arrow text-light'></i>
-                                                    <span class="mx-1 text-light">2%</span>
+                                                    <span class="mx-1 text-light">0%</span>
                                                 </span>
                                             </td>
                                         </tr>
                                         <tr>
-                                            <td>Income</td>
-                                            <td>3000</td>
-                                            <td></td>
+                                            <td>Gross Profit</td>
+                                            <td id="id_gp_metrix_amount">0.00</td>
+                                            <td>
+                                                <span id="gp_change" class="bg-danger rounded p-1">
+                                                    <i class='bx bxs-down-arrow text-light'></i>
+                                                    <span class="mx-1 text-light">0%</span>
+                                                </span>
+                                            </td>
                                         </tr>
                                         <tr>
-                                            <td>Income</td>
-                                            <td>3000</td>
-                                            <td></td>
-                                        </tr>
-                                        <tr>
-                                            <td>Income</td>
-                                            <td>3000</td>
-                                            <td></td>
+                                            <td>Gross Profit Margin</td>
+                                            <td id="id_gpm_metrix_amount">0.00</td>
+                                            <td>
+                                                <span id="gpm_change" class="bg-danger rounded p-1">
+                                                    <i class='bx bxs-down-arrow text-light'></i>
+                                                    <span class="mx-1 text-light">0%</span>
+                                                </span>
+                                            </td>
                                         </tr>
                                     </tbody>
                                 </table>
                             </div>
                         </div>
+                        
     
                     </div>
                 </section>
                 <main role="main" class="col-9 col-md-9 ml-sm-auto mt-2 px-4">
                     <nav class="d-flex justify-content-between align-items-center">
-                        <h1>Finance</h1>
+                        <h1><a href='/' class='bx bx-home btn border fs-1 mx-1'></a> Finance</h1>
                         <div>
                             <a href="{% url 'finance:cashbook' %}" class="btn btn-outline-dark">Cashbook</a>
                             <a class="btn btn-outline-dark mx-2">Sales</a>
@@ -321,6 +329,52 @@
 
         const expenseCtx = document.getElementById('expenseChart').getContext('2d');
         fetchAndRenderChart('/finance/expense_graph/', expenseCtx, 'Monthly Expenses');
+
+
+        // metrixes
+        fetch('/finance/pl_overview/')
+        .then(response => response.json())
+        .then(data => {
+            // Update Net Income
+            document.getElementById('net_income_amount').innerText = data.current_net_income.toFixed(2);
+            // Update Net Income percentage change
+            document.getElementById('net_income_change').innerText = `${data.net_income_change.toFixed(2)}%`;
+            if (data.net_income_change >= 0) {
+                document.getElementById('net_income_change').className = 'bg-success rounded p-1';
+            } else {
+                document.getElementById('net_income_change').className = 'bg-danger rounded p-1';
+            }
+
+            // Update Gross Profit
+            document.getElementById('id_gp_metrix_amount').innerText = data.current_gross_profit.toFixed(2);
+            // Update Gross Profit percentage change
+            document.getElementById('gp_change').innerText = `${data.gross_profit_change.toFixed(2)}%`;
+            if (data.gross_profit_change >= 0) {
+                document.getElementById('gp_change').className = 'bg-success rounded p-1';
+            } else {
+                document.getElementById('gp_change').className = 'bg-danger rounded p-1';
+            }
+
+            // Update Gross Profit Margin
+            document.getElementById('id_gpm_metrix_amount').innerText = data.current_gross_profit_margin.toFixed(2);
+            // Update Gross Profit Margin percentage change
+            document.getElementById('gpm_change').innerText = `${data.gross_profit_margin_change.toFixed(2)}%`;
+            if (data.gross_profit_margin_change >= 0) {
+                document.getElementById('gpm_change').className = 'bg-success rounded p-1';
+            } else {
+                document.getElementById('gpm_change').className = 'bg-danger rounded p-1';
+            }
+
+            // Update Expenses
+            document.getElementById('id_expense_metrix_amount').innerText = data.current_gross_profit.toFixed(2); 
+            // Update Expense percentage change
+            document.getElementById('expense_change').innerText = `${data.gross_profit_change.toFixed(2)}%`;
+            if (data.gross_profit_change >= 0) {
+                document.getElementById('expense_change').className = 'bg-danger rounded p-1';
+            } else {
+                document.getElementById('expense_change').className = 'bg-success rounded p-1';
+            }
+        });
 
 
     });

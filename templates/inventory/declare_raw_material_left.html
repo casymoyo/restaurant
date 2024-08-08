@@ -31,6 +31,7 @@
                         <th>Actual quantity</th>
                         <th>Used Quantity</th>
                         <th>Remaining Quantity</th>
+                        <th>Expected Portions</th>
                     </thead>
                     <tbody>
                         {% for item in production_plan_items %}
@@ -40,10 +41,11 @@
                                 <td><small>{{ item.actual_quantity }} {{ item.raw_material.unit }}</small></td>
                                 <td>
                                     <small>
-                                        <input type="number" class="form-control used-quantity" min="0" data-actual-quantity="{{ item.actual_quantity }}" />
+                                        <input type="number" class="form-control used-quantity" min="0" data-actual-quantity="{{ item.actual_quantity }}" data-portion="{{ item.dish.portion_multiplier}}" />
                                     </small>
                                 </td>
                                 <td><small class="remaining-quantity"></small></td>
+                                <td><small id="portions"></small></td>
                             </tr>
                         {% endfor %}
                     </tbody>
@@ -67,6 +69,7 @@
                     const tr = input.closest('tr');
                     const itemId = tr.getAttribute('data-item-id');
                     const actualQuantity = parseFloat(input.getAttribute('data-actual-quantity'));
+                    const portionMultiplier = parseInt(input.getAttribute('data-portion'));
                     const usedQuantity = parseFloat(input.value);
 
                     if (isNaN(usedQuantity) || usedQuantity < 0) {
@@ -88,7 +91,9 @@
                     }
 
                     const remainingQuantity = actualQuantity - usedQuantity;
-                    tr.querySelector('.remaining-quantity').textContent = remainingQuantity + ' grams';
+                    const portions = usedQuantity * portionMultiplier
+                    tr.querySelector('.remaining-quantity').textContent = remainingQuantity + ' kgs';
+                    tr.querySelector('#portions').textContent = usedQuantity * portionMultiplier + ' portions'
 
                     fetch("{% url 'inventory:declare_production_plan' production_plan.id %}", {
                         method: 'POST',
@@ -98,7 +103,8 @@
                         },
                         body: JSON.stringify({
                             production_plan_item: itemId,
-                            quantity_used: usedQuantity
+                            quantity_used: usedQuantity,
+                            portions: portions
                         })
                     })
                     .then(response => response.json())

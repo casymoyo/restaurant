@@ -43,4 +43,22 @@ urlpatterns = [
     path('purchase_order/detail/<int:order_id>/', purchase_order_detail, name='purchase_order_detail'),
     path('purchase_order/delete/<int:purchase_order_id>/', delete_purchase_order, name='delete_purchase_order'),
     path('purchase_orders/status/<int:order_id>/', change_purchase_order_status, name='change_purchase_order_status'),
+    
+    # dishes
+    path('dishes/', DishListView.as_view(), name='dish_list'),
+    path('dishes/create/', DishCreateView.as_view(), name='dish_create'),
+    path('dishes/<int:pk>/edit/', DishUpdateView.as_view(), name='dish_update'),
+    path('dishes/<int:pk>/delete/', DishDeleteView.as_view(), name='dish_delete'),
+    
+    # ingridients
+    path('ingredients/', IngredientListView.as_view(), name='ingredient_list'),
+    path('ingredients/create/<int:dish_id>/', add_ingredient, name='ingredient_create'),
+    path('ingredients/<int:pk>/edit/', IngredientUpdateView.as_view(), name='ingredient_update'),
+    path('ingredients/<int:pk>/delete/', IngredientDeleteView.as_view(), name='ingredient_delete'),
+    
+    # meals
+    path('add/meal/', add_meal, name='add_meal'),
+    path('meal/list', meal_list, name='meal_list'),
+    path('meals/<int:meal_id>/edit/', edit_meal, name='edit_meal'),
+    path('meals/delete/<int:meal_id>/', delete_meal, name='delete_meal'),
 ]
