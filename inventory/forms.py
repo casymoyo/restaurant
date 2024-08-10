@@ -3,8 +3,10 @@ from . models import (
     Product, 
     Meal,
     Supplier,
+    Production,
     Ingredient,
     PurchaseOrder, 
+    MealCategory,
     UnitOfMeasurement,
     ProductionItems
 )
@@ -48,6 +50,11 @@ class EditProductForm(forms.ModelForm):
     class Meta:
         model = Product
         exclude = ['quantity']
+
+class productionForm(forms.ModelForm):
+    class Meta:
+        model = Production
+        fields = ['date_created', 'time_created']
         
 class ProductionPlanInlineForm(forms.ModelForm):
     class Meta:
@@ -88,10 +95,12 @@ class IngredientForm(forms.ModelForm):
 class MealForm(forms.ModelForm):
     class Meta:
         model = Meal
-        fields = ['name', 'price', 'dish']
+        fields = ['name', 'price', 'category', 'dish']
         widgets = {
             'dish': forms.SelectMultiple(attrs={'class': 'form-control'}),
         }
 
-
-
+class MealCategoryForm(forms.ModelForm):
+    class Meta:
+        model = MealCategory
+        fields = '__all__'

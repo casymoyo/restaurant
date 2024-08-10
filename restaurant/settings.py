@@ -40,7 +40,9 @@ LOCAL_APPS = [
     'users',
     'pos',
     'inventory',
-    'finance'
+    'finance',
+    'analytics',
+    'settings'
 ]
 
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
@@ -80,6 +82,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'restaurant.wsgi.application'
 
+LOGIN_URL = "users:login" 
 
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
@@ -175,3 +178,10 @@ CRISPY_TEMPLATE_PACK = "bootstrap5"
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+CELERY_BROKER_URL = 'redis://localhost:6379/0' 
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'  
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = "Africa/Johannesburg"

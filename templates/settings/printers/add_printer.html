@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %} Add Printer {% endblock %}
+{% block content %}
+<div class="container mt-5">
+    <h1 class="mb-4">Available Printers</h1>
+    <ul class="list-group mb-4">
+        {% for printer_name, printer_info in printers.items %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+            {{ printer_name }} 
+            {% comment %} ({{ printer_info['device-uri'] }}) {% endcomment %}
+            <a href="{% url 'add_printer' %}?printer_name={{ printer_name }}" class="btn btn-primary btn-sm">Add to List</a>
+        </li>
+        {% endfor %}
+    </ul>
+
+    <h2 class="mb-4">Saved Printers</h2>
+    <ul class="list-group">
+        {% for printer in existing_printers %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+            {{ printer.name }} ({{ printer.location }})
+            {% if printer.is_default %}
+            <span class="badge bg-success">Default</span>
+            {% else %}
+            <a href="{% url 'set_default_printer' printer.id %}" class="btn btn-warning btn-sm">Set as Default</a>
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endblock %}

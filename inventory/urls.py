@@ -3,7 +3,7 @@ from .views import *
 
 
 app_name = 'inventory'
-#fdk
+
 urlpatterns = [
     path('products/', products, name='products'),
     path('create/product/', product, name='product'),
@@ -12,6 +12,7 @@ urlpatterns = [
     path('add/product/category/', add_product_category, name='add_product_category'),
 
     path('inventory/', inventory, name='inventory_list'),
+    path('finished_products/list/', finished_products, name='finished_products'),
     
     # unit of measurement 
     path('unit_of_measurement/', unit_of_measurement, name='unit_of_measurement'),
@@ -61,4 +62,8 @@ urlpatterns = [
     path('meal/list', meal_list, name='meal_list'),
     path('meals/<int:meal_id>/edit/', edit_meal, name='edit_meal'),
     path('meals/delete/<int:meal_id>/', delete_meal, name='delete_meal'),
+    path('create/meal/category/', create_meal_category, name='create_meal_category'),
+    
+    # end of day
+    path('end-of-day/', end_of_day_view, name='end_of_day_view'),
 ]

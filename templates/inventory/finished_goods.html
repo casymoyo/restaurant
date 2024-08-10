@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Products{% endblock title %}
+{% block content %}
+<style>
+    .card{
+        border: none;
+    }
+    a{
+        text-decoration: none;
+        color: #333;
+    }
+    .btn:hover{
+        background: #333;
+        color:white !important;
+    }
+</style>
+<div class="products m-2">
+    <nav class='mt-2 d-flex align-items-center justify-content-between'>
+        <div>
+            <ul class="list-unstyled d-flex align-items-center">
+                <li><a href='/' class='bx bx-home btn border fs-5 mt-1'></a></li>
+                <li class='mx-2 fs-5'>Inventory</li>
+            </ul>
+        </div>
+        <div>
+            <ul class="list-unstyled d-flex mt-3">
+                <li class="btn border mx-2">
+                    <a href="{% url 'inventory:create_purchase_order' %}">Add Inventory</a>
+                </li>
+                <li>
+                    <a href="{% url 'inventory:purchase_orders' %}" class="btn border">Purchase Orders</a>
+                </li>
+                <li class="btn border mx-2 inv-item" data-name="raw">Raw Materials</li>
+                <li class="btn border active prod inv-item" data-name="prod">Products</li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="tables">
+        <div class="">
+            <table class="table table-hover table-responsive" id="products_table" style="width: 100%;">
+            <thead class="bg-primary">
+                <th>Name</th>
+                <th>Quantity</th>
+                <th>Cost per unit</th>
+                <th>Price</th>
+                <th>Action</th>
+            </thead>
+            <tbody>
+                {% for product in products %}
+                    <tr>
+                        <td><small>{{ product.name }}</small></td>
+                        <td><small>{{ product.quantity }}</small></td>
+                        <td><small>{{ product.cost}}</small></td>
+                        <td><small>{{ product.price }}</small></td>
+                        <td>
+                            <small>
+                                <span>
+                                    <a href="{% url 'inventory:product_detail' product.id %}" class='text-dark'>
+                                        <i class='bx bx-show'></i>
+                                    </a>
+                                </span>
+                                <span class='mx-3'>
+                                    <a href="{% url 'inventory:edit_inventory' product.id %}" class="text-dark">
+                                        <i class='bx bx-edit-alt'></i>
+                                    </a>
+                                </span>
+                                <span>
+                                    <span id='delete' data-id="" onclick="productId(this)" class="text-dark">
+                                        <i class='bx bx-trash-alt'></i>
+                                    </span>
+                                </span>
+                            </small>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+<script>
+    new DataTable('#products_table')
+</script>
+{% endblock content %}

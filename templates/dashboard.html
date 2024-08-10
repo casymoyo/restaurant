@@ -25,13 +25,13 @@
             </div>
         </div>
     </a>
-    <a href="" class="col col-4 mb-2">
+    <a href="{% url 'analytics_index' %}" class="col col-4 mb-2">
         <div class="card">
             <div class="card-body d-flex justify-content-center align-items-center flex-column">
                 <div>
                     <img src="{% static 'assets/pngs/dashboard.png'%}" alt="dashboard_icon" width="100rem">
                 </div>
-                <p class="mt-1">Dashboard</p>
+                <p class="mt-1">Analytics</p>
             </div>
         </div>
     </a>
@@ -65,7 +65,7 @@
             </div>
         </div>
     </a>
-    <a href="" class="col col-4 mb-2">
+    <a href="{% url 'users:users' %}" class="col col-4 mb-2">
         <div class="card">
             <div class="card-body d-flex justify-content-center align-items-center flex-column">
                 <div>

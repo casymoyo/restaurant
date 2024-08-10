@@ -45,8 +45,8 @@
                         </div>
                         <div>
                             <ul class="list-unstyled d-flex align-items-center">
-                                <li class="mx-2">username</li>
-                                <li class='bx bx-log-out-circle mt-1 fs-3 cursor-pointer'></li>
+                                <li class="mx-2">{{ request.user }}</li>
+                                <li class='btn border btn-danger bx bx-log-out-circle mt-1 fs-3 cursor-pointer' data-bs-toggle="modal" data-bs-target="#logoutModal"></li>
                             </ul>
                         </div>
                     </div>
@@ -58,9 +58,10 @@
                                 <div class="alert alert-dismissible {% if message.tags %}alert-{{ message.tags }}{% endif %}">
                                 {{ message }}
                                 <button type="button"
-                                        class="btn-close"
-                                        data-bs-dismiss="alert"
-                                        aria-label="Close"></button>
+                                    class="btn-close"
+                                    data-bs-dismiss="alert"
+                                    aria-label="Close">
+                                </button>
                                 </div>
                             {% endfor %}
                         {% endif %}
@@ -68,6 +69,19 @@
                     </div>
                 </div>
             </nav>
+        </div>
+
+        <!-- logout modal -->
+        <div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="chargeModalLabel" aria-hidden="true">
+            <div class="modal-dialog bg modal-dialog-centered">
+                <div class="modal-content p-5">
+                    <h5 class="fw-bold">Are you sure you want to logout?</h5>
+                    <div class="d-flex justify-content-end mt-4">
+                        <button class="btn btn-outline-dark">No</button>
+                        <a href="{% url 'users:logout' %}" class="btn btn-seconday">Yes</a>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
     <script src="{% static 'css/bootstrap/js/bootstrap.bundle.min.js'%}"></script>    

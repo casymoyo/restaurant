@@ -7,10 +7,12 @@ from django.urls import include, path
 from django.views import defaults as default_views
 
 urlpatterns = [
-    path('pos', include('pos.urls', namespace='pos')),
+    path('pos/', include('pos.urls', namespace='pos')),
     path('', Dashboard, name='dashborad'),
     path("admin/", admin.site.urls),
+    path('settings/', include('settings.urls', namespace='settings')),
     path('users/', include('users.urls', namespace='users')),
+    path('analytics/', include('analytics.urls')),
     path('finance/', include('finance.urls', namespace='finance')),
     path('inventory/', include('inventory.urls', namespace='inventory')),
 ]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

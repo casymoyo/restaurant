@@ -10,9 +10,9 @@ class User(AbstractUser):
         ('accountant', 'Accountant')    
     )
     
-    profile_image = models.ImageField(upload_to='Profile_images', blank=True, null=True)
     phonenumber = models.CharField(max_length=13)
     role = models.CharField(choices=USER_ROLES, max_length=50)
     
     def __str__(self) -> str:
         return self.username
+    

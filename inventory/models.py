@@ -1,8 +1,9 @@
 import uuid
 import datetime
 from django.db import models
-from users.models import User
+# from users.models import User
 from django.db.models import F
+from django.forms import modelformset_factory
 
 class Category(models.Model):
     name = models.CharField(max_length=255)
@@ -56,8 +57,8 @@ class Product(models.Model):
         return self.name
 
 class Production(models.Model):
-    date_created = models.DateField(auto_now_add=True)
-    time_created = models.TimeField(auto_now_add=True)
+    date_created = models.DateField()
+    time_created = models.TimeField()
     status = models.BooleanField(default=False)
     production_plan_number = models.CharField(max_length=10, unique=True, default='')
     declared = models.BooleanField(default=False)
@@ -112,10 +113,17 @@ class Ingredient(models.Model):
     def __str__(self) -> str:
         return self.name
     
+class MealCategory(models.Model):
+    name = models.CharField(max_length=255)
+    
+    def __str__(self) -> str:
+        return self.name
+    
 class Meal(models.Model):
     name = models.CharField(max_length=255)
     price = models.CharField(max_length=255)
     dish = models.ManyToManyField(Dish, related_name='dishes')
+    category = models.ForeignKey(MealCategory, on_delete=models.CASCADE, null=True)
     deactivate = models.BooleanField(default=False)
     
     def __str__(self) -> str:

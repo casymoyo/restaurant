@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% load static%}
+{% load crispy_forms_tags %}
+{% block title%} Add User {% endblock%}
+{% block content %}
+   <div class="register">
+        <div class="container">
+            <h4 class="mt-2 fw-normal">Add User</h4>
+            <form method="post" class="rounded p-2">
+                {% csrf_token %}
+                {{form|crispy}}
+                <div class="d-flex">
+                    <div class="w-50">
+                        <button type="reset" class="btn btn-danger w-100">Reset</button>
+                    </div>
+                    <span class="px-1"></span>
+                    <div class="w-50">
+                        <button type="submit" class="btn btn-primary w-100">Save</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+   </div>
+{% endblock content %}

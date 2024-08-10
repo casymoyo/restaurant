@@ -67,9 +67,7 @@
                             <td><small>{{ item.lf_carried_forward_quantity }} {{ item.raw_material.unit }}</small></td>
                             <td><small>{{ item.actual_quantity }} {{ item.raw_material.unit }}</small></td>
                             <td><small>{{ item.production_completion_time }}</small></td>
-                            {% if not confirm %}
-                                <td><small>{{ item.portions }} portions</small></td>
-                            {% endif %}
+                            <td><small>{{ item.portions }} portions</small></td>
                           </tr>
                         {% endfor %}
                     </tbody>

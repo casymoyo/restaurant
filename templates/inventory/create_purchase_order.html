@@ -82,7 +82,7 @@
                               </tr>
                             </tfoot>
                         </table>
-                        <button class="btn btn-danger btn-sm flex" onclick="reload();">Cancel</button>
+                        <button class="btn btn-outline-dark btn-sm flex" onclick="reload();">Cancel</button>
                         <button class="btn btn-primary btn-sm flex  mt-1" id="confirm_btn">Confirm</button>
                     </div>
                 </div>
@@ -94,7 +94,7 @@
                                 <label for="id_product" class="form-label requiredField">
                                     Product
                                 </label> 
-                                <div class="d-flex">
+                                <div class="input-group">
                                     <select class="select form-select" id='id_product'>
                                         <option value="">-----</option>
                                         {% for product in inventory %}
@@ -108,7 +108,7 @@
                                 <label for="id_product" class="form-label requiredField">
                                     Supplier
                                 </label>
-                                <div class="d-flex">
+                                <div class="input-group">
                                     <select class="select form-select" id='id_supplier'>
                                         <option value="">-----</option>
                                         {% for supplier in suppliers %}
@@ -703,12 +703,12 @@
             product = product.split(' [')[0]
             console.log(product)
            fetch(`/inventory/inventory/?name=${product}`)
-          .then(response => response.json())
-          .then(data=>{
-            console.log(prodData)
-            prodData.push(data)
-            console.log(prodData)
-          })
+            .then(response => response.json())
+            .then(data=>{
+                console.log(prodData)
+                prodData.push(data)
+                console.log(prodData)
+            })
           .catch(error => console.error('Error:', error))
       })
      

@@ -32,7 +32,9 @@
                     <a href="{% url 'inventory:purchase_orders' %}" class="btn border">Purchase Orders</a>
                 </li>
                 <li class="btn border mx-2 inv-item" data-name="raw">Raw Materials</li>
-                <li class="btn border prod inv-item" data-name="prod">Products</li>
+                <li class="btn border prod inv-item">
+                    <a href="{% url 'inventory:finished_products' %}">Products</a>
+                </li>
             </ul>
         </div>
     </nav>

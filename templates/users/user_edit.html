@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% load static%}
+{% load crispy_forms_tags %}
+{% block title%} Users {% endblock%}
+{% block content %}
+<div class="users mt-2"> 
+    <div class="card">
+      <div class="card-header fw-bold">
+        {{user.first_name}} {{user.last_name}}
+      </div>
+      <div class="card-body">
+        <div>
+            <div class="d-flex justify-content-between">
+                <div>
+                    <img src="{% if user.profile.profile_image %}{{ user.profile.profile_image.url }}{% else %}{% static 'assets/avatar.png' %}{% endif %}" alt="Profile Picture" class="img-thumbnail" style="width: 100px; height: 100px;">
+                </div>
+                <div>
+                    {# header#}
+                    <p class="fw-bold pb-2">Personal Details:</p>
+                    <p class="fw-normal">First Name: {{user.first_name}}</p>
+                    <p class="fw-normal">Last Name: {{user.last_name}}</p>
+                    <p class="fw-normal">Phone Number: {{user.phonenumber}}</p>
+                    <p class="fw-normal">Email: {{user.email}}</p>
+                </div>
+                <div>
+                    {# header#}
+                    <p class="fw-bold pb-2">Work Details:</p>
+                    <p class="fw-normal">Company: {{user.company}}</p>
+                    <p class="fw-normal">Branch: {{user.branch}}</p>
+                    <p class="fw-normal">Role: {{user.role}}</p>
+                    <p class="fw-normal">User Code: {{user.code}}</p>
+                </div>
+                <div>
+                    <a href="{% url 'users:user_edit' user.id %}" class="btn btn-light btn-sm">
+                        <i class="bx bx-edit"></i>
+                        Edit
+                    </a>
+                </div>
+            </div>
+        </div>
+      </div>
+    </div>
+    {# ********************************* modals ********************************* #}
+    
+    <div class="modal fade" id="addUserModal" tabindex="-1" aria-labelledby="addUserModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content w-100 p-4">
+            <h6 class="fw-bold">Add User</h6>
+            <form method="post">
+                {% csrf_token %}
+                {{form|crispy}}
+                <div class="d-flex justify-content-end">
+                    <div class="">
+                        <button type="reset" class="btn btn-danger btn-sm">
+                            <i class="bx bx-reset"></i>
+                            Reset
+                        </button>
+                    </div>
+                    <span class="px-2"></span>
+                    <div class="">
+                        <button type="submit" class="btn btn-secondary btn-sm">
+                            <i class="bx bx-save"></i>
+                            Save
+                        </button>
+                    </div>
+                </div>
+            </form>
+            </div>
+        </div>
+      </div>
+    
+      <div class="modal fade" id="editUserModal" tabindex="-1" aria-labelledby="editUserModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            </div>
+        </div>
+      </div>
+    
+      <div class="modal fade" id="userDetailsModal" tabindex="-1" aria-labelledby="userDetailsModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            </div>
+        </div>
+      </div>
+</div>
+
+<script src="{% static 'css/bootstrap/js/bootstrap.bundle.min.js'%}"></script>  
+<script>
+        
+    // load branch based on selected company
+     $('#id_company').change(function() {
+        var url = "{% url 'users:ajax_load_branches' %}";
+        var companyId = $(this).val();
+
+        $.ajax({
+            url: url,
+            data: {
+                'company_id': companyId
+            },
+            success: function(data) {
+                $('#id_branch').html('');
+                $.each(data, function(key, value) {
+                    $('#id_branch').append('<option value="' + value.id + '">' + value.name + '</option>');
+                });
+            }
+        });
+    });
+
+</script>
+{% endblock content %}

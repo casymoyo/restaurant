@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Receipt</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            width: 8cm;
+            height: 9cm;
+            margin: 0;
+            padding: 0;
+        }
+        .receipt {
+            padding: 10px;
+            
+        }
+        .header, .footer {
+            text-align: center;
+        }
+        p, h2, div, table, tr, tbody, td, tfoot{
+            margin:0 !important;
+            padding:0 !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="receip">
+        <div class="header">
+            <h2>Parsales Investments</h2>
+            <p>65 Speke Ave, Harare</p>
+            <p>** TAX INVOICE **</p>
+            <p>TAX NR: 220356643</p>
+            <p>TIN No: 2001020099</p>
+        </div>
+        <hr>
+        <table>
+            <tr>
+                <td>BURGER x2</td>
+                <td>$2.00</td>
+            </tr>
+            <tr>
+                <td>TAX</td>
+                <td>$<span id="tax">0.00</span></td>
+            </tr>
+            <tr>
+                <td>TOTAL</td>
+                <td>$<span id="total">0.00</span></td>
+            </tr>
+            <tr>
+                <td>Cash</td>
+                <td>$<span id="cash">0.00</span></td>
+            </tr>
+            <tr>
+                <td>Change</td>
+                <td>$<span id="cash">0.00</span></td>
+                </tr>
+        </table>
+        <table>
+            <tr>
+                <td>Cashier</td>
+                <td><span id="cashier">0.00</span></td>
+            </tr>
+            <tr>
+                <td>Date</td>
+                <td><span id="date">0.00</span></td>
+            </tr>
+            <tr>
+                <td>Transaction</td>
+                <td><span id="transaction">0.00</span></td>
+            </tr>
+            <tr>
+                <td>Total Qty</td>
+                <td>1</span></td>
+            </tr>
+        </table>
+        <div class="footer">
+            Thank you, Call Again :)
+        </div>
+    </div>
+</body>
+</html>

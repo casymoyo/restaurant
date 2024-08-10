@@ -13,6 +13,7 @@ from loguru import logger
 from django.contrib.auth import get_user_model
 from .models import Dish, Ingredient
 from django.views import View
+from django.urls import reverse
 
 from finance.models import (
     CashBook,
@@ -36,7 +37,7 @@ from . forms import (
 
 
 # to be removed
-user = get_user_model()
+User = get_user_model()
 
 def unit_of_measurement(request):
     if request.method == 'GET':
@@ -180,6 +181,16 @@ def product(request):
         return JsonResponse(list(products), safe=False)
     
     return JsonResponse({'success':False, 'message':'Invalid request'})
+
+def finished_products(request):
+    # as defined as products in the UI
+    products = Product.objects.filter(raw_material = False)
+    logger.info(products)
+    return render(request, 'inventory/finished_goods.html', 
+        {
+            'products':products
+        }
+    )
 
 def product_detail(request, product_id):
     try: 
@@ -459,7 +470,7 @@ def change_purchase_order_status(request, order_id):
                 
                 expense = Expense.objects.create(
                     category = category,
-                    amount = purchase_order.total_cost,
+                    amount = purchase_order.total_cost - purchase_order.tax_amount,
                     user = User.objects.get(id=1),
                     description = f'Expense purchase order{purchase_order.order_number}',
                     cancel = False
@@ -594,7 +605,7 @@ def process_received_order(request):
         
         Logs.objects.create(
             purchase_order = purchase_order,
-            user= user.objects.get(id=1),  #to be removed,
+            user= User.objects.get(id=1),  #to be removed,
             action= 'stock in',
             product=product,
             quantity=quantity,
@@ -1120,6 +1131,8 @@ def meal_list(request):
     )
     
 def add_meal(request):
+    dishes = Dish.objects.all()
+    
     if request.method == 'POST':
         form = MealForm(request.POST)
         
@@ -1132,7 +1145,7 @@ def add_meal(request):
                 messages.warning(request, f'Meal: {name.upper()} exists.')
                 return redirect('inventory:add_meal')
             
-            if price < 0:
+            if float(price) < 0:
                 messages.warning(request, f'Price can\'t be less than zero.')
                 return redirect('inventory:add_meal')
             
@@ -1143,6 +1156,7 @@ def add_meal(request):
         form = MealForm()
     return render(request, 'inventory/add_meal.html', 
         {
+            'dishes':dishes,
             'form': form
         }
     )
@@ -1184,3 +1198,44 @@ def delete_meal(request, meal_id):
         return JsonResponse({'success': True}, status=200)
     except Meal.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'Meal does not exist'}, status=400)
+
+
+def create_meal_category(request):
+    if request.method == 'GET':
+        categories = MealCategory.objects.all().values()
+        logger.info(categories)
+        return JsonResponse(list(categories), safe=False)
+    
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            category_name = data.get('category')
+            
+            if category_name:
+                category, created = MealCategory.objects.get_or_create(name=category_name)
+                if created:
+                    return JsonResponse({'success': True, 'id': category.id, 'name': category.name}, status=201)
+                else:
+                    return JsonResponse({'success': False, 'message': 'Category already exists'}, status=400)
+                
+            return JsonResponse({'success': False, 'message': 'Invalid data'}, status=405)
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': f'{e}'}, status=400)
+
+def end_of_day_view(request):
+    
+    latest_plan = Production.objects.latest('time_created')
+
+    ProductionItemsFormSet = modelformset_factory(ProductionItems, fields=('dish', 'portions', 'wastage', 'left_overs', 'portions_sold'), extra=0)
+
+    if request.method == 'POST':
+        formset = ProductionItemsFormSet(request.POST, queryset=ProductionItems.objects.filter(production=latest_plan))
+
+        if formset.is_valid():
+            formset.save()
+            return redirect(reverse('end_of_day_view'))
+
+    else:
+        formset = ProductionItemsFormSet(queryset=ProductionItems.objects.filter(production=latest_plan))
+
+    return render(request, 'end_of_day.html', {'formset': formset, 'latest_plan': latest_plan})
