@@ -1,5 +1,5 @@
 from django.db import models
-from inventory.models import Meal
+from inventory.models import Meal, Product
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
@@ -28,6 +28,7 @@ class Sale(models.Model):
     sub_total = models.DecimalField(max_digits=10, decimal_places=2, default=0) 
     date = models.DateField(auto_now_add=True)
     receipt_number = models.CharField(max_length=10, blank=True)
+    staff = models.BooleanField(default=False)
     
     def __str__(self) -> str:
         return f'{self.cashier} -> ({self.total_amount})'
@@ -47,7 +48,8 @@ class SaleItem(models.Model):
     sale = models.ForeignKey(Sale, on_delete=models.CASCADE)
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0) 
     time = models.TimeField(auto_now_add=True)
-    meal = models.ForeignKey(Meal, on_delete=models.CASCADE)
+    meal = models.ForeignKey(Meal, on_delete=models.CASCADE, null=True)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, null=True)
     quantity = models.IntegerField()
     
 class CashBook(models.Model):

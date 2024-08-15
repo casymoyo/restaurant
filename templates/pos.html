@@ -107,27 +107,20 @@
         <div class="container-flui">
             <div class="row">
                 <main role="main" class="col-md-9 ml-sm-auto col-lg-9 px-4">
-                    <div class="mb-2 mt-2">
-                        <input type=search" class="form-control w-100" id="food_search" placeholder="Search">
-                    </div>
-
-                    <div class="d-flex flex-row flex-md-nowrap align-items-center pt-3 pb-2 bg-dark text-light p-2 rounded">
-                        <button class="btn btn-outline-light" id="food">Food</button>
-                        <button class="btn btn-outline-light mx-2" id="drinks">Drinks</button>
+                    <div class="d-flex flex-row flex-md-nowrap align-items-center pt-3 pb-2 rounded">
+                        <div class="mb-2 mt- w-100 d-flex">
+                            <input type="search" class="form-control w-100" id="food_search" placeholder="Search">
+                            <!-- <button class="btn btn-outline-dark mx-2" id="foodButton">Food</button>
+                            <button class="btn btn-outline-dark" id="categoryButton">Dr</button> -->
+                        </div>
                     </div>
                     <div>
-                        <div class="row" id="Food">
-                            <!-- Menu Items -->
-                            <div class="row" id="Food" style="display: none;">
-                                <!-- Menu Items for Food will be rendered here -->
-                            </div>
-                            <div class="row" id="Drinks" style="display: none;">
-                                <!-- Menu Items for Drinks will be rendered here -->
-                            </div>
+                        <div class="row" id="itemsContainer">
+                            <!-- Items will be rendered here by JavaScript -->
                         </div>
                     </div>
                 </main>
-                <section class="col-md-3 bg-dark text-light sidebar">
+                <section class="col-md-3 bg-dark text-light sidebar rounded mt-3">
                     <div class="p-3">
                         <h5 class="fw-bold">Order Details</h5>
                         <div id="orderDetails" style="height:300px"></div>
@@ -176,10 +169,43 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                        <button type="button" class="btn btn-primary" onclick="finalizeSale()">Finalize Sale</button>
+                        <button type="button" class="btn btn-primary" onclick="finalizeSale(false)">Finalize Sale</button>
                     </div>
                 </div>
             </div>
+            <script>
+                function focusInput() {
+                    document.getElementById('totalAmountInput').focus();
+                }
+                focusInput()
+            </script>
+        </div>
+
+        <div class="modal fade" id="staffChargeModal" tabindex="-1" aria-labelledby="chargeModalLabel" aria-hidden="true">
+            <div class="modal-dialog bg modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="chargeModalLabel">Finalize Sale</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="totalAmountInput" class="form-label">Total Amount</label>
+                            <input type="number" class="form-control" id="staffTotalAmountInput" placeholder="Enter total amount received">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary" onclick="finalizeSale(true)">Finalize Sale</button>
+                    </div>
+                </div>
+            </div>
+            <script>
+                function focusInput() {
+                    document.getElementById('totalAmountInput').focus();
+                }
+                focusInput()
+            </script>
         </div>
         <!-- Floating Button -->
         <div id="floatingButton" class="floating-button" onclick="toggleFloatingContent()">
@@ -194,8 +220,10 @@
             </div>
             <div class="content-body">
                 <ul>
-                    <li><a href="#" class="btn btn-outline-dark w-100">Sales List</a></li>
                     <li><a href="{% url 'inventory:end_of_day_view' %}" class="btn btn-outline-dark w-100">End of day</a></li>
+                    <li>
+                        <button class="btn btn-primary w-100" id="chargeStaff">Staff</button>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -223,42 +251,89 @@
             </div>
         </div>
 
-        <script>
-            document.querySelector('#floatingContent ul li a').addEventListener('click', function(event) {
-                event.preventDefault();
-                fetchSalesData();
-            });
-
-            function fetchSalesData() {
-                fetch('{% url "pos:sales_list" %}')
-                    .then(response => response.json())
-                    .then(data => {
-                        const salesList = document.getElementById('salesList');
-                        salesList.innerHTML = '';  // Clear previous list
-
-                        data.sales.forEach(sale => {
-                            const saleItem = document.createElement('li');
-                            saleItem.className = 'list-group-item';
-                            saleItem.innerText = `Sale Receipt Number: ${sale.receipt_number}, Amount: $${sale.total_amount}`;
-                            salesList.appendChild(saleItem);
-                        });
-                        const totalSales = data.total_sales;
-                        document.getElementById('totalSales').innerText = `$${totalSales}`;
-                        const salesListModal = new bootstrap.Modal(document.getElementById('salesListModal'));
-                        salesListModal.show();
-                    })
-                    .catch(error => console.error('Error fetching sales:', error));
-            }
-        </script>
+        <div class="modal fade" id="staffModal" tabindex="-1" aria-labelledby="chargeModalLabel" aria-hidden="true">
+            <div class="modal-dialog bg modal-dialog-centered">
+                <div class="modal-content p-5">
+                    <h5 class="fw-bold">Confirm Sale For Staff</h5>
+                    <div class="d-flex justify-content-end mt-4">
+                        <button class="btn btn-outline-dark">No</button>
+                        <button class="btn btn-outline-secondary" id="staff">Yes</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
+    
     <script>
         const VAT_RATE = 0.15;
         let cart = [];
         let meals = [];
         let drinks = [];
-        const chargeModal = new bootstrap.Modal(document.getElementById('chargeModal'));
+        let items = [];
 
-       
+        const chargeModal = new bootstrap.Modal(document.getElementById('chargeModal'));
+        const staffModal = new bootstrap.Modal(document.getElementById('staffModal'))
+        const staffChargeModal = new bootstrap.Modal(document.getElementById('staffChargeModal'))
+        const staff = document.getElementById('staff')
+
+        staff.addEventListener('click', ()=>{
+            staffModal.hide()
+            document.getElementById('totalAmountInput').value = parseFloat(document.getElementById('total').innerText.slice(1))
+            finalizeSale(true)
+        })
+
+        document.getElementById('chargeStaff').addEventListener('click', ()=>{
+            if (cart.length === 0){
+                Swal.fire({
+                    title: "Error",
+                    text: "Empty Order",
+                    icon: "error"
+                });
+            }else{
+                staffModal.show()
+            }
+        })
+
+        document.getElementById('food_search').addEventListener('input', function () {
+            const searchValue = this.value.toLowerCase();
+            const filteredItems = items.filter(item => item.name.toLowerCase().includes(searchValue));
+            displayItems(filteredItems);
+        });
+    
+        function displayItems(itemsToDisplay) {
+            const itemsContainer = document.getElementById('itemsContainer');
+            itemsContainer.innerHTML = '';
+    
+            itemsToDisplay.forEach(item => {
+                const itemCard = document.createElement('div');
+                itemCard.className = 'col-md-3';
+                itemCard.innerHTML = `
+                    <div class="card mb-4 box-shadow" style="border: none;">
+                        <div class="card-body rounded">
+                            <p class="card-text">${item.name}</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <button type="button" class="btn btn-sm btn-outline-dark" onclick="addToCart(${item.id}, '${item.name}', ${item.price}, ${item.finished_product})">Add</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                itemsContainer.appendChild(itemCard);
+            });
+        }
+    
+        window.addEventListener('load', function () {
+            fetch('{% url "pos:product_meal_json" %}')
+                .then(response => response.json())
+                .then(data => {
+                    items = data.items;
+                    displayItems(items);
+                    setTimeout(() => {
+                        document.getElementById('loader').style.display = 'none';
+                    }, 1000);
+                })
+                .catch(error => console.error('Error fetching items:', error));
+        });
+    
         function toggleFloatingContent() {
             const content = document.getElementById('floatingContent');
             content.style.display = content.style.display === 'none' || content.style.display === '' ? 'block' : 'none';
@@ -292,14 +367,20 @@
             }
         })
     
-        function addToCart(id, name, price) {
+        function addToCart(id, name, price, type) {
           const existingMeal = cart.find(meal => meal.id === id);
           if (existingMeal) {
             existingMeal.quantity += 1;
           } else {
-            const meal = { id, name, price, quantity: 1 };
+            if(type){
+                type=true
+            }else{
+                type=false
+            }
+            const meal = { id, name, price, quantity: 1, type};
             cart.push(meal);
           }
+          console.log(cart)
           updateOrderDetails();
         }
         
@@ -353,19 +434,15 @@
           }
 
     function removeFromCart(mealId) {
-        // Find the index of the meal to remove
         const mealIndex = cart.findIndex(meal => meal.id === mealId);
         
-        // If the meal is found in the cart, remove it
         if (mealIndex !== -1) {
             cart.splice(mealIndex, 1);
         }
-    
-        // Update the order details on the UI
         updateOrderDetails();
     }
 
-    function finalizeSale() {
+    function finalizeSale(staff) {
         const totalAmountInput = parseFloat(document.getElementById('totalAmountInput').value);
         const total = parseFloat(document.getElementById('total').innerText.slice(1));
         const change = totalAmountInput - total;
@@ -382,13 +459,16 @@
     
         const saleData = {
             received_amount: totalAmountInput,
+            staff:staff,
             items: cart.map(meal => ({
                 meal_id: meal.id,
                 quantity: meal.quantity,
-                price: meal.price
+                price: meal.price,
+                type:meal.type,
             }))
         };
-    
+        
+        console.log(saleData)
         fetch('{% url "pos:process_sale" %}', {
             method: 'POST',
             headers: {

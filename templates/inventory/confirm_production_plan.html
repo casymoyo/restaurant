@@ -44,17 +44,22 @@
         </div>
         <div class="row">
             <div class="">
+                <div class="d-flex align-items-center justify-content-between border rounded p-2 bg-dark text-light">
+                    <h5 class="fw-bold">Major Raw Materials</h5>
+                    <h5 class="fw-bold">Total Cost: ${{ total_cost_items }}</h5>
+                </div>
                 <table class="table" id='plan_item_table' style="width:100%;">
                     <thead class="bg-primary">
                         <th>Raw Material</th>
                         <th>Dish</th>
                         <th>Quantity</th>
-                        <th>Total Cost</th>
-                        <th>RM B/F quantity</th>
-                        <th>LF B/f quantity</th>
-                        <th>Actual quantity</th>
-                        <th>PC Time</th>
+                        <th>RM B/F Quantity</th>
+                        <th>LF B/f Quantity</th>
+                        <th>Actual Quantity</th>
+                        <th>Declared Quantity</th>
+                        <th>Portion Multiplier</th>
                         <th>Portions</th>
+                        <th>Total Cost</th>
                     </thead>
                     <tbody>
                         {% for item in production_plan_items  %}
@@ -62,19 +67,50 @@
                             <td><small>{{ item.raw_material }}</small></td>
                             <td><small>{{ item.dish.name }}</small></td>
                             <td><small>{{ item.quantity }} {{ item.raw_material.unit }}</small></td>
-                            <td><small>{{ item.total_cost }}</small></td>
                             <td><small>{{ item.rm_carried_forward_quantity }} {{ item.raw_material.unit }}</small></td>
                             <td><small>{{ item.lf_carried_forward_quantity }} {{ item.raw_material.unit }}</small></td>
                             <td><small>{{ item.actual_quantity }} {{ item.raw_material.unit }}</small></td>
-                            <td><small>{{ item.production_completion_time }}</small></td>
+                            <td><small>{{ item.declared_quantity }}</small></td>
+                            <td><small>{{ item.dish.portion_multiplier }}</small></td>
                             <td><small>{{ item.portions }} portions</small></td>
+                            <td><small>{{ item.total_cost }}</small></td>
                           </tr>
                         {% endfor %}
                     </tbody>
                 </table>
+
+                
+                <div class=" mt-4 mb-2 d-flex align-items-center justify-content-between border rounded p-2 bg-dark text-light">
+                    <h5 class="fw-bold">Minor Raw Materials</h5>
+                    <h5 class="fw-bold">Total Cost: ${{ total_cost_minor_items }}</h5>
+                </div>
+                <table class="table" id="minor">
+                    <thead class="bg-primary">
+                        <th>Raw Material</th>
+                        <th>Total Ingr Quantity (per kg)</th>
+                        <th>Planned Quantity (kgs)</th>
+                        <th>Expected Quantity (Planned x Total Quantity)</th>
+                        <th>Cost (per kg)</th>
+                        <th>Total Cost</th>
+                    </thead>
+                    <tbody>
+                        {% for item in production_plan_minor_items %}
+                          <tr>
+                            <td><small>{{ item.minor_raw_material }}</small></td>
+                            <td><small>{{ item.total_quantity_per_kg }}</small></td>
+                            <td><small>{{ item.planned_quantity }}</small></td>
+                            <td><small>{{ item.expected_quantity }}</small></td>
+                            <td><small>{{ item.cost_per_kg }}</small></td>
+                            <td><small>{{ item.total_cost }}</small></td>
+                          </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
                 {% if confirm %}
-                    <div class="d-flex justify-content-end">
-                        <a href="{% url 'inventory:process_production_plan' production_plan.id %}" class="btn-primary text-light btn w-100 bx bx-save"></a>
+                    <div class="d-flex justify-content-end mt-4">
+                        <a href="" class="btn btn-danger text-light mx-2">Cancel</a>
+                        <a href="{% url 'inventory:process_production_plan' production_plan.id %}" class="btn-primary text-light btn">Confirm</a>
                     </div>
                 {% endif %}
             </div>
@@ -83,5 +119,6 @@
 </div>
 <script>
     new DataTable('#plan_item_table')
+    new DataTable('#minor')
 </script>
 {% endblock content %}

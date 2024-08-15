@@ -85,8 +85,6 @@
                                 </table>
                             </div>
                         </div>
-                        
-    
                     </div>
                 </section>
                 <main role="main" class="col-9 col-md-9 ml-sm-auto mt-2 px-4">
@@ -94,7 +92,7 @@
                         <h1><a href='/' class='bx bx-home btn border fs-1 mx-1'></a> Finance</h1>
                         <div>
                             <a href="{% url 'finance:cashbook' %}" class="btn btn-outline-dark">Cashbook</a>
-                            <a class="btn btn-outline-dark mx-2">Sales</a>
+                            {% comment %} <a class="btn btn-outline-dark mx-2">Sales</a> {% endcomment %}
                             <a href="{% url 'finance:expenses' %}" class="btn btn-outline-dark">Expenses</a>
                         </div>
                     </nav>
@@ -283,8 +281,8 @@
                                 backgroundColor: 'transparent', 
                                 borderColor: '#dedede',
                                 borderWidth: 1,
-                                pointRadius: 0, // Remove the dots
-                                pointHoverRadius: 0 // Remove the hover effect on points
+                                pointRadius: 0, 
+                                pointHoverRadius: 0 
                             }]
                         },
                         options: {
@@ -335,9 +333,9 @@
         fetch('/finance/pl_overview/')
         .then(response => response.json())
         .then(data => {
-            // Update Net Income
+            
             document.getElementById('net_income_amount').innerText = data.current_net_income.toFixed(2);
-            // Update Net Income percentage change
+            
             document.getElementById('net_income_change').innerText = `${data.net_income_change.toFixed(2)}%`;
             if (data.net_income_change >= 0) {
                 document.getElementById('net_income_change').className = 'bg-success rounded p-1';
@@ -345,9 +343,9 @@
                 document.getElementById('net_income_change').className = 'bg-danger rounded p-1';
             }
 
-            // Update Gross Profit
+            
             document.getElementById('id_gp_metrix_amount').innerText = data.current_gross_profit.toFixed(2);
-            // Update Gross Profit percentage change
+            
             document.getElementById('gp_change').innerText = `${data.gross_profit_change.toFixed(2)}%`;
             if (data.gross_profit_change >= 0) {
                 document.getElementById('gp_change').className = 'bg-success rounded p-1';
@@ -355,9 +353,9 @@
                 document.getElementById('gp_change').className = 'bg-danger rounded p-1';
             }
 
-            // Update Gross Profit Margin
+            
             document.getElementById('id_gpm_metrix_amount').innerText = data.current_gross_profit_margin.toFixed(2);
-            // Update Gross Profit Margin percentage change
+            
             document.getElementById('gpm_change').innerText = `${data.gross_profit_margin_change.toFixed(2)}%`;
             if (data.gross_profit_margin_change >= 0) {
                 document.getElementById('gpm_change').className = 'bg-success rounded p-1';
@@ -365,9 +363,9 @@
                 document.getElementById('gpm_change').className = 'bg-danger rounded p-1';
             }
 
-            // Update Expenses
+            
             document.getElementById('id_expense_metrix_amount').innerText = data.current_gross_profit.toFixed(2); 
-            // Update Expense percentage change
+            
             document.getElementById('expense_change').innerText = `${data.gross_profit_change.toFixed(2)}%`;
             if (data.gross_profit_change >= 0) {
                 document.getElementById('expense_change').className = 'bg-danger rounded p-1';

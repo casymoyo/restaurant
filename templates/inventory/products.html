@@ -10,10 +10,6 @@
         text-decoration: none;
         color: #333;
     }
-    .btn:hover{
-        background: #333;
-        color:white !important;
-    }
 </style>
 <div class="products m-2">
     <nav class='mt-2 d-flex align-items-center justify-content-between'>
@@ -25,15 +21,18 @@
         </div>
         <div>
             <ul class="list-unstyled d-flex mt-3">
-                <li class="btn border mx-2">
-                    <a href="{% url 'inventory:create_purchase_order' %}">Add Inventory</a>
+                <li>
+                    <a href="{% url 'inventory:create_purchase_order' %}" class="btn btn-outline-dark">Add Inventory</a>
+                </li>
+                <li class="mx-2">
+                    <a href="{% url 'inventory:create_purchase_order' %}" class="btn btn-outline-dark">Transfer(s) to Production</a>
                 </li>
                 <li>
-                    <a href="{% url 'inventory:purchase_orders' %}" class="btn border">Purchase Orders</a>
+                    <a href="{% url 'inventory:purchase_orders' %}" class="btn btn-outline-dark">Purchase Orders</a>
                 </li>
-                <li class="btn border mx-2 inv-item" data-name="raw">Raw Materials</li>
-                <li class="btn border prod inv-item">
-                    <a href="{% url 'inventory:finished_products' %}">Products</a>
+                <li class="btn btn-outline-dark mx-2">Raw Materials</li>
+                <li>
+                    <a href="{% url 'inventory:finished_products' %}" class="btn btn-outline-dark">Products</a>
                 </li>
             </ul>
         </div>

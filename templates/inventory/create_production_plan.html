@@ -7,8 +7,12 @@
     <div class='add-production-plan'>
         <div class='production-plan mt-2 d-flex justify-content-between align-items-center'>
             <div>
-                <a href='{% url "inventory:production_plans" %}' class='border btn bx bx-arrow-back fs-5'></a>
-                <a href='/' class='bx bx-home btn border fs-5 mx-2'></a>
+                <a href='{% url "inventory:production_plans"%}' class='border btn bx bx-arrow-back fs-5'></a>
+                {% if request.user.role != 'chef'%}
+                    <a href='/' class='bx bx-home btn border fs-5 mx-2'></a>
+                {% else %}
+                    <span class='mx-2'></span>
+                {% endif %}
                 <span class='mt-2 fs-5'>Create Production Plan</span>
             </div>
             <div>
@@ -27,8 +31,8 @@
                         <th>Dish</th>
                         <th>Quantity</th>
                         <th>Total Cost</th>
-                        <th>RM B/F quantity</th>
-                        <th>LF B/f quantity</th>
+                        <th>Previous Rameterial C/F Quantity</th>
+                        <th>Previous Portion C/F quantity</th>
                         <th>Actual quantity</th>
                         <th>PC Time</th>
                     </thead>
@@ -100,6 +104,7 @@ $(document).ready(function() {
             });
             cart = [];
             updateCartTable();
+            window.location.href=`/inventory/minor_raw_materials/${data.data}/`
         } else {
             Swal.fire({
                 title: "Error",
@@ -158,7 +163,13 @@ $(document).ready(function() {
 
     $('#id_quantity').on('input', function(e){
         let quantity = parseFloat(e.target.value);
-        actual.value = parseFloat(quantity - (parseFloat(lf.value) + parseFloat(rm.value)));
+        let value = parseFloat(quantity - (parseFloat(lf.value) + parseFloat(rm.value)));
+
+        if (value < 0){
+            value = 0;
+        }
+
+        actual.value = value
         actual.readOnly = true;
         actual.style.backgroundColor = 'lightgray';
     });

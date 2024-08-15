@@ -1,6 +1,6 @@
 from django.http import JsonResponse
 from django.shortcuts import render, get_object_or_404
-from inventory.models import Meal, Production, ProductionItems, Product
+from inventory.models import Meal, Production, ProductionItems, Product, Logs
 from loguru import logger
 import json, datetime
 from finance.models import Sale, SaleItem, CashBook
@@ -12,7 +12,6 @@ from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
 from django.template.loader import get_template
 from xhtml2pdf import pisa
-
 user = get_user_model()
 
 @login_required
@@ -24,17 +23,20 @@ def pos(request):
         }
     )
 
+@login_required
 def product_meal_json(request):
     meals = Meal.objects.filter(deactivate=False).values('id', 'name', 'price')
-    products = Product.objects.filter(raw_material=False).values('id', 'name', 'price')
-    logger.info(products )
+    products = Product.objects.filter(raw_material=False).values('id', 'name', 'price', 'finished_product')
+
+    combined_items = list(meals) + list(products)
+    
     data = {
-        'meals': list(meals),
-        'products': list(products)
+        'items': combined_items
     }
     
     return JsonResponse(data)
 
+@login_required
 def sales_list(request):
     today = datetime.datetime.today()
     sales = Sale.objects.filter(date=today)
@@ -46,9 +48,9 @@ def sales_list(request):
         'sales': sales_data,
         'total_sales': total_sales
     }
-    logger.info(data)
     return JsonResponse(data)
 
+@login_required
 def meal_detail_json(request, meal_id):
     if request.method == 'POST':
         try:
@@ -63,14 +65,16 @@ def meal_detail_json(request, meal_id):
         
         return JsonResponse({'success':True, 'data': meal_data})
 
+@login_required
 @transaction.atomic
 def process_sale(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
             items = data['items']
+            staff = data['staff']
             
-            logger.info(items)
+            logger.info(staff)
 
             sub_total = sum(item['price'] * item['quantity'] for item in items)
             logger.info(sub_total)
@@ -84,78 +88,77 @@ def process_sale(request):
                 total_amount=total_amount,
                 tax=tax,
                 sub_total=sub_total,
-                cashier=user.objects.get(id=1)
+                cashier=user.objects.get(id=1),
+                staff= True if staff else False
             )
             
             latest_plan = Production.objects.latest('time_created')
 
             for item in items:
-                meal = get_object_or_404(Meal, id=item['meal_id'])
-                
-                sale_item = SaleItem.objects.create(
+                if not item['type']:
+                    meal = get_object_or_404(Meal, id=item['meal_id'])
+                    
+                    sale_item = SaleItem.objects.create(
                     sale=sale,
                     meal=meal,
                     quantity=item['quantity'],
                     price=meal.price
                 )
                 
+                for dish in meal.dish.all():
+                    try:
+                        pp_item = ProductionItems.objects.get(production=latest_plan, dish=dish)
+                        
+                        if pp_item.portions == pp_item.portions_sold:
+                            raise ValueError(f'Related dish ({pp_item.dish.name}) portions exhausted.')
+                        
+                        if staff:
+                            pp_item.staff_portions += sale_item.quantity
+                            logger.info('staff')
+                        else:
+                            pp_item.portions_sold += sale_item.quantity
+                            logger.info('sale')
+                            
+                        pp_item.left_overs -= sale_item.quantity
+                        pp_item.save()
+                        
+                    except ProductionItems.DoesNotExist:
+                        logger.info(f'Production item not found for dish {dish.name}')
+                        raise ValueError(f'Production item not found for dish {dish.name}')
+                else:
+                    product = get_object_or_404(Product, id=item['meal_id'])
+                    product.quantity -= item['quantity']
+                    
+                    sale_item = SaleItem.objects.create(
+                        sale=sale,
+                        product=product,
+                        quantity=item['quantity'],
+                        price=meal.price
+                    )
+                    
+                    Logs.objects.create(
+                        user=request.user, 
+                        action= 'sale',
+                        product=product,
+                        quantity=sale_item.quantity,
+                        total_quantity=product.quantity,
+                    )
+                    
+                    product.save()
+                    
                 CashBook.objects.create(
                     sale=sale, 
-                    amount = meal.price,
+                    amount = sale.total_amount,
                     debit=True,
                     description=f'Sale (Receipt number: {sale.receipt_number})'
                 )
-                
-                try:
-                    for dish in meal.dish.all():
-                        pp_item = ProductionItems.objects.get(production=latest_plan, dish=dish)
-                        pp_item.portions -= sale_item.quantity
-                        pp_item.save()
-                
-                    # print_receipt_view(request, sale.id)
-                    generate_receipt_pdf(request)
-                
-                except ProductionItems.DoesNotExist:
-                    logger.info(f'Production item not found for dish {dish.name}')
-                    return JsonResponse({'success': False, 'message': f'Production item not found for dish {dish.name}'}, status=400)
-                except Exception as e:
-                    return JsonResponse({'success': False, 'message': str(e)}, status=400)
+                    
             logger.info(f'Sale: {sale.id} Processed')
             return JsonResponse({'success': True, 'sale_id': sale.id}, status=201)
-        except Exception as e:
-            return JsonResponse({'success': False, 'message': str(e)}, status=400)
-        
-def print_receipt_view(request, sale_id):
-    print_receipt_task.delay(sale_id)
-    logger.info('printing_receipt')
-    
-def render_to_pdf(template_src, context_dict={}):
-    template = get_template(template_src)
-    html = template.render(context_dict)
-    response = HttpResponse(content_type='application/pdf')
-    response['Content-Disposition'] = 'attachment; filename="receipt.pdf"'
-    pisa_status = pisa.CreatePDF(html, dest=response)
-    if pisa_status.err:
-        return HttpResponse('We had some errors <pre>' + html + '</pre>')
-    logger.info('done')
-    return response
 
-def generate_receipt_pdf(request):
-    logger.info('here')
-    context = {
-        'item': 'Burger',
-        'quantity': 1,
-        'price': 1.00,
-        'total': 1.00,
-        'tax': 0.00,
-        'cash': 1.00,
-        'change': 0.00,
-        'cashier': 'VIMBAINASHE M',
-        'date': 'Thu 08 08, 2024 10:12',
-        'transaction': '45512425105404',
-        'till': 'Server',
-        'sales_channel': 'USD',
-        'total_qty': 1
-    }
-    return render_to_pdf('receipt_template.html', context)
+        except Exception as e:
+            transaction.set_rollback(True)
+            logger.error(f'Error processing sale: {str(e)}')
+            return JsonResponse({'success': False, 'message': str(e)}, status=400)
+
 

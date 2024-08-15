@@ -51,10 +51,10 @@ class EditProductForm(forms.ModelForm):
         model = Product
         exclude = ['quantity']
 
-class productionForm(forms.ModelForm):
-    class Meta:
-        model = Production
-        fields = ['date_created', 'time_created']
+# class productionForm(forms.ModelForm):
+#     class Meta:
+#         model = Production
+#         fields = ['date_created', 'time_created']
         
 class ProductionPlanInlineForm(forms.ModelForm):
     class Meta:
@@ -85,12 +85,13 @@ class ProductionPlanInlineForm(forms.ModelForm):
 class DishForm(forms.ModelForm):
     class Meta:
         model = Dish
-        fields = ['name', 'portion_multiplier', 'raw_material']
+        fields = ['name', 'major_raw_material', 'portion_multiplier',]
+             
 
 class IngredientForm(forms.ModelForm):
     class Meta:
         model = Ingredient
-        fields = ['name', 'quantity', 'raw_material']
+        fields = ['minor_raw_material', 'quantity', 'note',]
 
 class MealForm(forms.ModelForm):
     class Meta:
