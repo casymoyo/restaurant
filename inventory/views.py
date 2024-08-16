@@ -1,4 +1,4 @@
-import json
+import json, threading
 from django.utils import timezone
 from . models import *
 from loguru import logger
@@ -17,6 +17,15 @@ from django.views import View
 from django.urls import reverse
 from django.db.models import Sum
 from django.utils.timezone import localdate
+from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+from reportlab.lib.enums import TA_CENTER
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+import io
+from utils.email import EmailThread
+from django.core.mail import EmailMessage
 
 from finance.models import (
     Sale,
@@ -40,9 +49,6 @@ from . forms import (
     IngredientForm
 )
 
-
-# to be removed
-User = get_user_model()
 
 def unit_of_measurement(request):
     if request.method == 'GET':
@@ -844,6 +850,8 @@ def confirm_minor_raw_materials(request, pp_id):
                 
                 raw_material = get_object_or_404(Product, name=k)
                 cost = Decimal(item[k]['cost'])
+                production_quantity = Decimal(item[k]['production_quantity'])
+                quantity = Decimal(item[k]['quantity'])
                 
                 MinorProductionItems.objects.create(
                     production = production_plan,
@@ -852,7 +860,7 @@ def confirm_minor_raw_materials(request, pp_id):
                     planned_quantity = item[k]['production_quantity'],
                     expected_quantity = item[k]['quantity'] * item[k]['production_quantity'],
                     cost_per_kg = cost,
-                    total_cost = item[k]['quantity'] * item[k]['production_quantity'] * cost,
+                    total_cost = production_quantity * quantity * cost,
                 )
                 
         return JsonResponse({'success':True, 'message':f'Production Plan: {production_plan.production_plan_number} Minor Raw Material Successfully Processed .'}, status=200)
@@ -1166,7 +1174,6 @@ class IngredientDeleteView(View):
         ingredient.delete()
         return redirect('inventory:ingredient_list')
 
-
 def add_dish(request): # didn't change the name of the template, it caters for both, dish and ingredient creation
     form = IngredientForm()
     dish_form = DishForm()
@@ -1461,6 +1468,10 @@ def end_of_day_detail(request, e_o_d_id):
         
         difference =  end_of_day.cashed_amount - (total_amount_sold_today - total_amount_staff_sold_today) 
         # total_staff_portions= end_of_day_items.objects.aggregate(total_staff_portions=Sum('staff_portions'))['total_staff_portions'] or 0
+        
+        buffer = generate_end_of_day_report(end_of_day, end_of_day_items, total_amount_staff_sold_today)
+        send_end_of_day_report(request, buffer)
+        logger.info('email sent')
     except Exception as e:
         messages.warning(request, f'{e}')
 
@@ -1479,4 +1490,145 @@ def end_of_day_detail(request, e_o_d_id):
     )
     
 
-                
+def generate_end_of_day_report(end_of_day, items, staff_sold_amount):
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4)
+
+    elements = []
+
+    # Title
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        'title_style',
+        fontSize=16,
+        alignment=TA_CENTER,
+        spaceAfter=12,
+    )
+    title = Paragraph(f"End Of Day Report: {end_of_day.date}", title_style)
+    elements.append(title)
+    elements.append(Spacer(1, 12))
+
+    # Sales Section Title
+    sales_title = Paragraph("Sales", styles['Heading2'])
+    elements.append(sales_title)
+    elements.append(Spacer(1, 6))
+
+    # Sales Section
+    sales_data = [
+        ["Details", "Quantity", "Amount"],
+        ["Total", "", f"{end_of_day.total_sales:.2f}"],
+        ["Staff", "", "(6.00)"],
+        ["Non Staff", "", f"{end_of_day.total_sales - 6:.2f}"],
+        ["Cashed Amount", "", f"{end_of_day.cashed_amount:.2f}"],
+        ["Difference", "", f"{end_of_day.cashed_amount - (end_of_day.total_sales - staff_sold_amount):.2f}"],
+    ]
+
+    sales_table = Table(sales_data, colWidths=[2 * inch, 1 * inch, 2 * inch])
+    sales_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),  # Align the entire table to the left
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+        ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+    ]))
+    elements.append(sales_table)
+    elements.append(Spacer(1, 12))
+
+    # Dishes Section Title
+    dishes_title = Paragraph("Dishes", styles['Heading2'])
+    elements.append(dishes_title)
+    elements.append(Spacer(1, 6))
+
+    # Dishes Section
+    dish_data = [
+        ["Dish Name", "S A C Portions", "P Sold", "S Portions", "Price Per Unit", "Wastage", "Left Overs", "Over/Less"]
+    ]
+    for item in items:
+        dish_data.append([
+            item.dish_name,
+            item.total_portions,
+            item.total_sold,
+            item.staff_portions,
+            "N/A",  
+            item.wastage,
+            item.leftovers,
+            item.expected
+        ])
+
+    dish_table = Table(dish_data, colWidths=[1 * inch] * 8)
+    dish_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+        ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+    ]))
+    elements.append(dish_table)
+
+    doc.build(elements)
+    buffer.seek(0)
+    return buffer
+
+def send_end_of_day_report(request, buffer):
+    email = EmailMessage(
+        f"End of Day Report:",
+        "Please find the attached End of Day report. The expected amount is to be calculated on cost price, since they are no stipulated prices per dishes, but if they to be put the expected table will be relavant.",
+        'admin@techcity.co.zw',
+        ['cassymyo@gmail.com'],
+    )
+    email.attach(f'EndOfDayReport.pdf', buffer.getvalue(), 'application/pdf')
+    
+    # Run email sending in a thread
+    EmailThread(email).start()
+
+    logger.info(f' End of day report email sent.')
+    
+def confirm_minor_raw_materials(request):
+    # payload 
+    """
+        {
+            raw_material_id: int
+            quantity:float
+        }
+    """
+    try:
+        data = json.loads(request.body)
+        
+        raw_material_id = data.get('raw_material_id')
+        quantity = data.get('quantity')
+        
+        logger.info(raw_material_id)
+        raw_material = Product.objects.get(id=raw_material_id)
+        logger.info(raw_material)
+        
+        kitchen_minor_raw_materials, created = MinorRawMaterials.objects.get_or_create(
+            raw_material = raw_material,
+            
+            defaults={
+                "quantity":quantity,
+                "quantity_left":0
+            }  
+        )
+        
+        if created:
+            kitchen_minor_raw_materials.quantity += quantity
+            kitchen_minor_raw_materials.save()
+        
+        raw_material.quantity -= quantity
+        raw_material.save()
+        
+        if not raw_material_id or not quantity:
+            return JsonResponse({'success':False, 'message':'Missin Data: Raw Material or Quantity'}, status=400)
+    except Exception as e:
+        return JsonResponse({'success':False, 'message':f'{e}'}, staus=400)
+    return JsonResponse({'success':True}, status=200)
+
+

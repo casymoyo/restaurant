@@ -75,4 +75,7 @@ class transactionLog(models.Model):
     action = models.CharField(max_length=10, choices=action_choice)
     
     
+class EmailNotifications(models.Model):
+    expense_notification = models.BooleanField(default=True)
+    
      

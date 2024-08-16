@@ -107,9 +107,9 @@ class MinorProductionItems(models.Model):
     total_quantity_per_kg = models.FloatField()
     planned_quantity = models.FloatField()
     expected_quantity = models.FloatField()
+    actual_quantity = models.FloatField(null=True)
     cost_per_kg = models.DecimalField(max_digits=10, decimal_places=2, default=1) 
     total_cost = models.DecimalField(max_digits=10, decimal_places=2, default=1) 
-    
     
     def __str__(self) -> str:
         return f'{self.minor_raw_material}'
@@ -249,6 +249,14 @@ class Logs(models.Model):
     timestamp = models.DateField(auto_now_add=True)
     description = models.CharField(max_length=255, null=True)
     
+class MinorRawMaterials(models.Model):
+    raw_material = models.ForeignKey(Product, on_delete=models.CASCADE)
+    quantity = models.FloatField()
+    quantity_left = models.FloatField()
+    
+    def __str__(self) -> str:
+        return self.raw_material.name
+    
 
 class EndOfDay(models.Model):
     date = models.DateField(auto_now_add=True)
@@ -259,7 +267,6 @@ class EndOfDay(models.Model):
     def __str__(self) -> str:
         return f'{self.total_sales}'
     
-
 class EndOfDayItems(models.Model):
     end_of_day = models.ForeignKey(EndOfDay, on_delete=models.CASCADE)
     dish_name = models.CharField(max_length=50)

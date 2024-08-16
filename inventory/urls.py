@@ -31,6 +31,8 @@ urlpatterns = [
     path('process/minor_raw_materials/<int:pp_id>/', process_minor_raw_materials, name='process_minor_raw_materials'),
     path('minor_raw_materials/<int:pp_id>/', minor_raw_materials, name='minor_raw_materials'),
     path('confirm/minor_raw_materials/<int:pp_id>/', confirm_minor_raw_materials, name='confirm_minor_raw_materials'),
+    path('confirm_minor_raw_materials/', confirm_minor_raw_materials, name='confirm_minor_raw_materials'),
+    
     # supplier
     path('suppliers/list', suppliers, name='suppliers'),
     path('edit/supplier/', edit_supplier, name='edit_supplier'),

@@ -12,6 +12,7 @@ from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
 from django.template.loader import get_template
 from xhtml2pdf import pisa
+from django.utils import timezone
 user = get_user_model()
 
 @login_required
@@ -74,57 +75,74 @@ def process_sale(request):
             items = data['items']
             staff = data['staff']
             
-            logger.info(staff)
+            logger.info(data)
 
             sub_total = sum(item['price'] * item['quantity'] for item in items)
             logger.info(sub_total)
             
-            tax = sub_total * 0.15 #to be dynamically stipulated
+            tax = sub_total * 0.15 # To be dynamically stipulated
             logger.info(tax)
             
-            total_amount = sub_total 
+            total_amount = sub_total + tax
             
             sale = Sale.objects.create(
                 total_amount=total_amount,
                 tax=tax,
                 sub_total=sub_total,
                 cashier=user.objects.get(id=1),
-                staff= True if staff else False
+                staff=True if staff else False
             )
             
-            latest_plan = Production.objects.latest('time_created')
-
+            today = timezone.now().date()
             for item in items:
-                if not item['type']:
-                    meal = get_object_or_404(Meal, id=item['meal_id'])
+                meal = get_object_or_404(Meal, id=item['meal_id'])
+                if item['type'] == False:
                     
                     sale_item = SaleItem.objects.create(
-                    sale=sale,
-                    meal=meal,
-                    quantity=item['quantity'],
-                    price=meal.price
-                )
-                
-                for dish in meal.dish.all():
-                    try:
-                        pp_item = ProductionItems.objects.get(production=latest_plan, dish=dish)
-                        
-                        if pp_item.portions == pp_item.portions_sold:
-                            raise ValueError(f'Related dish ({pp_item.dish.name}) portions exhausted.')
-                        
-                        if staff:
-                            pp_item.staff_portions += sale_item.quantity
-                            logger.info('staff')
-                        else:
-                            pp_item.portions_sold += sale_item.quantity
-                            logger.info('sale')
+                        sale=sale,
+                        meal=meal,
+                        quantity=item['quantity'],
+                        price=meal.price
+                    )
+                    
+                    for dish in meal.dish.all():
+                        remaining_quantity = sale_item.quantity
+                        production_items = ProductionItems.objects.filter(
+                            production__date_created=today, dish=dish
+                        ).order_by('production__time_created')  # Order by the time the production was created to follow FIFO
+
+                        for pp_item in production_items:
+                            if pp_item.portions == pp_item.portions_sold:
+                                continue  
                             
-                        pp_item.left_overs -= sale_item.quantity
-                        pp_item.save()
+                            available_portions = pp_item.portions - pp_item.portions_sold
+                            
+                            if remaining_quantity <= available_portions:
+                                if staff:
+                                    pp_item.staff_portions += remaining_quantity
+                                    logger.info('staff')
+                                else:
+                                    pp_item.portions_sold += remaining_quantity
+                                    logger.info('sale')
+                                
+                                pp_item.left_overs -= remaining_quantity
+                                pp_item.save()
+                                break  # Done processing this sale item
+                            
+                            else:
+                                if staff:
+                                    pp_item.staff_portions += available_portions
+                                else:
+                                    pp_item.portions_sold += available_portions
+
+                                pp_item.left_overs -= available_portions
+                                pp_item.save()
+                                
+                                remaining_quantity -= available_portions  # Move to the next batch
                         
-                    except ProductionItems.DoesNotExist:
-                        logger.info(f'Production item not found for dish {dish.name}')
-                        raise ValueError(f'Production item not found for dish {dish.name}')
+                        if remaining_quantity > 0:
+                            raise ValueError(f"Insufficient portions for dish {dish.name}.")
+                            
                 else:
                     product = get_object_or_404(Product, id=item['meal_id'])
                     product.quantity -= item['quantity']
@@ -138,7 +156,7 @@ def process_sale(request):
                     
                     Logs.objects.create(
                         user=request.user, 
-                        action= 'sale',
+                        action='sale',
                         product=product,
                         quantity=sale_item.quantity,
                         total_quantity=product.quantity,
@@ -148,7 +166,7 @@ def process_sale(request):
                     
                 CashBook.objects.create(
                     sale=sale, 
-                    amount = sale.total_amount,
+                    amount=sale.total_amount,
                     debit=True,
                     description=f'Sale (Receipt number: {sale.receipt_number})'
                 )
