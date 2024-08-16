@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% load static%}
+{% load crispy_forms_tags %}
+{% block title%} Production Plan {% endblock%}
+{% block content %}
+   <div class="inventory">
+        <div class="inventory-navbar">
+            <nav class="d-flex justify-content-between align-items-center p-2">
+                <div class='fw-bold d-flex'>
+                    <a href='{% url "inventory:products"%}' class='border btn bx bx-arrow-back fs-5'></a>
+                    <a href='/' class='bx bx-home btn border fs-5 mx-2'></a>
+                    <span class='fs-5'>Production</span>
+                </div>
+                <div>
+                    <ul class="list-unstyled mt-2 d-flex">
+                        <li class="">
+                            <a href="{% url 'inventory:create_production_plan' %}" class='btn btn-outline-dark mx-2'>Create Production Plan</a>
+                        </li>
+                        <li class="">
+                            <a href="{% url 'inventory:meal_list' %}" class='btn btn-outline-dark'>Meals</a>
+                        </li>
+                        <li class="">
+                            <a href="{% url 'inventory:dish_list' %}" class='btn btn-outline-dark mx-2'>Dishes</a>
+                        </li>
+                        <li class="">
+                            <a href="{% url 'inventory:declared_production_plan' %}" class='btn btn-outline-dark'>Declared Production Plans</a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+        </div>
+        <div>
+            <div class=" mt-2 w-100">
+                <table class='table border table-hover rounded p-2' id='production_table' style="width: 100%;" >
+                        <thead class='bg-primary'>
+                            <tr>
+                                <th>Date</th>
+                                <th>PP Number</th>
+                                <th>Confirmation Status</th>
+                                <th>Declaration Status</th>
+                                <th>Actions</th>
+                            </tr>
+                            </thead>
+                        <tbody>
+                            {% for plan in plans %}
+                                <tr>
+                                    <td><small>{{ plan.date_created }} {{ plan.time_created }}</small></td>
+                                    <td><small>{{ plan.production_plan_number }}</small></td>
+                                    <td>
+                                        <small>
+                                            {% if plan.status %}
+                                                <small class="bg-success fw-bold text-light p-2 rounded text-center w-100">Confirmed</small>
+                                            {%else %}
+                                                <a href="{% url 'inventory:confirm_production_plan' plan.id %}" class="bg-secondary fw-bold text-light p-2 rounded text-center w-100">Waiting Confirmation</a>
+                                            {% endif %}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <small>
+                                            {% if plan.declared %}
+                                                <small class="bg-success fw-bold text-light p-2 rounded text-center w-100" disabled>Declared</small>
+                                            {% else %}
+                                                {% if plan.status %}
+                                                    <a href="{% url 'inventory:declare_production_plan' plan.id %}" class="bg-secondary fw-bold text-light p-2 rounded text-center w-100">Waiting declaration</a>
+                                                {% else %}
+                                                    <small class="bg-primary fw-bold text-light p-2 rounded text-center w-100" disabled>Awaiting production plan confirmation</small>
+                                                {% endif %}
+                                            {% endif %}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <small>
+                                            <a href="{% url 'inventory:production_plan_detail' plan.id %}" class="bx bx-show"></a>
+                                            <a href="" class="bx bx-printer"></a>
+                                        </small>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="modal fade" id="statusFormModal" tabindex="-1" aria-labelledby="loaderModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-body">
+                        <h5 class="fw-bold">Change Status</h5>
+                        <form action="">
+                            {% csrf_token %}
+                            {{ status_form | crispy }}
+                            <div class="d-flex justify-content-end">
+                                <div class="">
+                                    <button type="reset" class="btn btn-danger btn-sm w-100">
+                                        <i class='bx bx-reset'></i>
+                                        Reset
+                                    </button>
+                                </div>
+                                <span class="px-1"></span>
+                                <div class="">
+                                    <button type="button" onclick="changeStatus()" class="btn btn-secondary btn-sm w-100">
+                                        <i class='bx bx-save'></i>
+                                        change
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="loaderModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-body text-center">
+                        <h5 class="fw-bold">Status Successfully Changed and Related Accounts updated</h5>
+                    </div>
+                </div>
+            </div>
+        </div>
+   </div> 
+   <script>
+        new DataTable('#production_table');
+   </script>
+{% endblock content %}

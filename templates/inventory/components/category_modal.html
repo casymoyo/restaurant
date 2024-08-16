@@ -1,0 +1,40 @@
+{% load static%}
+{% block content %}
+   <div class="inventory">
+        <div class='add-product-category' id="id_category_form">
+            <div class='add-product-category-nav d-flex mt-2 py-3 px-2 align-items-center'>
+                <div>
+                    <h6 class='mt-2 fw-bold'>Add Category</h6>
+                </div>
+            </div>
+            <form method='post' class='px-2'>
+                {% csrf_token %}
+                <div class='mb-2'>
+                    <label for='id_name'>Category Name</label>
+                    <input 
+                        name='name' 
+                        id='id_category_name' 
+                        type='text' 
+                        class='form-control'
+                    />
+                </div>
+                <small id='id_error'></small>
+                <div class="d-flex justify-content-end">
+                    <div class="">
+                        <button type="reset" class="btn btn-danger btn-sm w-100">
+                            <i class='bx bx-reset'></i>
+                            reset
+                        </button>
+                    </div>
+                    <span class="px-1"></span>
+                    <div class="">
+                        <button type="button" onclick="categorySubmit();" class="btn btn-secondary btn-sm w-100">
+                            <i class='bx bx-save'></i>
+                            save
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+   </div>  
+{% endblock content %}

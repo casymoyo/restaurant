@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+{% load static %}
+{% load crispy_forms_tags %}
+{% block title %} Create Production Plan {% endblock %}
+{% block content %}
+<div class="inventory">
+    <div class='add-production-plan'>
+        <div class='production-plan mt-2 d-flex justify-content-between align-items-center'>
+            <div>
+                <a href='{% url "inventory:production_plans" %}' class='border btn bx bx-arrow-back fs-5'></a>
+                <a href='/' class='bx bx-home btn border fs-5 mx-2'></a>
+                <span class='mt-2 fs-5'>Update Production Plan : {{ production_plan.production_plan_number }}</span>
+            </div>
+            <div>
+                <ul class="list-unstyled mt-3">
+                    <li>
+                        <a href="{% url 'inventory:production_plans' %}" class="btn border">Production Plan</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-9">
+                <table class="table">
+                    <thead class="bg-primary">
+                        <th>Raw Material</th>
+                        <th>Dish</th>
+                        <th>Quantity</th>
+                        <th>Total Cost</th>
+                        <th>RM B/F quantity</th>
+                        <th>LF B/f quantity</th>
+                        <th>Actual quantity</th>
+                        <th>PC Time</th>
+                    </thead>
+                    <tbody id="cart-items"></tbody>
+                </table>
+                <div class="d-flex justify-content-end">
+                  <button class="btn border bx bx-reset mx-2" id="id_reset"></button>
+                  <button class="btn-primary btn sm bx bx-save" id="id_submit"></button>
+                </div>
+            </div>
+            <div class="col-3">
+                <form id="production-plan-form" action="" method="post">
+                    {% csrf_token %}
+                    {{ form.as_p }}
+                    <button type="button" id="save-button" class="btn btn-secondary btn-sm w-100">Save</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+$(document).ready(function() {
+    let cart = [];
+    let product = '';
+    let unit_cost = 1;
+    let unit_of_measurement = ''
+
+    let lf = document.getElementById('id_lf_carried_forward_quantity');
+    let rm = document.getElementById('id_rm_carried_forward_quantity');
+
+    let quantity = document.getElementById('id_quantity');
+    let actual = document.getElementById('id_actual_quantity');
+
+    $('#id_raw_material').select2();
+    $('#id_dish').select2();
+
+    $('#id_raw_material').on('change', function(e){
+        product = e.target.value;
+    });
+
+
+    //get data
+    fetch('{% url "inventory:update_production_plan" production_plan.id %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': $('input[name="csrfmiddlewaretoken"]').val()
+            },
+            body: JSON.stringify({'production_id'})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success){
+                for (item in data){
+                    const cartItem = {
+                        raw_material: item.raw_material__name,
+                        dish: item.dish__name,
+                        quantity: item.quantity,
+                        total_cost: item.total_cost, 
+                        rm_bf_quantity: item.rm_carried_forward_quantity,
+                        lf_bf_quantity: item.lf_carried_forward_quantity,
+                        actual_quantity: item.actual_quantity,
+                        timeout: item.production_completion_time
+                    };
+                }
+                cart.push(cartItem)
+            } else {
+                Swal.fire({
+                    title: "Error",
+                    text: data.message,
+                    icon: "error"
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error posting product data:', error);
+        });
+
+    updateCartTable();
+
+    // submit button 
+    $('#id_submit').on('click', function(){
+      const postData = {
+        csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val(),
+        cart: cart
+    };
+
+    fetch('{% url "inventory:create_production_plan" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': $('input[name="csrfmiddlewaretoken"]').val()
+        },
+        body: JSON.stringify(postData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success){
+            Swal.fire({
+                title: "Success",
+                text: "Production plan created successfully!",
+                icon: "success"
+            });
+            cart = [];
+            updateCartTable();
+        } else {
+            Swal.fire({
+                title: "Error",
+                text: data.message,
+                icon: "error"
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error submitting production plan:', error);
+    });
+    })
+
+    $('#id_dish').on('change', function(e) {
+        const selectedProductId = e.target.value;
+        const postData = {
+            csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val(),
+            dish: selectedProductId,
+            raw_material: product
+        };
+
+        fetch('{% url "inventory:yeseterdays_left_overs" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': $('input[name="csrfmiddlewaretoken"]').val()
+            },
+            body: JSON.stringify(postData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success){
+                lf.value = parseFloat(data.data.left_over_portion_diff) || 0.00;
+                lf.readOnly = true;
+                lf.style.backgroundColor = 'lightgray';
+
+                rm.value = parseFloat(data.data.raw_material_dif) || 0.00;
+                rm.readOnly = true;
+                rm.style.backgroundColor = 'lightgray';
+
+                unit_cost = parseFloat(data.data.unit_cost);
+                unit_of_measurement = data.data.unit_of_measurement;
+                console.log(unit_of_measurement)
+            } else {
+                Swal.fire({
+                    title: "Error",
+                    text: data.message,
+                    icon: "error"
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error posting product data:', error);
+        });
+    });
+
+    $('#id_quantity').on('input', function(e){
+        let quantity = parseFloat(e.target.value);
+        actual.value = parseFloat(quantity - (parseFloat(lf.value) + parseFloat(rm.value)));
+        actual.readOnly = true;
+        actual.style.backgroundColor = 'lightgray';
+    });
+
+    $('#save-button').on('click', function() {
+        const item = {
+            raw_material: $('#id_raw_material option:selected').text(),
+            dish: $('#id_dish option:selected').text(),
+            quantity: parseFloat(quantity.value),
+            total_cost: parseFloat(actual.value) * unit_cost, 
+            rm_bf_quantity: parseFloat(rm.value),
+            lf_bf_quantity: parseFloat(lf.value),
+            actual_quantity: parseFloat(actual.value),
+            timeout: document.getElementById('id_production_completion_time').value
+        };
+
+        cart.push(item);
+        updateCartTable();
+    });
+
+    function updateCartTable() {
+        const cartItems = $('#cart-items');
+        cartItems.empty();
+        cart.forEach((item, index) => {
+            cartItems.append(`
+                <tr>
+                    <td><button class="btn border bx bx-trash" onclick="deleteItem(${index})"></button> <span class='mx-2'>${item.raw_material}</span></td>
+                    <td>${item.dish}</td>
+                    <td><input type="number" class="form-control" value="${item.quantity}" onchange="updateQuantity(${index}, this.value)"></td>
+                    <td>${item.total_cost.toFixed(2)}</td>
+                    <td>${item.rm_bf_quantity.toFixed(2)}${unit_of_measurement}</td>
+                    <td>${item.lf_bf_quantity.toFixed(2)}${unit_of_measurement}</td>
+                    <td>${item.actual_quantity.toFixed(2)}${unit_of_measurement}</td>
+                    <td>${item.timeout}</td>
+                </tr>
+            `);
+        });
+    }
+
+    window.deleteItem = function(index) {
+        cart.splice(index, 1);
+        updateCartTable();
+    }
+
+    window.updateQuantity = function(index, newQuantity) {
+        const item = cart[index];
+        item.quantity = parseFloat(newQuantity);
+        item.actual_quantity = parseFloat(newQuantity - (parseFloat(item.lf_bf_quantity) + parseFloat(item.rm_bf_quantity)));
+        item.total_cost = item.actual_quantity * unit_cost;
+        updateCartTable();
+    }
+});
+</script>
+{% endblock content %}

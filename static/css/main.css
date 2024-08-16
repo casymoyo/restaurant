@@ -1,0 +1,29 @@
+.overflow {
+  height: 99vh;
+}
+
+@font-face {
+  font-family: Lato-Regular;
+  src: url("../fonts/Lato/Lato-Regular.ttf");
+}
+.Urban-Eat {
+  font-family: Lato-Regular;
+  overflow-x: hidden;
+}
+.Urban-Eat a {
+  text-decoration: none;
+  color: #333;
+}
+.Urban-Eat .hidden {
+  display: none;
+}
+.Urban-Eat .activate {
+  background: #333;
+  color: white !important;
+}
+.Urban-Eat .finance .card {
+  border: none;
+}
+.Urban-Eat .finance select {
+  border: none;
+}/*# sourceMappingURL=main.css.map */

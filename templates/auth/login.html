@@ -1,0 +1,93 @@
+{% load static i18n %}
+{% get_current_language as LANGUAGE_CODE %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="description" content="Techcity Pos System"/>
+    <meta name="Author" content="casy moyo" />
+    <link rel="icon" href="{% static 'images/favicons/favicon.ico' %}"/>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+
+    {% block css %}
+        <link rel="stylesheet" href="{% static 'css/main.css'%}">
+        <link rel="stylesheet" href="{% static 'css/bootstrap/css/bootstrap.min.css'%}">
+        <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    {% endblock css %}
+
+    <title>
+        {% block title %}Restaurant{% endblock %}
+    </title>
+</head>
+<style>
+    .login {
+        background: #dde5f4;
+        height: 100vh;
+        background: url('../../static/assets/back.jpg');
+        background-repeat: no-repeat;
+        background-size: cover;
+    }
+    .login-form {
+        height: 40vh;
+        width: 40vh;
+        border: 1px solid #333;
+        background: #333;
+        color: #fff;
+    }
+</style>
+<body>
+    <div class="login">
+        <div class="">
+            <div class="login d-flex flex-column align-items-center justify-content-center">
+                <div class="logo">
+                    <!-- <img src="{% static 'assets/logo.png' %}" width="250px"/> -->
+                </div>
+                <div class="login-form rounded d-flex align-items-center mt-4">
+                    <form method="post" class="p-3">
+                        {{ form }}
+                        {% csrf_token %}
+                        <div class="row">
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class='bx bx-envelope'></i>
+                                </span>
+                                <input
+                                    name="email_address"
+                                    type="text"
+                                    placeholder="Email"
+                                    class="form-control"
+                                />
+                            </div>
+                        </div>
+                        <div class="row mt-4">
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class='bx bx-lock-alt'></i>
+                                </span>
+                                <input
+                                    name="password"
+                                    type="password"
+                                    placeholder="Password"
+                                    class="form-control"
+                                />
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-outline-light mt-4 w-100">Login</button>
+                    </form>
+                </div>
+                <!-- messages -->
+                {% if messages %}
+                    {% for message in messages %}
+                        <small class="alert alert-dismissible text-danger {% if message.tags %}alert-{{ message.tags }}{% endif %}">
+                        {{ message }}
+                    {% endfor %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</body>
+</html>

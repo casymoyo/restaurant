@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+{% load static%}
+{% load crispy_forms_tags %}
+{% block title%} Users {% endblock%}
+{% block content %}
+<div class="users mt-2">
+    <div class='mt-2 mb-2'>
+        <div class='mt-2 d-flex justify-content-between align-items-center'>
+            <div>
+                <a href='/' class='bx bx-home btn border fs-5 mx-2'></a>
+                <span class='mt-2 fs-5'>Users</span>
+            </div>
+            <div>
+                <ul class="list-unstyled mt-3">
+                    <li>
+                        <button id="addUser" class="btn btn-outline-dark">Add User</button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <table class="table table-striped" style='width:100%;' id='users_table'>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                <td>{{ user.id }}</td>
+                <td><small>{{ user.get_full_name|default:user.username }}</small></td>
+                <td><small>{{ user.email }}</small></td>
+                <td>{{ user.role }}</td>  
+                <td>
+                    <a data-toggle="tooltip" data-placement="top" title="view user profile" href="{% url 'users:user_detail' user.id %}" class="btn btn-light btn-sm ">
+                        <i class="bx bx-show"></i>
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="modal fade" id="addUserModal" tabindex="-1" aria-labelledby="addUserModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content w-100 p-4">
+            <h6 class="fw-bold">Add User</h6>
+            <form method="post">
+                {% csrf_token %}
+                {{form|crispy}}
+                <div class="d-flex justify-content-end">
+                    <div class="">
+                        <button type="reset" class="btn btn-danger btn-sm">
+                            <i class="bx bx-reset"></i>
+                            Reset
+                        </button>
+                    </div>
+                    <span class="px-2"></span>
+                    <div class="">
+                        <button type="submit" class="btn btn-secondary btn-sm">
+                            <i class="bx bx-save"></i>
+                            Save
+                        </button>
+                    </div>
+                </div>
+            </form>
+            </div>
+        </div>
+      </div>
+    
+    <div class="modal fade" id="editUserModal" tabindex="-1" aria-labelledby="editUserModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content w-100 p-4">
+                <h6 class="fw-bold">Edit User</h6>
+                <form method="post" id="editUserForm" action="{% url 'users:user_edit' 0 %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="user_id" id="editUserId">
+                    {{ user_details_form|crispy }}
+                    <div class="d-flex justify-content-end">
+                        <div class="">
+                            <button type="reset" class="btn btn-danger btn-sm">
+                                <i class="bx bx-reset"></i>
+                                Reset
+                            </button>
+                        </div>
+                        <span class="px-2"></span>
+                        <div class="">
+                            <button type="submit" class="btn btn-secondary btn-sm">
+                                <i class="bx bx-save"></i>
+                                Save
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+      </div>
+
+</div>
+
+<script src="{% static 'css/bootstrap/js/bootstrap.bundle.min.js'%}"></script>  
+<script>
+    new DataTable('#users_table')
+    const addBtn = document.getElementById('addUser');
+    const addModal = new bootstrap.Modal(document.getElementById('addUserModal'));
+
+    const editUserBtn = document.getElementById('editUser');
+    const editUserBtns = document.querySelectorAll('.editUserBtn');
+    const editModal = new bootstrap.Modal(document.getElementById('editUserModal'));
+    
+    
+    addBtn.addEventListener('click', ()=>{
+        addModal.show()
+    })
+    
+    editUserBtn.addEventListener('click', ()=>{
+        editModal.show()
+    })
+    
+    editUserBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const userId = this.getAttribute('data-user-id');
+            const url = "{% url 'users:user_edit' 0 %}".replace('0', userId);
+    
+            $.ajax({
+                url: "{% url 'users:ajax_get_user_data' 0 %}".replace('0', userId),
+                success: function(data) {
+                    $('#editUserForm').attr('action', url);
+                    $('#editUserId').val(userId);
+                    $('#editUserModal input[name="first_name"]').val(data.first_name);
+                    $('#editUserModal input[name="last_name"]').val(data.last_name);
+                    $('#editUserModal input[name="username"]').val(data.username);
+                    $('#editUserModal input[name="email"]').val(data.email);
+                    $('#editUserModal input[name="phonenumber"]').val(data.phonenumber);
+                    $('#editUserModal select[name="edit_company"]').val(data.company);
+                    $('#editUserModal select[name="edit_branch"]').val(data.branch);
+                    $('#editUserModal select[name="role"]').val(data.role);
+                    editModal.show();
+                }
+            });
+        });
+    });
+</script>
+{% endblock content %}

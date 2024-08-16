@@ -1,0 +1,60 @@
+<script src='jquery.js'></script>
+<table>
+  <tr>
+    <td>Data</td>
+    <td><button class="delete-btn" data-id="1">Delete</button></td>
+  </tr>
+</table>
+
+<!-- Modal -->
+<div id="delete-modal" class="modal">
+  <div class="modal-content">
+    <p>Are you sure you want to delete this item?</p>
+    <button class="confirm-delete-btn">Yes</button>
+    <button class="cancel-delete-btn">No</button>
+  </div>
+</div>
+
+
+<script>
+let modal = $('.modal');
+let deleteBtn = document.getElementsByClassName("delete-btn");
+
+$('.deleteBtn').click(()=>{
+  let id = this.getAttribute("data-id");
+    modal.style.display = "block";
+    document.getElementsByClassName("confirm-delete-btn")[0].addEventListener("click", function() {
+      fetch("delete_item.php?id=" + id)
+        .then(response => response.text())
+        .then(message => console.log(message));
+      modal.style.display = "none";
+    });
+})
+
+</script>
+```
+PHP (delete_item.php):
+```
+<?php
+// Connect to database
+$conn = mysqli_connect("host", "username", "password", "database");
+
+// Check connection
+if (!$conn) {
+  die("Connection failed: " . mysqli_connect_error());
+}
+
+// Get the ID of the item to be deleted
+$id = $_GET["id"];
+
+// Delete the item
+$sql = "DELETE FROM table_name WHERE id = $id";
+if (mysqli_query($conn, $sql)) {
+  echo "Item deleted successfully";
+} else {
+  echo "Error deleting item: " . mysqli_error($conn);
+}
+
+// Close connection
+mysqli_close($conn);
+?>

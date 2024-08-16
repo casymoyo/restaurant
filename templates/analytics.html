@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block title %} Analytics Overview {% endblock %}
+
+{% block content %}
+    <div class="container mt-5">
+        <h2>Sales Analytics</h2>
+        <div class="row mt-4">
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Filter By</h5>
+                        <select id="filterBy" class="form-control">
+                            <option value="day">Day</option>
+                            <option value="hour">Hour</option>
+                            <option value="month">Month</option>
+                            <option value="year">Year</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4" id="analyticsData">
+            <!-- Data will be populated here by JavaScript -->
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.getElementById('filterBy').addEventListener('change', function() {
+            const filterBy = this.value;
+            fetch(`/analytics/analytics/?filter_by=${filterBy}`)
+                .then(response => response.json())
+                .then(data => {
+                    const analyticsData = document.getElementById('analyticsData');
+                    analyticsData.innerHTML = '';
+
+                    if (filterBy === 'day') {
+                        analyticsData.innerHTML += `
+                            <div class="col-md-4">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Today's Sales</h5>
+                                        <p class="card-text">${data.today_sales || "0.00"}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Yesterday's Sales</h5>
+                                        <p class="card-text">${data.yesterday_sales || "0.00"}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    } else if (filterBy === 'month') {
+                        analyticsData.innerHTML += `
+                            <div class="col-md-4">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">This Month's Sales</h5>
+                                        <p class="card-text">${data.month_sales || "0.00"}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    } else if (filterBy === 'year') {
+                        analyticsData.innerHTML += `
+                            <div class="col-md-4">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">This Year's Sales</h5>
+                                        <p class="card-text">${data.year_sales || "0.00"}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    } else if (filterBy === 'hour') {
+                        const labels = data.sales_by_hour.map(item => item.hour);
+                        const salesData = data.sales_by_hour.map(item => item.total_sales);
+
+                        analyticsData.innerHTML += `
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Sales by Hour</h5>
+                                        <canvas id="salesByHourChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+
+                        const salesByHourData = {
+                            labels: labels,
+                            datasets: [{
+                                label: 'Sales by Hour',
+                                data: salesData,
+                                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                                borderColor: 'rgba(75, 192, 192, 1)',
+                                borderWidth: 1
+                            }]
+                        };
+
+                        const salesByHourConfig = {
+                            type: 'bar',
+                            data: salesByHourData,
+                            options: {
+                                scales: {
+                                    y: {
+                                        beginAtZero: true
+                                    }
+                                }
+                            }
+                        };
+
+                        const salesByHourChart = new Chart(
+                            document.getElementById('salesByHourChart'),
+                            salesByHourConfig
+                        );
+                    }
+
+                    if (data.best_selling_meal) {
+                        analyticsData.innerHTML += `
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Best Selling Meal</h5>
+                                        <p class="card-text">${data.best_selling_meal.meal__name} - ${data.best_selling_meal.total_sold} sold</p>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                });
+        });
+
+        // Trigger change event on page load to load initial data
+        document.getElementById('filterBy').dispatchEvent(new Event('change'));
+    </script>
+{% endblock %}

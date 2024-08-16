@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+{% load static%}
+{% block title%} Inventory {% endblock%}
+{% block content %}
+   <div class="inventory">
+        <div class="inventory-navbar">
+            <nav class="d-flex justify-content-between align-items-center bg-dark text-light rounded mb-2 p-2">
+                <div class="d-flex">
+                    <div>
+                        <h4 class='mt-1 fw-bold'>{{ inventory.product.name | capfirst }} <small class='px-1 fw-bold fx-6'>Product Activity</small></h4>
+                    </div>
+                </div>
+                <nav class='recent-nav navbar navbar-expand-lg navbar-light bg-dark text-light rounded px-2'>
+                    <ul class='navbar-nav items  mr-auto'>
+                        <li class='nav-item active' data-name="atable">Activity table</li>
+                        <li class='nav-item px-2' data-name="charts">Activity chart</li>
+                    </ul>
+                </nav>
+            </nav>
+        </div>
+        <div>
+            <div class="inventory-chart hidden text-center charts" style='width: 100vh; height: 100vh;'>
+                <canvas id="inventoryChart"></canvas>
+            </div>
+
+            <div class="table-detail mt-2 w-100 atable">
+                <table class='table border rounded display p-2' style="width:100%" id='detailTable'>
+                    <thead class='bg-primary'>
+                        <tr>
+                            <th>Date</th>
+                            <th>By (user)</th>
+                            <th>Refence</th>
+                            <th>Type</th>
+                            <th>Trans Qnty</th>
+                            <th>Qnty At Hand</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs %}
+                            <tr>
+                                <td><small>{{ log.timestamp }}</small></td>
+                                <td><small><span>{{ log.user }}</span></small></td>
+                                {% if log.invoice.invoice_number %}
+                                    <td data-id="{{log.invoice.id}}" id="invoice" style="cursor:pointer;"><small>{{ log.invoice.invoice_number }}</small></td>
+                                {% elif log.product_transfer %}
+                                    <td data-id="{{ log.product_transfer.id }}" id="transfer" style="cursor:pointer;"><small>{{ log.product_transfer.transfer.transfer_ref }}</small></td>
+                                {% else %}
+                                    <td data-id="{{ log.purchase_order.id }}" id="purchase_order" style="cursor:pointer;"><small>{{ log.purchase_order.order_number }}</small></td>
+                                {% endif %}
+                                <td>
+                                    <small style='width:20px !important;'>
+                                        {{ log.action }} 
+                                        {% if log.description %}({{ log.description }}){% endif %}
+                                    </small>
+                                </td>
+                                <td><small>
+                                    {% if log.action == 'stock in' or log.action == 'Update' or log.action == 'sale cancelled' or log.action == 'Stock in' %}
+                                        <span class='text-success'>{{log.quantity}}</span>
+                                        <i class='text-success bx bx-chevron-up'></i>
+                                    {% elif log.action == 'defective'%}
+                                        <span class='text-danger'>{{log.quantity}}</span>
+                                        <i class='text-danger bx bx-chevron-down'></i>
+                                    {% elif log.action == 'Decline'%}
+                                        <span class='text-danger'>{{log.quantity}}</span>
+                                        <i class='text-danger bx bxs-circle bx-rotate-90 bx-tada'></i>
+                                    {% elif log.action == 'Edit' or log.action == 'deactivated' or log.action == 'activated'%}
+                                        <span class='text-dark'>{{log.quantity}}</span>
+                                    {% else %}
+                                        <span class='text-danger'>{{log.quantity}}</span>
+                                        <i class='text-danger bx bx-chevron-down'></i>
+                                    {% endif %}
+                                    </small>
+                                </td>
+                                <td><small>{{log.total_quantity}}</small></td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>  
+                <div class="modal fade" id="invoiceModal" tabindex="-1" aria-labelledby="invoiceModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <h5 class="modal-title fw-bold p-2" id="invoiceModalLabel">Invoice Details</h5>
+                            <div class="modal-body" id="invoiceDetails"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="modal fade" id="transferModal" tabindex="-1" aria-labelledby="transferModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <h5 class="modal-title fw-bold p-2" id="transferModalLabel">Transfer Details</h5>
+                            <div class="modal-body" id="transferDetails"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+   </div>
+
+<script src="{% static 'css/bootstrap/js/bootstrap.bundle.min.js'%}"></script>  
+<script>
+    new DataTable('#detailTable')
+    
+    const chart = $('.charts')
+    const table = $('.atable')
+    const navButtons = document.querySelectorAll('.nav-item')
+
+    const invoiceModal = new bootstrap.Modal(document.getElementById('invoiceModal'));
+    const invoiceDetails = document.getElementById('invoiceDetails');
+    const transferModal = new bootstrap.Modal(document.getElementById('transferModal'));
+    const transferDetails = document.getElementById('transferDetails');
+
+    const salesData = {{ sales_data|safe }}; 
+    const stockInData = {{ stock_in_data|safe }};
+    const transferData = {{ transfer_data|safe }};
+    const ctx = document.getElementById('inventoryChart').getContext('2d');
+    const inventoryChart = new Chart(ctx, {
+        type: 'line', 
+        data: {
+        labels: {{ labels|safe }}, 
+        datasets: [
+            {
+            label: 'Sales',
+            data: salesData,
+            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+            borderColor: 'rgba(255, 99, 132, 1)',
+            borderWidth: 1
+            },
+            {
+            label: 'Stock-Ins',
+            data: stockInData,
+            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            borderWidth: 1
+            },
+            {
+            label: 'Transfers',
+            data: transferData,
+            backgroundColor: 'rgba(255, 206, 86, 0.2)',
+            borderColor: 'rgba(255, 206, 86, 1)',
+            borderWidth: 1
+            }
+        ]
+        },
+        options: {
+        scales: {
+            yAxes: [{
+            ticks: {
+                beginAtZero: true 
+            }
+            }]
+        }
+        }
+    });
+
+    navButtons.forEach((btn)=>{
+        btn.addEventListener(
+            'click', ()=>{
+                let name = event.target.getAttribute('data-name')
+
+                navButtons.forEach(b => b.classList.remove('active')); 
+                event.target.classList.add('active'); 
+                show(name)
+            }
+        )
+    })
+
+    function show(name) {
+        chart.addClass('hidden');
+        table.addClass('hidden'); 
+
+        $(`.${name}`).removeClass('hidden'); 
+    }
+
+    document.querySelector('table').addEventListener('click', (event) => {
+        const target = event.target.closest('td');
+        if (target && target.id === 'invoice') {
+            const invoiceId = target.dataset.id;
+            fetchInvoiceDetails(invoiceId); 
+        } else if (target && target.id === 'transfer') {
+            const transferId = target.dataset.id;
+            fetchTransferDetails(transferId); 
+        }
+    });
+
+    function fetchInvoiceDetails(invoiceId) {
+        fetch(`/finance/invoice/details/${invoiceId}/`) 
+            .then(response => response.json())
+            .then(data => {
+                invoiceDetails.innerHTML = `
+                    <p>Invoice Number: ${data[0]?.invoice_number}</p>
+                    <p>Customer: <a href='/finance/customer/account/${data[0]?.customer__id}/'>${data[0]?.customer__name}</a></p>
+                    <p>Items: ${data[0]?.products_purchased}</p>
+                    <p>Amount: ${data[0]?.amount}</p>
+                    <p>Payment Status: ${data[0]?.payment_status}</p>
+                    </div>
+                `; 
+                invoiceModal.show(); 
+            });
+    }
+   
+    function fetchTransferDetails(transferId) {
+        fetch(`/inventory/transfer/detail/${transferId}/`)  
+            .then(response => response.json())
+            .then(data => {
+                console.log(data)
+                transferDetails.innerHTML = `
+                    <p>Transfer Reference: ${data[0]?.transfer__transfer_ref}</p>
+                    <p>Product Name: ${data[0]?.product__name}</p>
+                    <p>Quantity: ${data[0]?.quantity}</p>
+                    <p>Price: ${data[0]?.price}</p>
+                    <p>From Branch: ${data[0]?.from_branch__name}</p>
+                    <p>To Branch: ${data[0]?.to_branch__name}</p>
+                    </div>
+                `; 
+                transferModal.show(); l
+            });
+    }
+</script>  
+{% endblock content %}

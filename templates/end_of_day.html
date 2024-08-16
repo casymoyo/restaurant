@@ -1,0 +1,33 @@
+{% block content %}
+    <div class="container mt-5">
+        <h2>End of Day: {{ latest_plan.production_plan_number }}</h2>
+
+        <form method="post">
+            {% csrf_token %}
+            {{ formset.management_form }}
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Dish</th>
+                        <th>Portions Produced</th>
+                        <th>Portions Sold</th>
+                        <th>Wastage</th>
+                        <th>Leftovers</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for form in formset %}
+                        <tr>
+                            <td>{{ form.dish }}</td>
+                            <td>{{ form.portions.value }}</td>
+                            <td>{{ form.portions_sold }}</td>
+                            <td>{{ form.wastage }}</td>
+                            <td>{{ form.left_overs }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <button type="submit" class="btn btn-primary">Submit</button>
+        </form>
+    </div>
+{% endblock %}

@@ -1,0 +1,208 @@
+{% load static%}
+{% block content %}
+   <div class="table mt-2 w-100">
+        <!-- inventory table -->
+        {% include 'components/loader.html' %}
+        <div class='products'>
+            <table class='table border table-bordered table-striped table-hover table-responsive table-sm rounded p-2 w-100 ' style="width:100%" id='inventory'>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Quantity</th>
+                        <th>Cost</th>
+                        <th>Price</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id='inventory_table' >
+                    {% for product in inventory %}
+                        <tr >
+                            <td><small><span class='hint--bottom' aria-label='{{ product.product.description }}'>{{ product.product.name }}</span</small></td>
+                            <td><small>{{ product.quantity }}</small></td>
+                            <td><small>{{ product.cost }}</small></td>
+                            <td><small>{{ product.price }}</small></td>
+                            <td>
+                                <small>
+                                    <span>
+                                        <a href="{% url 'inventory:inventory_detail' product.id %}" class='text-dark'>
+                                            <i class='bx bx-show'></i>
+                                        </a>
+                                    </span>
+                                    <span class='px-2'>
+                                        <a href="{% url 'inventory:edit_inventory' product.product.name %}" class="text-dark">
+                                            <i class='bx bx-edit-alt'></i>
+                                        </a>
+                                    </span>
+                                    <span>
+                                        <span id='delete' data-id="{{ product.id }}" onclick="productId(this)" class="text-dark">
+                                            <i class='bx bx-trash-alt'></i>
+                                        </span>
+                                    </span>
+                                    <span>
+                                        {%if product.status == False %} 
+                                            <a href='{% url "inventory:activate_inventory" product.id %}' class="btn btn-sm text-primary">
+                                                activate product
+                                            </a>
+                                        {% endif %}
+                                    </span>
+                                </small>
+                                </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class='hidden services w-100'>
+            <table class='table border table-bordered table-striped table-hover table-responsive table-sm rounded p-2  w-100' style="width:100%" id='serviceTable'>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Cost</th>
+                        <th>Price</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for service in services %}
+                        <tr >
+                            <td><small><span class='hint--bottom' aria-label='{{ service.description }}'>{{ service.name}}</span</small></td>
+                            <td><small>{{ service.cost }}</small></td>
+                            <td><small>{{ service.price }}</small></td>
+                            <td>
+                                <small>
+                                    {% comment %} <span>
+                                        <a href="{% url 'inventory:inventory_detail' service.id %}" class='text-dark'>
+                                            <i class='bx bx-show'></i>
+                                        </a>
+                                    </span> {% endcomment %}
+                                    <span class='px-2'>
+                                        <a href="{% url 'inventory:edit_service' service.id %}" class="text-dark">
+                                            <i class='bx bx-edit-alt'></i>
+                                        </a>
+                                    </span>
+                                    {% comment %} <span>
+                                        <span id='delete' data-id="{{ service.id }}" onclick="productId(this)" class="text-dark">
+                                            <i class='bx bx-trash-alt'></i>
+                                        </span>
+                                    </span> {% endcomment %}
+                                </small>
+                                </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- delete modal -->
+        <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="loaderModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-body" id='payment_content'>
+                        <p class="h5 fw-bold">Confirm Product deletion</p>
+                            <div>
+                                <button class="w-100 btn btn-secondary btn-sm yes">
+                                    yes
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="loaderModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-body texr-center" id='payment_content'>
+                        <p class="h5 fw-bold">Success</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+   </div> 
+    
+   <script src="{% static 'js/jquery.js'%}"></script>
+   <script>
+        let product_id = '';
+        const inventoryData = [];
+        const modal = new bootstrap.Modal(document.querySelector('#deleteModal'));
+        const successModal = new bootstrap.Modal(document.querySelector('#successModal'));
+        const deleteButtons = document.querySelectorAll('#delete');
+        const loader = document.querySelector('#loader');
+        const tableEl = document.querySelector('#inventory');
+        const serviceTable = document.querySelector('#serviceTable');
+
+        const inventoryTable = document.querySelector('#inventory_table'); 
+
+        const products = $('.products')
+        const services = $('.services')
+        const navButtons = document.querySelectorAll('.nav-item');
+
+        loader.classList.add('hidden');
+        loader.classList.remove('d-flex')
+        tableEl.classList.remove('hidden')
+
+        navButtons.forEach((btn)=>{
+            btn.addEventListener(
+                'click', ()=>{
+                    let name = event.target.getAttribute('data-name')
+
+                    navButtons.forEach(b => b.classList.remove('active')); 
+                    event.target.classList.add('active'); 
+
+                    show(name)
+                }
+            )
+        })
+
+        function show(name) {
+            products.addClass('hidden');
+            services.addClass('hidden'); 
+
+            $(`.${name}`).removeClass('hidden'); 
+        }
+
+   
+        const productId=(element)=>{
+            product_id = element.dataset.id
+            modal.show()
+        }
+
+        deleteButtons.forEach((button)=>{
+            button.addEventListener(
+                'click', ()=>{
+                    modal.show()
+                }
+            )
+        })
+        
+        document.querySelector('.yes').addEventListener(
+            'click', ()=>{
+                console.log(product_id)
+                $.ajax({
+                    url: "{% url 'inventory:delete_inventory' %}?product_id=" + product_id,
+                    type: 'GET',
+                    }).done(function(response) {
+                        modal.hide()
+                        successModal.show()
+                        setTimeout(()=>{
+                            window.location.reload()
+                        }, 2000)
+                    }
+                )
+            }
+        )
+
+        $.ajax({
+            url: '{% url "inventory:inventory_index_json" %}',
+            type: 'GET',
+            }).done(function(response) {
+                const data = response
+                console.log(data)
+                inventoryData.push(data)
+            }
+        )
+   </script>
+{% endblock content %}

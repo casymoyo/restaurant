@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %} Printers {% endblock %}
+{% block content %}
+<div class="container mt-5">
+        <h1 class="mb-4">Add Printer</h1>
+        <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="printer_name" class="form-label">Printer Name</label>
+                <input type="text" name="printer_name" class="form-control" id="printer_name" required>
+            </div>
+            <div class="mb-3">
+                <label for="printer_location" class="form-label">Printer Location</label>
+                <input type="text" name="printer_location" class="form-control" id="printer_location" required>
+            </div>
+            <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" name="is_default" id="is_default">
+                <label class="form-check-label" for="is_default">Set as Default Printer</label>
+            </div>
+            <button type="submit" class="btn btn-primary">Add Printer</button>
+        </form>
+        <a href="{% url 'settings:list_printers' %}" class="btn btn-secondary mt-3">Back to Printers List</a>
+    </div>
+{% endblock %}
