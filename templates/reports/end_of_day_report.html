@@ -1,0 +1,71 @@
+<div>
+    <h2 class="text-center">End Of Day Report: {{ date }}</h2>
+    <div class="content-between">
+        <div class="portions content-center">
+            <table>
+                <tbody>
+                    <tr>
+                        <td>Told Sold Portions</td>
+                        <td>{{'43'}}</td>
+                    </tr>
+                    <tr>
+                        <td>Told Cashed Up</td>
+                        <td>$</td>
+                    </tr>
+                    <tr>
+                        <td>Difference</td>
+                        <td>{{'43'}}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="negatives content-center">
+            <table>
+                <tbody>
+                    <tr>
+                        <td>Total Negative Dishses</td>
+                        <td>{{'43'}}</td>
+                    </tr>
+                    <tr>
+                        <td>Total Positive Dishes</td>
+                        <td>$</td>
+                    </tr>
+                    <tr>
+                        <td>Difference</td>
+                        <td>{{'43'}}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="main">
+        <table>
+            <thead>
+                <th>System Auto Calculated Portions</th>
+                <th>Portions Sold</th>
+                <th>Staff Portions</th>
+                <th>Price Per Unit</th>
+                <th>Expected</th>
+                <th>Wastage</th>
+                <th>Left Overs</th>
+                <th>Expected Amount</th>
+                <th>Difference</th>
+            </thead>
+            <tbody>
+                {% for item in end_of_day_items %}
+                    <tr>
+                        <td>{{ }}</td>
+                        <td>{{ }}</td>
+                        <td>{{ }}</td>
+                        <td>{{ }}</td>
+                        <td>{{ }}</td>
+                        <td>{{ }}</td>
+                        <td>{{ }}</td>
+                        <td>{{ }}</td>
+                        <td>{{ }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>

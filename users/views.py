@@ -30,7 +30,7 @@ def users(request):
             user.save()
             messages.success(request, 'User successfully added')
         else:
-            messages.error(request, 'Invalid form data')
+            messages.warning(request, 'Invalid form data')
 
     return render(request, 'auth/users.html', {'users': users, 'form': form, 'user_details_form': user_details_form})
 
@@ -54,9 +54,11 @@ def login_view(request):
                 login(request, user)
                 logger.info(f'User: {user.first_name + " " + user.email} logged in')
                 logger.info(f'User role: {user.role}')
-                if user.role in ['accountant', 'chef', 'admin', 'owner']:
+                if user.role in ['accountant', 'admin', 'owner']:
                     logger.info(f'User: {user.first_name + " " + user.email} is an {user.role}')
                     return redirect('dashborad')
+                elif user.role == 'chef':
+                    return redirect('inventory:production_plans')
                 return redirect('pos:pos')
             else:
                 messages.error(request, 'Your account is not active, contact admin')

@@ -14,7 +14,8 @@ from django.utils import timezone
 from django.db.models import Q
 from datetime import  timedelta
 from decimal import Decimal
-
+from . tasks import send_expense_creation_notification
+from loguru import logger
 # to calculate cost of sales
 
 def get_previous_month():
@@ -109,7 +110,9 @@ def expenses(request):
                 credit = True,
                 description=f'Expense ({expense.description[:20]})'
             )
-      
+
+            send_expense_creation_notification(expense.id)
+            
             return JsonResponse({'success': True, 'messages':'Expense successfully created'}, status=201)
         except Exception as e:
             return JsonResponse({'success': False, 'message': str(e)}, status=400)
@@ -223,17 +226,34 @@ def add_expense_category(request):
 
 def income_json(request):
     current_month = get_current_month()
+    today = datetime.date.today()
+    
     month = request.GET.get('month', current_month)
-    sales_total = Sale.objects.filter(date__month=month).aggregate(Sum('total_amount'))
+    day = request.GET.get('day', today.day)
+    
+    if request.GET.get('filter') == 'today':
+        sales_total = Sale.objects.filter(date=today).aggregate(Sum('total_amount'))
+    else:
+        sales_total = Sale.objects.filter(date__month=month).aggregate(Sum('total_amount'))
+    
     logger.info(f'Sales: {sales_total}')
     return JsonResponse({'sales_total': sales_total['total_amount__sum'] or 0})
 
 def expense_json(request):
     current_month = get_current_month()
+    today = datetime.date.today()
+    
     month = request.GET.get('month', current_month)
-    expense_total = Expense.objects.filter(date__month=month, cancel=False).aggregate(Sum('amount'))
-    logger.info(f'Sales: {expense_total}')
+    day = request.GET.get('day', today.day)
+    
+    if request.GET.get('filter') == 'today':
+        expense_total = Expense.objects.filter(date=today, cancel=False).aggregate(Sum('amount'))
+    else:
+        expense_total = Expense.objects.filter(date__month=month, cancel=False).aggregate(Sum('amount'))
+    
+    logger.info(f'Expenses: {expense_total}')
     return JsonResponse({'expense_total': expense_total['amount__sum'] or 0})
+
 
 def income_graph(request):
     current_year = get_current_year()
@@ -257,9 +277,16 @@ def pl_overview(request):
     current_month = get_current_month()
     previous_month = get_previous_month()
     current_year = get_current_year()
-
-    current_month_sales = Sale.objects.filter(date__year=current_year, date__month=current_month).aggregate(total_sales=Sum('total_amount'))['total_sales'] or 0
-    current_month_expenses = Expense.objects.filter(date__year=current_year, date__month=current_month, cancel=False).aggregate(total_expenses=Sum('amount'))['total_expenses'] or 0
+    today = datetime.date.today()
+    
+    filter_option = request.GET.get('filter')
+    
+    if filter_option == 'today':
+        current_month_sales = Sale.objects.filter(date=today).aggregate(total_sales=Sum('total_amount'))['total_sales'] or 0
+        current_month_expenses = Expense.objects.filter(date=today, cancel=False).aggregate(total_expenses=Sum('amount'))['total_expenses'] or 0
+    else:
+        current_month_sales = Sale.objects.filter(date__year=current_year, date__month=current_month).aggregate(total_sales=Sum('total_amount'))['total_sales'] or 0
+        current_month_expenses = Expense.objects.filter(date__year=current_year, date__month=current_month, cancel=False).aggregate(total_expenses=Sum('amount'))['total_expenses'] or 0
 
     previous_month_sales = Sale.objects.filter(date__year=current_year, date__month=previous_month).aggregate(total_sales=Sum('total_amount'))['total_sales'] or 0
     previous_month_expenses = Expense.objects.filter(date__year=current_year, date__month=previous_month, cancel=False).aggregate(total_expenses=Sum('amount'))['total_expenses'] or 0
@@ -290,3 +317,5 @@ def pl_overview(request):
     }
     logger.info(data)
     return JsonResponse(data)
+
+

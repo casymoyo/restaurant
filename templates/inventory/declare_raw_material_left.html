@@ -28,7 +28,7 @@
                     <thead class="bg-primary">
                         <th>Raw Material</th>
                         <th>Dish</th>
-                        <th>Actual quantity</th>
+                        <th>Quantity</th>
                         <th>Used Quantity</th>
                         <th>Remaining Quantity</th>
                         <th>Expected Portions</th>
@@ -38,10 +38,10 @@
                             <tr data-item-id="{{ item.id }}">
                                 <td><small>{{ item.raw_material }}</small></td>
                                 <td><small>{{ item.dish.name }}</small></td>
-                                <td><small>{{ item.actual_quantity }} {{ item.raw_material.unit }}</small></td>
+                                <td><small>{{ item.quantity }} {{ item.raw_material.unit }}</small></td>
                                 <td>
                                     <small>
-                                        <input type="number" class="form-control used-quantity" min="0" data-actual-quantity="{{ item.actual_quantity }}" data-portion="{{ item.dish.portion_multiplier}}" />
+                                        <input type="number" class="form-control used-quantity" min="0" data-actual-quantity="{{ item.quantity }}" data-portion="{{ item.dish.portion_multiplier}}" />
                                     </small>
                                 </td>
                                 <td><small class="remaining-quantity"></small></td>
@@ -50,11 +50,53 @@
                         {% endfor %}
                     </tbody>
                 </table>
-                <div class="d-flex justify-content-end">
-                    <button id="id_confirm" class="btn-primary text-light btn bx bx-save"></button>
-                </div>
             </div>
         </div>
+        <table class="table" id="minor">
+                    <thead class="bg-primary">
+                        <tr>
+                            <th>Raw Material</th>
+                            <th>Quantity</th>
+                            <th>Used Quantity</th>
+                            <th>Remaining Quantity</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in production_plan_minor_items %}
+                        <tr data-id="{{ item.minor_raw_material.id }}">
+                            <td><small>{{ item.minor_raw_material }}</small></td>
+                            <td><small>{{ item.total_quantity_per_kg }}</small></td>
+                            <td><small>{{ item.planned_quantity }}</small></td>
+                            <td>
+                                <small data-expected-quantity="{{ item.expected_quantity }}">
+                                    {{ item.expected_quantity }}
+                                </small>
+                            </td>
+                            <td><small>{{ item.cost_per_kg }}</small></td>
+                            <td><small>{{ item.total_cost }}</small></td>
+                            {% if confirm %}
+                                <td>
+                                    <small data-kitchen-quantity="{{ k_item.quantity }}">
+                                        {% if k_item.id == item.id %}
+                                        {{ k_item.quantity }}
+                                        {% endif %}
+                                    </small>
+                                </td>
+                            {% endif %}
+                            <td><small id="actual_needed_quantity"></small></td>
+                            {% if confirm %}
+                            <td>
+                                {% csrf_token %}
+                                <input type="number" id="quantity">
+                            </td>
+                            {% endif %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <div class="d-flex justify-content-end mt-2">
+                    <button id="id_confirm" class="btn-primary text-light btn">Declare</button>
+                </div>
     </div>
 </div>
 
@@ -80,15 +122,15 @@
                         });
                         return;
                     }
-
+                    // revisit
                     if (usedQuantity > actualQuantity) {
                         Swal.fire({
                             title: "Error",
-                            text: 'Quantity used can\'t be greater than Actual Quantity.',
+                            text: 'Quantity used can\'t be greater than Quantity.',
                             icon: "error"
                         });
                         return;
-                    }
+                    } 
 
                     const remainingQuantity = actualQuantity - usedQuantity;
                     const portions = usedQuantity * portionMultiplier

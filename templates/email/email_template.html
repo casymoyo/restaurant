@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>End Of Day Email Template</title>
+</head>
+<style>
+    .text-center{
+        text-align: center;
+    }
+    .content-between{
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+    }
+</style>
+<body>
+    <h2 class="text-center">End Of Day Report: {{ date }}</h2>
+    <div class="content-between">
+        <div class="portions">
+            <table>
+                <tbody>
+                    <tr>
+                        <td>Told Sold Portions</td>
+                        <td>{{'43'}}</td>
+                    </tr>
+                    <tr>
+                        <td>Told Cashed Up</td>
+                        <td>$</td>
+                    </tr>
+                    <tr>
+                        <td>Difference</td>
+                        <td>{{'43'}}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="negatives">
+            <table>
+                <tbody>
+                    <tr>
+                        <td>Total Negative Dishses</td>
+                        <td>{{'43'}}</td>
+                    </tr>
+                    <tr>
+                        <td>Total Positive Dishes</td>
+                        <td>$</td>
+                    </tr>
+                    <tr>
+                        <td>Difference</td>
+                        <td>{{'43'}}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>

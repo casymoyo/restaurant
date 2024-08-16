@@ -10,8 +10,11 @@
                         <div class="card mb-4">
                             <div class="card-body">
                                 <div class="">
-                                    <small class="text-muted">Current month: </small>
-                                    <small class="card-text text-muted"id="id_income_month"></small>
+                                    <div class="btn-group" role="group" aria-label="Date Filters">
+                                        <button type="button" class="btn btn-primary" onclick="fetchData('today');">Today</button>
+                                        <button type="button" class="btn btn-secondary" onclick="fetchData('this_month');">This Month</button>
+                                    </div>
+
                                 </div>
                                 <div>
                                     <h1 class="h6">Income</h1>
@@ -85,8 +88,6 @@
                                 </table>
                             </div>
                         </div>
-                        
-    
                     </div>
                 </section>
                 <main role="main" class="col-9 col-md-9 ml-sm-auto mt-2 px-4">
@@ -94,7 +95,7 @@
                         <h1><a href='/' class='bx bx-home btn border fs-1 mx-1'></a> Finance</h1>
                         <div>
                             <a href="{% url 'finance:cashbook' %}" class="btn btn-outline-dark">Cashbook</a>
-                            <a class="btn btn-outline-dark mx-2">Sales</a>
+                            {% comment %} <a class="btn btn-outline-dark mx-2">Sales</a> {% endcomment %}
                             <a href="{% url 'finance:expenses' %}" class="btn btn-outline-dark">Expenses</a>
                         </div>
                     </nav>
@@ -203,8 +204,33 @@
     </div>
     <!-- Modal -->   
     <script>
+        function fetchData(filter) {
+                fetch(`/finance/income_json/?filter=${filter}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const sales = data.sales_total
+                        document.getElementById('id_income').textContent = `$${sales}`;
+                    });
+
+                fetch(`/finance/expense_json/?filter=${filter}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const expenses = data.expense_total;
+                        document.getElementById('id_expense').textContent = `$${expenses}`;
+                    });
+
+                fetch(`/finance/pl_overview/?filter=${filter}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const net_income = data.current_net_income;
+                        document.getElementById('net_income_amount').textContent = `$${net_income}`;
+                        // Update other elements similarly
+                    });
+            }
+            fetchData('this_month');
         document.addEventListener('DOMContentLoaded', function() {
-            const monthSelect = document.createElement('select');
+
+            {% comment %} const monthSelect = document.createElement('select');
             const months = [
                 'January', 'February', 'March', 'April', 'May', 'June',
                 'July', 'August', 'September', 'October', 'November', 'December'
@@ -249,7 +275,7 @@
                     });
             });
             monthSelect.dispatchEvent(new Event('change'));
-
+ {% endcomment %}
 
         // graphs
 
@@ -283,8 +309,8 @@
                                 backgroundColor: 'transparent', 
                                 borderColor: '#dedede',
                                 borderWidth: 1,
-                                pointRadius: 0, // Remove the dots
-                                pointHoverRadius: 0 // Remove the hover effect on points
+                                pointRadius: 0, 
+                                pointHoverRadius: 0 
                             }]
                         },
                         options: {
@@ -331,13 +357,13 @@
         fetchAndRenderChart('/finance/expense_graph/', expenseCtx, 'Monthly Expenses');
 
 
-        // metrixes
+        {% comment %} // metrixes
         fetch('/finance/pl_overview/')
         .then(response => response.json())
         .then(data => {
-            // Update Net Income
+            
             document.getElementById('net_income_amount').innerText = data.current_net_income.toFixed(2);
-            // Update Net Income percentage change
+            
             document.getElementById('net_income_change').innerText = `${data.net_income_change.toFixed(2)}%`;
             if (data.net_income_change >= 0) {
                 document.getElementById('net_income_change').className = 'bg-success rounded p-1';
@@ -345,9 +371,9 @@
                 document.getElementById('net_income_change').className = 'bg-danger rounded p-1';
             }
 
-            // Update Gross Profit
+            
             document.getElementById('id_gp_metrix_amount').innerText = data.current_gross_profit.toFixed(2);
-            // Update Gross Profit percentage change
+            
             document.getElementById('gp_change').innerText = `${data.gross_profit_change.toFixed(2)}%`;
             if (data.gross_profit_change >= 0) {
                 document.getElementById('gp_change').className = 'bg-success rounded p-1';
@@ -355,9 +381,9 @@
                 document.getElementById('gp_change').className = 'bg-danger rounded p-1';
             }
 
-            // Update Gross Profit Margin
+            
             document.getElementById('id_gpm_metrix_amount').innerText = data.current_gross_profit_margin.toFixed(2);
-            // Update Gross Profit Margin percentage change
+            
             document.getElementById('gpm_change').innerText = `${data.gross_profit_margin_change.toFixed(2)}%`;
             if (data.gross_profit_margin_change >= 0) {
                 document.getElementById('gpm_change').className = 'bg-success rounded p-1';
@@ -365,16 +391,16 @@
                 document.getElementById('gpm_change').className = 'bg-danger rounded p-1';
             }
 
-            // Update Expenses
+            
             document.getElementById('id_expense_metrix_amount').innerText = data.current_gross_profit.toFixed(2); 
-            // Update Expense percentage change
+            
             document.getElementById('expense_change').innerText = `${data.gross_profit_change.toFixed(2)}%`;
             if (data.gross_profit_change >= 0) {
                 document.getElementById('expense_change').className = 'bg-danger rounded p-1';
             } else {
                 document.getElementById('expense_change').className = 'bg-success rounded p-1';
             }
-        });
+        }); {% endcomment %}
 
 
     });

@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+{% block title %}
+  End Of Day Detail
+{% endblock title %}
+{% block content %}
+<div>
+    <h2 class="text-center mt-2">End Of Day Report: {{ end_of_day.date }}</h2>
+    <div class="row">
+        <div class="col">
+            <h3 class="mt-2 mb-2">Sales</h3>
+            <table class="table table-borderless">
+                <thead>
+                    <th>Details</th>
+                    <th>Quantity</th>
+                    <th>Amount</th>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Total</td>
+                        <td>{{ total_quantity_sold_today }}</td>
+                        <td class="fs-5">{{ total_amount_sold_today }}.00</td>
+                    </tr>
+                    <tr>
+                        <td>Staff</td>
+                        <td>({{ total_staff_portions }})</td>
+                        <td class="fs-5">({{ total_amount_staff_sold_today }}.00)</td>
+                    </tr>
+                    <tr class="border-top">
+                        <td>Non Staff</td>
+                        <td>{{ non_staff_quantity }}</td>
+                        <td class="fs-5">{{ non_staff_total_amount }}.00</td>
+                    </tr>
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td>Cashed Amount</td>
+                        <td></td>
+                        <td class="border-bottom fs-5">({{ end_of_day.cashed_amount }})</td>
+                    </tr>
+                    <tr>
+                        <td>Difference</td>
+                        <td></td>
+                        <td>
+                            {% if difference < 0 %}
+                              <span class="text-danger fw-bold fs-5">{{ difference }}</span>
+                            {% else %}
+                                {{ difference }}
+                            {% endif %}
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        <div class="negatives d-none">
+            <table>
+                <tbody>
+                    <tr>
+                        <td>Total Negative Dishses</td>
+                        <td>{{'43'}}</td>
+                    </tr>
+                    <tr>
+                        <td>Total Positive Dishes</td>
+                        <td>$</td>
+                    </tr>
+                    <tr>
+                        <td>Difference</td>
+                        <td>{{'43'}}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="main">
+        <h3 class="mt-2 mb-2">Dishes</h3>
+        <table class="table">
+            <thead>
+                <th>Dish Name</th>
+                <th>System Auto Calculated Portions</th>
+                <th>Portions Sold</th>
+                <th>Staff Portions</th>
+                <th>Price Per Unit</th>
+                <th>Wastage</th>
+                <th>Left Overs</th>
+                <th>Over/Less</th>
+                <!-- <th>Expected Amount</th>
+                <th>Difference</th>
+            </thead> -->
+            <tbody>
+                {% for item in end_of_day_items %}
+                    <tr>
+                        <td>{{ item.dish_name }}</td>
+                        <td>{{ item.total_portions }}</td>
+                        <td>{{ item.total_sold}}</td>
+                        <td>{{ item.staff_portions }}</td>
+                        <td>{{ item.price_per_unit }}</td>
+                        <td>{{ item.wastage }}</td>
+                        <td>{{ item.leftovers}}</td>
+                        <td>{{ item.expected}}</td>
+                        <!-- <td></td>
+                        <td></td>
+                        <td></td> -->
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock content%}

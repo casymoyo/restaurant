@@ -5,23 +5,26 @@
 {% block content %}
    <div class="inventory">
         <div class="inventory-navbar">
-            <nav class="d-flex justify-content-between align-items-center p-2">
+            <nav class="d-flex justify-content-between align-items-center mt-2 mb-2">
                 <div class='fw-bold d-flex'>
-                    <a href='{% url "inventory:products"%}' class='border btn bx bx-arrow-back fs-5'></a>
-                    <a href='/' class='bx bx-home btn border fs-5 mx-2'></a>
-                    <span class='fs-5'>Production</span>
+                    {% if request.user.role != 'chef'%}
+                        <a href='/' class='bx bx-home btn border fs-5'></a>
+                    {% endif %}
+                    <span class='fs-5 mx-2'>Production</span>
                 </div>
                 <div>
                     <ul class="list-unstyled mt-2 d-flex">
                         <li class="">
                             <a href="{% url 'inventory:create_production_plan' %}" class='btn btn-outline-dark mx-2'>Create Production Plan</a>
-                        </li>
-                        <li class="">
-                            <a href="{% url 'inventory:meal_list' %}" class='btn btn-outline-dark'>Meals</a>
-                        </li>
-                        <li class="">
-                            <a href="{% url 'inventory:dish_list' %}" class='btn btn-outline-dark mx-2'>Dishes</a>
-                        </li>
+                            </li>
+                            {% if request.user.role != 'chef'%}
+                                <li class="">
+                                    <a href="{% url 'inventory:meal_list' %}" class='btn btn-outline-dark'>Meals</a>
+                                </li>
+                                <li class="">
+                                    <a href="{% url 'inventory:dish_list' %}" class='btn btn-outline-dark mx-2'>Dishes</a>
+                                </li>
+                            {% endif %}
                         <li class="">
                             <a href="{% url 'inventory:declared_production_plan' %}" class='btn btn-outline-dark'>Declared Production Plans</a>
                         </li>
@@ -70,7 +73,7 @@
                                     </td>
                                     <td>
                                         <small>
-                                            <a href="{% url 'inventory:production_plan_detail' plan.id %}" class="bx bx-show"></a>
+                                            <a href="{% url 'inventory:production_plan_detail' plan.id %}" class="bx bx-show mx-2"></a>
                                             <a href="" class="bx bx-printer"></a>
                                         </small>
                                     </td>

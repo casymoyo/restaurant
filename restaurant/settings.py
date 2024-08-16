@@ -14,9 +14,14 @@ SECRET_KEY = 'django-insecure-3m$$5om_jd5=rk*1x9(@=-=o8(j!^y(@!)iz^38q6*^w#6v+4n
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['*', 'https://restaurant-production-e103.up.railway.app/']
-
-
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    'acb0-91-102-181-72.ngrok-free.app',
+]
+CSRF_TRUSTED_ORIGINS = [
+    'https://acb0-91-102-181-72.ngrok-free.app',
+]
 # Application definition
 
 
@@ -34,6 +39,7 @@ DJANGO_APPS = [
 THIRD_PARTY_APPS = [
   "crispy_forms",
   "crispy_bootstrap5",
+  'corsheaders',
 ]
 
 LOCAL_APPS = [
@@ -48,8 +54,10 @@ LOCAL_APPS = [
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
-CSRF_TRUSTED_ORIGINS = ['https://restaurant-production-e103.up.railway.app']
+# CSRF_TRUSTED_ORIGINS = ['https://94c6-91-102-181-72.ngrok-free.app', 'https://90ce-91-102-181-72.ngrok-free.app/']
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+CORS_ORIGIN_ALLOW_ALL = True
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -179,9 +187,18 @@ CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# celery
 CELERY_BROKER_URL = 'redis://localhost:6379/0' 
 CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'  
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = "Africa/Johannesburg"
+
+# email backened
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'  
+EMAIL_HOST = 'mail.techcity.co.zw'  
+EMAIL_PORT = 465  
+EMAIL_USE_SSL = True 
+EMAIL_HOST_USER = 'admin@techcity.co.zw' 
+EMAIL_HOST_PASSWORD = 'kv]j[N~StShy'

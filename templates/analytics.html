@@ -3,20 +3,24 @@
 {% block title %} Analytics Overview {% endblock %}
 
 {% block content %}
-    <div class="container mt-5">
-        <h2>Sales Analytics</h2>
+    <div>
+        <div class="d-flex justify-content-between align-items-center mt-2 mb-2">
+            <div>
+                <a href='/' class='bx bx-home btn border fs-5'></a>
+                <span class='mt-2 fs-5 mx-2 fw-bold'>Analytics</span>
+            </div>
+        </div>
         <div class="row mt-4">
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">Filter By</h5>
-                        <select id="filterBy" class="form-control">
-                            <option value="day">Day</option>
-                            <option value="hour">Hour</option>
-                            <option value="month">Month</option>
-                            <option value="year">Year</option>
-                        </select>
-                    </div>
+            <div class="d-flex align-items-center justify-content-between">
+                <h5>Sales</h5>
+                <div class="d-flex align-items-center">
+                    <h6 class="card-title">Filter By</h6>
+                    <select id="filterBy" class="form-control mx-2">
+                        <option value="day">Day</option>
+                        <option value="hour">Hour</option>
+                        <option value="month">Month</option>
+                        <option value="year">Year</option>
+                    </select>
                 </div>
             </div>
         </div>
@@ -38,30 +42,30 @@
 
                     if (filterBy === 'day') {
                         analyticsData.innerHTML += `
-                            <div class="col-md-4">
-                                <div class="card">
+                            <div class="col-md-3">
+                                <div class="card" style='border:none;'>
                                     <div class="card-body">
-                                        <h5 class="card-title">Today's Sales</h5>
-                                        <p class="card-text">${data.today_sales || "0.00"}</p>
+                                        <h5 class="card-title text-muted">Today's Sales</h5>
+                                        <p class="card-text text-center fs-3">${data.today_sales || "0.00"}</p>
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-4">
-                                <div class="card">
+                            <div class="col-md-3">
+                                <div class="card" style='border:none;'>
                                     <div class="card-body">
-                                        <h5 class="card-title">Yesterday's Sales</h5>
-                                        <p class="card-text">${data.yesterday_sales || "0.00"}</p>
+                                        <h5 class="card-title text-muted">Yesterday's Sales</h5>
+                                        <p class="card-text text-center fs-3">${data.yesterday_sales || "0.00"}</p>
                                     </div>
                                 </div>
                             </div>
                         `;
                     } else if (filterBy === 'month') {
                         analyticsData.innerHTML += `
-                            <div class="col-md-4">
-                                <div class="card">
+                            <div class="col-md-3">
+                                <div class="card" style='border:none;'>
                                     <div class="card-body">
-                                        <h5 class="card-title">This Month's Sales</h5>
-                                        <p class="card-text">${data.month_sales || "0.00"}</p>
+                                        <h5 class="card-title text-muted">This Month's Sales</h5>
+                                        <p class="card-text text-center fs-3">${data.month_sales || "0.00"}</p>
                                     </div>
                                 </div>
                             </div>
@@ -69,10 +73,10 @@
                     } else if (filterBy === 'year') {
                         analyticsData.innerHTML += `
                             <div class="col-md-4">
-                                <div class="card">
+                                <div class="card" style='border:none;'>
                                     <div class="card-body">
-                                        <h5 class="card-title">This Year's Sales</h5>
-                                        <p class="card-text">${data.year_sales || "0.00"}</p>
+                                        <h5 class="card-title text-muted">This Year's Sales</h5>
+                                        <p class="card-text text-center fs-3">${data.year_sales || "0.00"}</p>
                                     </div>
                                 </div>
                             </div>
@@ -124,10 +128,10 @@
                     if (data.best_selling_meal) {
                         analyticsData.innerHTML += `
                             <div class="col-md-6">
-                                <div class="card">
-                                    <div class="card-body">
-                                        <h5 class="card-title">Best Selling Meal</h5>
-                                        <p class="card-text">${data.best_selling_meal.meal__name} - ${data.best_selling_meal.total_sold} sold</p>
+                                <div class="card" style='border:none;'>
+                                    <div class="card-body" >
+                                        <h5 class="card-title text-muted">Best Selling Meal</h5>
+                                        <p class="card-text text-center fs-3">${data.best_selling_meal.meal__name} - ${data.best_selling_meal.total_sold} sold</p>
                                     </div>
                                 </div>
                             </div>
@@ -136,7 +140,6 @@
                 });
         });
 
-        // Trigger change event on page load to load initial data
         document.getElementById('filterBy').dispatchEvent(new Event('change'));
     </script>
 {% endblock %}

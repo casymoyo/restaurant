@@ -1,4 +1,5 @@
-import json
+import json, threading
+from django.utils import timezone
 from . models import *
 from loguru import logger
 from decimal import Decimal
@@ -14,8 +15,21 @@ from django.contrib.auth import get_user_model
 from .models import Dish, Ingredient
 from django.views import View
 from django.urls import reverse
+from django.db.models import Sum
+from django.utils.timezone import localdate
+from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+from reportlab.lib.enums import TA_CENTER
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+import io
+from utils.email import EmailThread
+from django.core.mail import EmailMessage
 
 from finance.models import (
+    Sale,
+    SaleItem,
     CashBook,
     Expense, 
     ExpenseCategory
@@ -35,9 +49,6 @@ from . forms import (
     IngredientForm
 )
 
-
-# to be removed
-User = get_user_model()
 
 def unit_of_measurement(request):
     if request.method == 'GET':
@@ -80,7 +91,7 @@ def unit_of_measurement(request):
 # @login_required
 def products(request):
     
-    raw_materials = Product.objects.filter(raw_material=True, quantity__gt=0)
+    raw_materials = Product.objects.filter(raw_material=True)
     finished_products = Product.objects.filter(raw_material=False)
     logger.info(finished_products)
     return render(request, 'inventory/products.html', 
@@ -223,7 +234,7 @@ def edit_inventory(request, product_id):
             form.save()
             
         Logs.objects.create(
-            user=user.objects.get(id=1), #to be removed
+            user=request.user, 
             action= 'Edit',
             product=product,
             quantity=product.quantity,
@@ -402,6 +413,7 @@ def create_purchase_order(request):
                     product_name = (item_data['product'])
                     quantity = int(item_data['quantity'])
                     unit_cost = Decimal(item_data['price'])
+                    note = item_data['note']
 
                     if not all([product_name, quantity, unit_cost]):
                         transaction.set_rollback(True)
@@ -419,7 +431,8 @@ def create_purchase_order(request):
                         quantity=quantity,
                         unit_cost=unit_cost,
                         received_quantity=0,
-                        received=False
+                        received=False,
+                        note=note
                     )
 
                     # consider to put expenses
@@ -547,7 +560,7 @@ def delete_purchase_order(request, purchase_order_id):
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)}, status=500)
 
-# @login_required
+@login_required
 def receive_order(request, order_id):
     try:
         purchase_order = PurchaseOrder.objects.get(id=order_id)
@@ -568,7 +581,7 @@ def receive_order(request, order_id):
         }
     )
     
-# @login_required
+@login_required
 @transaction.atomic
 def process_received_order(request):
     
@@ -619,9 +632,8 @@ def process_received_order(request):
         return JsonResponse({'success': True, 'message': 'Inventory updated successfully'}, status=200)
     
 def production_plans(request):
-    plans = Production.objects.all().order_by('-date_created') 
+    plans = Production.objects.all().order_by('date_created') 
     return render(request, 'inventory/production_plans.html', {'plans':plans})
-
 
 def create_production_plan(request):
     
@@ -656,8 +668,8 @@ def create_production_plan(request):
             raw_material_name = item.get('raw_material')
             quantity = item.get('quantity')
             dish_name = item.get('dish')
-            # rm_cf_quantity = item.get('rm_bf_quantity')
-            # lf_cf_quantity = item.get('lf_bf_quantity')
+            rm_cf_quantity = item.get('rm_bf_quantity')
+            lf_cf_quantity = item.get('lf_bf_quantity')
             actual_quantity = item.get('actual_quantity')
             pct = item.get('timeout')
             total_cost = item.get('total_cost')
@@ -679,7 +691,12 @@ def create_production_plan(request):
                 logger.info(f'here:')
                 rm_cf_quantity = 0
                 lf_cf_quantity = 0
-                
+            
+            if quantity < rm_cf_quantity:
+                rm_cf_quantity -= quantity
+                if rm_cf_quantity < 0:
+                    rm_cf_quantity = 0
+            
             
             production_item = ProductionItems.objects.create(
                 production=production_plan,
@@ -694,7 +711,12 @@ def create_production_plan(request):
             )
             logger.info(f'{production_item} : Saved successfully')
         
-        return JsonResponse({'success': True, 'message': 'Production plans created successfully'}, status=201)
+        return JsonResponse(
+            {
+                'success': True, 
+                'message': 'Production plans created successfully', 
+                'data':production_plan.id
+            }, status=201)
     
     if request.method == 'GET':
         form = ProductionPlanInlineForm()
@@ -736,7 +758,7 @@ def yeseterdays_left_overs(request):
             return JsonResponse({'success': False, 'message': f'Raw Material with ID: {raw_material_id} doesn\t exist'}, status=404)
         
         try:
-            dish = Dish.objects.get(id=dish_id, raw_material=raw_material)
+            dish = Dish.objects.get(id=dish_id, major_raw_material=raw_material)
         except Dish.DoesNotExist:
             return JsonResponse({'success': False, 'message': f'Dish with ID: {dish_id} doesn\'t exist'}, status=404)
         
@@ -774,12 +796,88 @@ def yeseterdays_left_overs(request):
            
     return JsonResponse({'success': False, 'message': 'Invalid HTTP method'}, status=405)
 
+def minor_raw_materials(request, pp_id):
+    production = Production.objects.get(id=pp_id)
+    return render(request, 'inventory/process_minor_raw_materials.html', {'production':production})
+
+def process_minor_raw_materials(request, pp_id):
+    production_plan_items = ProductionItems.objects.filter(production__id=pp_id)
+    minor_raw_materials = {}
+    
+    for item in production_plan_items:
+        
+        for ingredient in Ingredient.objects.filter(dish=item.dish):
+            
+            if ingredient.minor_raw_material.name in minor_raw_materials:
+                
+                minor_raw_materials[ingredient.minor_raw_material.name]['quantity'] += ingredient.quantity
+
+            else:
+                minor_raw_materials[ingredient.minor_raw_material.name]={
+                    'quantity':ingredient.quantity,
+                    'cost':ingredient.minor_raw_material.cost,
+                    'production_quantity': item.actual_quantity - item.remaining_raw_material
+                }
+    return JsonResponse(minor_raw_materials)
+
+def confirm_minor_raw_materials(request, pp_id):
+    # payload
+    """
+        [
+            "items"{
+                'name':{
+                    quantity:flaot
+                    cost_per_unit:float
+                    production_quanity:float
+                }
+            }
+        ]
+    """
+    try:
+        data = json.loads(request.body)
+        data =data.get('items')
+    except Exception as e:
+        return JsonResponse({'success':False, 'message':f'{e}'}, status=400)
+    try:
+        production_plan = Production.objects.get(id=pp_id)
+        
+        if MinorProductionItems.objects.filter(production=production_plan).exists():
+            return JsonResponse({'success':False, 'message':f'Minor Raw Material Production Plan Exists.'}, status=400)
+        
+        for item in data:
+            
+            for k in item.keys():
+                
+                raw_material = get_object_or_404(Product, name=k)
+                cost = Decimal(item[k]['cost'])
+                production_quantity = Decimal(item[k]['production_quantity'])
+                quantity = Decimal(item[k]['quantity'])
+                
+                MinorProductionItems.objects.create(
+                    production = production_plan,
+                    minor_raw_material = raw_material,
+                    total_quantity_per_kg = item[k]['quantity'],
+                    planned_quantity = item[k]['production_quantity'],
+                    expected_quantity = item[k]['quantity'] * item[k]['production_quantity'],
+                    cost_per_kg = cost,
+                    total_cost = production_quantity * quantity * cost,
+                )
+                
+        return JsonResponse({'success':True, 'message':f'Production Plan: {production_plan.production_plan_number} Minor Raw Material Successfully Processed .'}, status=200)
+    except Exception as e:
+        return JsonResponse({'success':False, 'message':f'{e}'}, status=400)
+
 def production_plan_detail(request, pp_id):
     
     if request.method == 'GET':
         try:
             production_plan = Production.objects.get(id=pp_id)
-            production_plan_items = ProductionItems.objects.filter(production=production_plan)
+            production_plan_items = ProductionItems.objects.filter(production=production_plan)  
+            production_plan_minor_items = MinorProductionItems.objects.filter(production=production_plan)
+            
+            total_cost_items = production_plan_items.aggregate(total_cost=Sum('total_cost'))['total_cost'] or 0
+            total_cost_minor_items = production_plan_minor_items.aggregate(total_cost=Sum('total_cost'))['total_cost'] or 0
+
         except Exception as e:
             messages.warning(request, f'Production Plan With ID: {pp_id}, doesn\t exists.')
         
@@ -787,6 +885,9 @@ def production_plan_detail(request, pp_id):
             {
                 'production_plan':production_plan,
                 'production_plan_items':production_plan_items,
+                'production_plan_minor_items':production_plan_minor_items,
+                'total_cost_items': total_cost_items,
+                'total_cost_minor_items': total_cost_minor_items,
                 'confirm': False
             }
         )
@@ -797,15 +898,22 @@ def confirm_production_plan(request, pp_id):
         try:
             production_plan = Production.objects.get(id=pp_id)
             production_plan_items = ProductionItems.objects.filter(production=production_plan)
+            production_plan_minor_items = MinorProductionItems.objects.filter(production=production_plan)
+            
+            total_cost_items = production_plan_items.aggregate(total_cost=Sum('total_cost'))['total_cost'] or 0
+            total_cost_minor_items = production_plan_minor_items.aggregate(total_cost=Sum('total_cost'))['total_cost'] or 0
+            
         except Exception as e:
             messages.warning(request, f'Production Plan With ID: {pp_id}, doesnt exists.')
-        
-        logger.info(production_plan_items)
+
         return render(request, 'inventory/confirm_production_plan.html', 
             {
+                'confirm': True,
                 'production_plan':production_plan,
                 'production_plan_items':production_plan_items,
-                'confirm': True
+                'total_cost_items': total_cost_items,
+                'total_cost_minor_items': total_cost_minor_items,
+                'production_plan_minor_items':production_plan_minor_items,
             }
         )
         
@@ -818,11 +926,9 @@ def process_production_plan_confirmation(request, pp_id):
         messages.warning(request, f'Production Plan With ID: {pp_id}, doesn\'t exist.')
         return redirect('inventory:process_production_plan', pp_id)
     
-    # Update production plan status
     production_plan.status = True
     production_plan.save()
     
-    # Process each item in the production plan
     for item in production_plan_items:
         try:
             raw_material = item.raw_material
@@ -914,9 +1020,12 @@ def declare_production_plan(request, pp_id):
         except ProductionItems.DoesNotExist:
             return JsonResponse({'success': False, 'message': f'Production Plan Item with ID: {pp_item_id} doesn\'t exist'}, status=404)
 
-        production_plan_item.remaining_raw_material = production_plan_item.actual_quantity - raw_material_used
+        production_plan_item.remaining_raw_material = production_plan_item.quantity - raw_material_used
+        production_plan_item.total_cost = raw_material_used * production_plan_item.raw_material.cost
         production_plan_item.declared = True
+        production_plan_item.declared_quantity = raw_material_used
         production_plan_item.portions = int(portions)
+        production_plan_item.left_overs = int(portions)
         production_plan_item.save()
         
         logger.info(f'Production plan line: {production_plan_item.raw_material.name} successfully saved')
@@ -1005,8 +1114,8 @@ class DishUpdateView(View):
     
     def get(self, request, pk):
         dish = get_object_or_404(Dish, pk=pk)
-        form = DishForm(instance=dish)
-        return render(request, 'inventory/dish_form.html', {'form': form, 'dish': dish})
+        dish_form = DishForm(instance=dish)
+        return render(request, 'inventory/dish_form.html', {'dish_form': dish_form, 'dish': dish})
 
     def post(self, request, pk):
         dish = get_object_or_404(Dish, pk=pk)
@@ -1065,18 +1174,16 @@ class IngredientDeleteView(View):
         ingredient.delete()
         return redirect('inventory:ingredient_list')
 
-
-def add_ingredient(request, dish_id):
+def add_dish(request): # didn't change the name of the template, it caters for both, dish and ingredient creation
     form = IngredientForm()
+    dish_form = DishForm()
     
     if request.method == 'GET':
         
-        dish = Dish.objects.get(id=dish_id)
-        
         return render(request, 'inventory/ingredient_form.html', 
             {
-                'dish':dish,
-                'form':form
+                'form':form,
+                'dish_form':dish_form
             }
         )
     
@@ -1084,6 +1191,10 @@ def add_ingredient(request, dish_id):
         # payload
         """
         {
+            name:str
+            major_raw_material:int
+            portion_multiplier:float
+            
             "cart": [
                 {
                     "name":(str)
@@ -1098,13 +1209,21 @@ def add_ingredient(request, dish_id):
             
             data = json.loads(request.body)
             cart = data.get('cart')
-            dish_id = data.get('dish_id')
-            
+            dish_name = data.get('name')
+            major_raw_material = data.get('major_raw_material')
+            portion_multiplier = data.get('portion_multiplier')
+            logger.info(major_raw_material)
         except json.JSONDecodeError as e:
             return JsonResponse({'success': False, 'message': f'Invalid JSON data: {e}'}, status=400)
         
         try:
-            dish = Dish.objects.get(id=dish_id)
+            raw = Product.objects.get(id=major_raw_material)
+            
+            dish = Dish.objects.create(
+                name = dish_name,
+                major_raw_material = raw,
+                portion_multiplier = portion_multiplier
+            )
             
             for item in cart:
                 name =item.get('raw_material')
@@ -1112,8 +1231,8 @@ def add_ingredient(request, dish_id):
                 logger.info(name)
                 Ingredient.objects.create(
                     dish=dish,
-                    name=item.get('name'),
-                    raw_material=raw_material,
+                    note=item.get('note'),
+                    minor_raw_material=raw_material,
                     quantity=int(item.get('quantity')),
                 )
 
@@ -1170,10 +1289,6 @@ def edit_meal(request, meal_id):
             price = form.cleaned_data['price']
             
             # validation
-            if Meal.objects.filter(name=name).exists():
-                messages.warning(request, f'Meal: {name.upper()} exists.')
-                return redirect('inventory:add_meal')
-            
             if float(price) < 0:
                 messages.warning(request, f'Price can\'t be less than zero.')
                 return redirect('inventory:add_meal')
@@ -1222,20 +1337,298 @@ def create_meal_category(request):
         except Exception as e:
             return JsonResponse({'success': False, 'message': f'{e}'}, status=400)
 
+
 def end_of_day_view(request):
+    if request.method == 'GET':
+        today = localdate()
+        
+        try:
+            e_o_d = EndOfDay.objects.get(date=today)
+        except EndOfDay.DoesNotExist:
+            e_o_d = None
+
+        if e_o_d and not e_o_d.done:
+            productions_today = Production.objects.filter(date_created=today, status=True, declared=True)
+            production_items_today = ProductionItems.objects.filter(production__in=productions_today)
+
+            productions_today = production_items_today.values('dish__name').annotate(
+                total_portions=Sum('portions'),
+                total_sold=Sum('portions_sold'),
+                total_staff_portions=Sum('staff_portions')
+            )
+
+            logger.info(productions_today)
+            production_data = productions_today
+        else:
+            production_data = {}
+
+        return render(request, 'end_of_day.html', {
+            'date': today,
+            'production_today': production_data
+        })
+
     
-    latest_plan = Production.objects.latest('time_created')
-
-    ProductionItemsFormSet = modelformset_factory(ProductionItems, fields=('dish', 'portions', 'wastage', 'left_overs', 'portions_sold'), extra=0)
-
     if request.method == 'POST':
-        formset = ProductionItemsFormSet(request.POST, queryset=ProductionItems.objects.filter(production=latest_plan))
+        try:
+            data = json.loads(request.body)
+            # Get the necessary data
+            dish_name = data.get('dish_name')
+            total_portions = data.get('total_portions')
+            total_sold = data.get('total_sold')
+            staff_portions = data.get('total_staff_portions')
+            wastage = data.get('wastage')
+            leftovers = data.get('leftovers')
+            
+            
+            # production_item = ProductionItems.objects.get(dish__name=dish_name, date=request.POST.get('date'))
 
-        if formset.is_valid():
-            formset.save()
-            return redirect(reverse('end_of_day_view'))
+            expected = total_portions - total_sold - staff_portions - wastage - leftovers
+            
+            e_o_d, _ = EndOfDay.objects.get_or_create(
+                date=datetime.datetime.today(),
+                done = False,
+            )
+            
+            EndOfDayItems.objects.create(
+                end_of_day = e_o_d,
+                dish_name = data.get('dish_name'),
+                total_portions = data.get('total_portions'),
+                total_sold = data.get('total_sold'),
+                staff_portions = data.get('total_staff_portions'),
+                wastage = data.get('wastage'),
+                leftovers = data.get('leftovers'),
+                expected = expected
+            )
 
-    else:
-        formset = ProductionItemsFormSet(queryset=ProductionItems.objects.filter(production=latest_plan))
+            return JsonResponse({'success': True})
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)})
+    return JsonResponse({'success': False, 'message': 'Invalid request method'})
 
-    return render(request, 'end_of_day.html', {'formset': formset, 'latest_plan': latest_plan})
+
+def confirm_end_of_day(request):
+    try:
+        data = json.loads(request.body)
+        amount = data.get('cashed_amount')
+        sales = Sale.objects.filter(date=localdate(), staff=False).aggregate(total_amount=Sum('total_amount'))['total_amount'] or 0
+        
+        e_o_d = EndOfDay.objects.get(date=localdate())
+        e_o_d.total_sales = sales
+        e_o_d.cashed_amount = Decimal(amount)
+        e_o_d.done = True
+        e_o_d.save()
+        
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)})
+    return JsonResponse({'success': True})
+
+def supplier_prices(request, raw_material_name):
+    """
+    {
+        raw_material_name: str
+    }
+    """
+    try:
+
+        purchase_orders = PurchaseOrderItem.objects.filter(product__name=raw_material_name)
+
+        supplier_prices = []
+        for item in purchase_orders:
+            supplier_prices.append(
+                {
+                    'id':item.purchase_order.supplier.id,
+                    'supplier': item.purchase_order.supplier.name, 
+                    'price': item.unit_cost
+                }
+            )
+
+        supplier_prices_sorted = sorted(supplier_prices, key=lambda x: x['price'])
+        best_three_prices = supplier_prices_sorted[:3]
+
+        logger.info(best_three_prices)
+
+        return JsonResponse({'success': True, 'suppliers': best_three_prices})
+
+    except Exception as e:
+        logger.error(f"Error fetching supplier prices: {e}")
+        return JsonResponse({'success': False, 'message': str(e)})
+
+
+def end_of_day_detail(request, e_o_d_id):
+    try:
+        end_of_day = EndOfDay.objects.get(id=e_o_d_id)
+        end_of_day_items = EndOfDayItems.objects.filter(end_of_day=end_of_day)
+        
+        total_amount_sold_today = Sale.objects.filter(date=localdate(), staff=False).aggregate(total_amount=Sum('total_amount'))['total_amount'] or 0
+        total_amount_staff_sold_today = Sale.objects.filter(date=localdate(), staff=True).aggregate(total_amount=Sum('total_amount'))['total_amount'] or 0
+        total_quantity_sold_today = SaleItem.objects.filter(sale__date=localdate(),).aggregate(total_quantity=Sum('quantity'))['total_quantity'] or 0
+        total_staff_portions = SaleItem.objects.filter(sale__date=localdate(), sale__staff=True).aggregate(total_staff_portions=Sum('quantity'))['total_staff_portions'] or 0
+        
+        logger.info(end_of_day_items)
+        
+        difference =  end_of_day.cashed_amount - (total_amount_sold_today - total_amount_staff_sold_today) 
+        # total_staff_portions= end_of_day_items.objects.aggregate(total_staff_portions=Sum('staff_portions'))['total_staff_portions'] or 0
+        
+        buffer = generate_end_of_day_report(end_of_day, end_of_day_items, total_amount_staff_sold_today)
+        send_end_of_day_report(request, buffer)
+        logger.info('email sent')
+    except Exception as e:
+        messages.warning(request, f'{e}')
+
+    return render(request, 'end_of_day_detail.html', 
+        {
+            'end_of_day':end_of_day,
+            'end_of_day_items':end_of_day_items,
+            'total_staff_portions':total_staff_portions,
+            'total_amount_sold_today': total_amount_sold_today,
+            'total_quantity_sold_today':total_quantity_sold_today,
+            'total_amount_staff_sold_today':total_amount_staff_sold_today,
+            'non_staff_quantity': total_quantity_sold_today - total_staff_portions,
+            'non_staff_total_amount': total_amount_sold_today - total_amount_staff_sold_today,
+            'difference': difference
+        }
+    )
+    
+
+def generate_end_of_day_report(end_of_day, items, staff_sold_amount):
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4)
+
+    elements = []
+
+    # Title
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        'title_style',
+        fontSize=16,
+        alignment=TA_CENTER,
+        spaceAfter=12,
+    )
+    title = Paragraph(f"End Of Day Report: {end_of_day.date}", title_style)
+    elements.append(title)
+    elements.append(Spacer(1, 12))
+
+    # Sales Section Title
+    sales_title = Paragraph("Sales", styles['Heading2'])
+    elements.append(sales_title)
+    elements.append(Spacer(1, 6))
+
+    # Sales Section
+    sales_data = [
+        ["Details", "Quantity", "Amount"],
+        ["Total", "", f"{end_of_day.total_sales:.2f}"],
+        ["Staff", "", "(6.00)"],
+        ["Non Staff", "", f"{end_of_day.total_sales - 6:.2f}"],
+        ["Cashed Amount", "", f"{end_of_day.cashed_amount:.2f}"],
+        ["Difference", "", f"{end_of_day.cashed_amount - (end_of_day.total_sales - staff_sold_amount):.2f}"],
+    ]
+
+    sales_table = Table(sales_data, colWidths=[2 * inch, 1 * inch, 2 * inch])
+    sales_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),  # Align the entire table to the left
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+        ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+    ]))
+    elements.append(sales_table)
+    elements.append(Spacer(1, 12))
+
+    # Dishes Section Title
+    dishes_title = Paragraph("Dishes", styles['Heading2'])
+    elements.append(dishes_title)
+    elements.append(Spacer(1, 6))
+
+    # Dishes Section
+    dish_data = [
+        ["Dish Name", "S A C Portions", "P Sold", "S Portions", "Price Per Unit", "Wastage", "Left Overs", "Over/Less"]
+    ]
+    for item in items:
+        dish_data.append([
+            item.dish_name,
+            item.total_portions,
+            item.total_sold,
+            item.staff_portions,
+            "N/A",  
+            item.wastage,
+            item.leftovers,
+            item.expected
+        ])
+
+    dish_table = Table(dish_data, colWidths=[1 * inch] * 8)
+    dish_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+        ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+    ]))
+    elements.append(dish_table)
+
+    doc.build(elements)
+    buffer.seek(0)
+    return buffer
+
+def send_end_of_day_report(request, buffer):
+    email = EmailMessage(
+        f"End of Day Report:",
+        "Please find the attached End of Day report. The expected amount is to be calculated on cost price, since they are no stipulated prices per dishes, but if they to be put the expected table will be relavant.",
+        'admin@techcity.co.zw',
+        ['cassymyo@gmail.com'],
+    )
+    email.attach(f'EndOfDayReport.pdf', buffer.getvalue(), 'application/pdf')
+    
+    # Run email sending in a thread
+    EmailThread(email).start()
+
+    logger.info(f' End of day report email sent.')
+    
+def confirm_minor_raw_materials(request):
+    # payload 
+    """
+        {
+            raw_material_id: int
+            quantity:float
+        }
+    """
+    try:
+        data = json.loads(request.body)
+        
+        raw_material_id = data.get('raw_material_id')
+        quantity = data.get('quantity')
+        
+        logger.info(raw_material_id)
+        raw_material = Product.objects.get(id=raw_material_id)
+        logger.info(raw_material)
+        
+        kitchen_minor_raw_materials, created = MinorRawMaterials.objects.get_or_create(
+            raw_material = raw_material,
+            
+            defaults={
+                "quantity":quantity,
+                "quantity_left":0
+            }  
+        )
+        
+        if created:
+            kitchen_minor_raw_materials.quantity += quantity
+            kitchen_minor_raw_materials.save()
+        
+        raw_material.quantity -= quantity
+        raw_material.save()
+        
+        if not raw_material_id or not quantity:
+            return JsonResponse({'success':False, 'message':'Missin Data: Raw Material or Quantity'}, status=400)
+    except Exception as e:
+        return JsonResponse({'success':False, 'message':f'{e}'}, staus=400)
+    return JsonResponse({'success':True}, status=200)
+
+

@@ -27,13 +27,18 @@ urlpatterns = [
     path('production_plan/detail/<int:pp_id>/', production_plan_detail, name='production_plan_detail'),
     path('confirm/production_plan/<int:pp_id>/', confirm_production_plan, name='confirm_production_plan'),
     path('declare/production_plan/<int:pp_id>/', declare_production_plan, name='declare_production_plan'),
-    path('processs/production_plan/<int:pp_id>/', process_production_plan_confirmation, name='process_production_plan'),
+    path('process/production_plan/<int:pp_id>/', process_production_plan_confirmation, name='process_production_plan'),
+    path('process/minor_raw_materials/<int:pp_id>/', process_minor_raw_materials, name='process_minor_raw_materials'),
+    path('minor_raw_materials/<int:pp_id>/', minor_raw_materials, name='minor_raw_materials'),
+    path('confirm/minor_raw_materials/<int:pp_id>/', confirm_minor_raw_materials, name='confirm_minor_raw_materials'),
+    path('confirm_minor_raw_materials/', confirm_minor_raw_materials, name='confirm_minor_raw_materials'),
     
     # supplier
     path('suppliers/list', suppliers, name='suppliers'),
     path('edit/supplier/', edit_supplier, name='edit_supplier'),
     path('create/supplier/', create_supplier, name='create_supplier'),
     path('supplier/json/list/', supplier_list_json, name='supplier_list_json'),
+    path('supplier_prices/<str:raw_material_name>/', supplier_prices, name='supplier_prices'),
     
     # ppurchase orders
     path('purchase_orders/list/', purchase_orders, name='purchase_orders'),
@@ -47,13 +52,12 @@ urlpatterns = [
     
     # dishes
     path('dishes/', DishListView.as_view(), name='dish_list'),
-    path('dishes/create/', DishCreateView.as_view(), name='dish_create'),
+    path('create/dish/', add_dish, name='dish_create'),
     path('dishes/<int:pk>/edit/', DishUpdateView.as_view(), name='dish_update'),
     path('dishes/<int:pk>/delete/', DishDeleteView.as_view(), name='dish_delete'),
     
     # ingridients
     path('ingredients/', IngredientListView.as_view(), name='ingredient_list'),
-    path('ingredients/create/<int:dish_id>/', add_ingredient, name='ingredient_create'),
     path('ingredients/<int:pk>/edit/', IngredientUpdateView.as_view(), name='ingredient_update'),
     path('ingredients/<int:pk>/delete/', IngredientDeleteView.as_view(), name='ingredient_delete'),
     
@@ -66,4 +70,7 @@ urlpatterns = [
     
     # end of day
     path('end-of-day/', end_of_day_view, name='end_of_day_view'),
+    path('save-end-of-day/', end_of_day_view, name='save_end_of_day'),
+    path('confirm_end_of_day/', confirm_end_of_day, name='confirm_end_of_day'),
+    path('end_of_day_detail/<int:e_o_d_id>/', end_of_day_detail, name='end_of_day_detail'),
 ]
