@@ -3,6 +3,11 @@ from loguru import logger
 from users.models import User
 from django.contrib.auth.forms import UserCreationForm
 
+class CompanyForm(forms.ModelForm):
+    class Meta:
+        model = Company
+        fields = ['name', 'address']
+
 
 class UserRegistrationForm(forms.ModelForm):
     password = forms.CharField(widget=forms.PasswordInput)

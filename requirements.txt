@@ -33,8 +33,6 @@ cssselect2==0.7.0
 dbus-fast==2.21.3
 distlib==0.3.8
 Django==5.0.6
-django-celery==3.1.17
-django-celery-results==2.5.1
 django-crispy-forms==2.1
 django-extensions==3.2.3
 django-livesync==0.5
@@ -69,7 +67,6 @@ prometheus_client==0.20.0
 prompt-toolkit==3.0.43
 psycopg2-binary==2.9.9
 pycparser==2.22
-pycups==2.0.4
 pydyf==0.10.0
 pyHanko==0.25.0
 pyhanko-certvalidator==0.26.3
