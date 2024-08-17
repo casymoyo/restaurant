@@ -168,9 +168,6 @@ MEDIA_URL = "/media/"
 
 # LOGGING
 # ------------------------------------------------------------------------------
-# https://docs.djangoproject.com/en/dev/ref/settings/#logging
-# See https://docs.djangoproject.com/en/dev/topics/logging for
-# more details on how to customize your logging configuration.
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
