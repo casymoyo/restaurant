@@ -162,6 +162,8 @@ def process_sale(request):
                     debit=True,
                     description=f'Sale (Receipt number: {sale.receipt_number})'
                 )
+                
+                generate_receipt(request, sale)
                     
             logger.info(f'Sale: {sale.id} Processed')
             return JsonResponse({'success': True, 'sale_id': sale.id}, status=201)
@@ -226,12 +228,12 @@ def generate_receipt(request, sale):
     # totals
     y_position -= 0.7 * cm
     p.drawString(1 * cm, y_position, "TAX :")
-    p.drawString(6 * cm, y_position, f"{sale}")
+    p.drawString(6 * cm, y_position, f"{sale.tax}")
 
     y_position -= 0.5 * cm
     p.drawString(1 * cm, y_position, "TOTAL :")
     p.setFont("Helvetica-Bold", font_size)
-    p.drawString(6 * cm, y_position, f"{sale}")
+    p.drawString(6 * cm, y_position, f"{sale.total_amount}")
 
     y_position -= 0.5 * cm
     p.setFont("Helvetica", font_size)
@@ -245,7 +247,7 @@ def generate_receipt(request, sale):
     # cashier and transaction info
     y_position -= 0.7 * cm
     p.drawString(1 * cm, y_position, "Cashier :")
-    p.drawString(6 * cm, y_position, f"{sale}")
+    p.drawString(6 * cm, y_position, f"{request.user}")
 
     # date and time
     y_position -= 0.5 * cm
@@ -262,10 +264,10 @@ def generate_receipt(request, sale):
     p.drawString(1 * cm, y_position, "Sales Channel :")
     p.drawString(6 * cm, y_position, "USD")
 
-    y_position -= 0.7 * cm
-    p.drawString(1 * cm, y_position, "Total Qty :")
-    p.drawString(6 * cm, y_position, "1")
-    y_position -= 1 * cm
+    # y_position -= 0.7 * cm
+    # p.drawString(1 * cm, y_position, "Total Qty :")
+    # p.drawString(6 * cm, y_position, "1")
+    # y_position -= 1 * cm
     draw_centered_text("Thank You Call Again", y_position, bold=True)
 
     y_position -= 0.5 * cm

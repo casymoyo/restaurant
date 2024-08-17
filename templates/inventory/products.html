@@ -25,7 +25,7 @@
                     <a href="{% url 'inventory:create_purchase_order' %}" class="btn btn-outline-dark">Add Inventory</a>
                 </li>
                 <li class="mx-2">
-                    <a href="{% url 'inventory:create_purchase_order' %}" class="btn btn-outline-dark">Transfer(s) to Production</a>
+                    {% comment %} <a href="{% url 'inventory:create_purchase_order' %}" class="btn btn-outline-dark">Transfer(s) to Production</a> {% endcomment %}
                 </li>
                 <li>
                     <a href="{% url 'inventory:purchase_orders' %}" class="btn btn-outline-dark">Purchase Orders</a>
