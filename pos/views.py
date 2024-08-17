@@ -74,7 +74,7 @@ def meal_detail_json(request, meal_id):
             return JsonResponse({'success':False, 'message':f'meal with ID: {meal_id} doesn\'t exists'})
         
         return JsonResponse({'success':True, 'data': meal_data})
-
+    
 @login_required
 @transaction.atomic
 def process_sale(request):
@@ -84,74 +84,57 @@ def process_sale(request):
             items = data['items']
             staff = data['staff']
             
-            logger.info(data)
+            logger.info(staff)
 
             sub_total = sum(item['price'] * item['quantity'] for item in items)
             logger.info(sub_total)
             
-            tax = sub_total * 0.15 # To be dynamically stipulated
+            tax = sub_total * 0.15 #to be dynamically stipulated
             logger.info(tax)
             
-            total_amount = sub_total + tax
+            total_amount = sub_total 
             
             sale = Sale.objects.create(
                 total_amount=total_amount,
                 tax=tax,
                 sub_total=sub_total,
-                cashier=user.objects.get(id=1),
-                staff=True if staff else False
+                cashier=request.user,
+                staff= True if staff else False
             )
             
-            today = timezone.now().date()
+            latest_plan = Production.objects.latest('time_created')
+
             for item in items:
-                meal = get_object_or_404(Meal, id=item['meal_id'])
-                if item['type'] == False:
+                if not item['type']:
+                    meal = get_object_or_404(Meal, id=item['meal_id'])
                     
                     sale_item = SaleItem.objects.create(
-                        sale=sale,
-                        meal=meal,
-                        quantity=item['quantity'],
-                        price=meal.price
-                    )
-                    
-                    for dish in meal.dish.all():
-                        remaining_quantity = sale_item.quantity
-                        production_items = ProductionItems.objects.filter(
-                            production__date_created=today, dish=dish
-                        ).order_by('production__time_created')  # Order by the time the production was created to follow FIFO
-
-                        for pp_item in production_items:
-                            if pp_item.portions == pp_item.portions_sold:
-                                continue  
-                            
-                            available_portions = pp_item.portions - pp_item.portions_sold
-                            
-                            if remaining_quantity <= available_portions:
-                                if staff:
-                                    pp_item.staff_portions += remaining_quantity
-                                    logger.info('staff')
-                                else:
-                                    pp_item.portions_sold += remaining_quantity
-                                    logger.info('sale')
-                                
-                                pp_item.left_overs -= remaining_quantity
-                                pp_item.save()
-                                break  # Done processing this sale item
-                            
-                            else:
-                                if staff:
-                                    pp_item.staff_portions += available_portions
-                                else:
-                                    pp_item.portions_sold += available_portions
-
-                                pp_item.left_overs -= available_portions
-                                pp_item.save()
-                                
-                                remaining_quantity -= available_portions  # Move to the next batch
+                    sale=sale,
+                    meal=meal,
+                    quantity=item['quantity'],
+                    price=meal.price
+                )
+                
+                for dish in meal.dish.all():
+                    try:
+                        pp_item = ProductionItems.objects.get(production=latest_plan, dish=dish)
                         
-                        if remaining_quantity > 0:
-                            raise ValueError(f"Insufficient portions for dish {dish.name}.")
+                        if pp_item.portions == pp_item.portions_sold:
+                            raise ValueError(f'Related dish ({pp_item.dish.name}) portions exhausted.')
+                        
+                        if staff:
+                            pp_item.staff_portions += sale_item.quantity
+                            logger.info('staff')
+                        else:
+                            pp_item.portions_sold += sale_item.quantity
+                            logger.info('sale')
                             
+                        pp_item.left_overs -= sale_item.quantity
+                        pp_item.save()
+                        
+                    except ProductionItems.DoesNotExist:
+                        logger.info(f'Production item not found for dish {dish.name}')
+                        raise ValueError(f'Production item not found for dish {dish.name}')
                 else:
                     product = get_object_or_404(Product, id=item['meal_id'])
                     product.quantity -= item['quantity']
@@ -165,7 +148,7 @@ def process_sale(request):
                     
                     Logs.objects.create(
                         user=request.user, 
-                        action='sale',
+                        action= 'sale',
                         product=product,
                         quantity=sale_item.quantity,
                         total_quantity=product.quantity,
@@ -175,11 +158,11 @@ def process_sale(request):
                     
                 CashBook.objects.create(
                     sale=sale, 
-                    amount=sale.total_amount,
+                    amount = sale.total_amount,
                     debit=True,
                     description=f'Sale (Receipt number: {sale.receipt_number})'
                 )
-            generate_receipt(request, sale) 
+                    
             logger.info(f'Sale: {sale.id} Processed')
             return JsonResponse({'success': True, 'sale_id': sale.id}, status=201)
 
@@ -188,7 +171,6 @@ def process_sale(request):
             logger.error(f'Error processing sale: {str(e)}')
             return JsonResponse({'success': False, 'message': str(e)}, status=400)
         
-
 @login_required
 def generate_receipt(request, sale):
     #  page size to 8 cm by 9 cm
@@ -244,17 +226,17 @@ def generate_receipt(request, sale):
     # totals
     y_position -= 0.7 * cm
     p.drawString(1 * cm, y_position, "TAX :")
-    p.drawString(6 * cm, y_position, f"{sale.}")
+    p.drawString(6 * cm, y_position, f"{sale}")
 
     y_position -= 0.5 * cm
     p.drawString(1 * cm, y_position, "TOTAL :")
     p.setFont("Helvetica-Bold", font_size)
-    p.drawString(6 * cm, y_position, f"{sale.}")
+    p.drawString(6 * cm, y_position, f"{sale}")
 
     y_position -= 0.5 * cm
     p.setFont("Helvetica", font_size)
     p.drawString(1 * cm, y_position, "Cash :")
-    p.drawString(6 * cm, y_position, f"{sale.}")
+    p.drawString(6 * cm, y_position, f"{sale}")
 
     y_position -= 0.5 * cm
     p.drawString(1 * cm, y_position, "Change :")
@@ -263,7 +245,7 @@ def generate_receipt(request, sale):
     # cashier and transaction info
     y_position -= 0.7 * cm
     p.drawString(1 * cm, y_position, "Cashier :")
-    p.drawString(6 * cm, y_position, f"{sale.})
+    p.drawString(6 * cm, y_position, f"{sale}")
 
     # date and time
     y_position -= 0.5 * cm

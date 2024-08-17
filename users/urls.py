@@ -13,9 +13,3 @@ urlpatterns = [
     path('user/detail/<int:user_id>/', user_detail, name='user_detail'),
     path('ajax/get-user-data/<int:user_id>/', get_user_data, name='ajax_get_user_data'),
 ]
-# urls.py
-
-urlpatterns = [
-    
-    path('', views.home, name='home'),  
-]

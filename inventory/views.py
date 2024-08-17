@@ -444,7 +444,7 @@ def create_purchase_order(request):
                     expense = Expense.objects.create(
                         category = category,
                         amount = purchase_order.total_cost,
-                        user = User.objects.get(id=1),
+                        user = request.user,
                         description = f'Expense purchase order{purchase_order.order_number}',
                         cancel = False
                     )
@@ -484,7 +484,7 @@ def change_purchase_order_status(request, order_id):
                 expense = Expense.objects.create(
                     category = category,
                     amount = purchase_order.total_cost - purchase_order.tax_amount,
-                    user = User.objects.get(id=1),
+                    user = request.user,
                     description = f'Expense purchase order{purchase_order.order_number}',
                     cancel = False
                 )
@@ -618,7 +618,7 @@ def process_received_order(request):
         
         Logs.objects.create(
             purchase_order = purchase_order,
-            user= User.objects.get(id=1),  #to be removed,
+            user= request.user,  #to be removed,
             action= 'stock in',
             product=product,
             quantity=quantity,
@@ -1347,20 +1347,20 @@ def end_of_day_view(request):
         except EndOfDay.DoesNotExist:
             e_o_d = None
 
-        if e_o_d and not e_o_d.done:
-            productions_today = Production.objects.filter(date_created=today, status=True, declared=True)
-            production_items_today = ProductionItems.objects.filter(production__in=productions_today)
+        # if e_o_d and not e_o_d.done:
+        productions_today = Production.objects.filter(date_created=today, status=True, declared=True)
+        production_items_today = ProductionItems.objects.filter(production__in=productions_today)
 
-            productions_today = production_items_today.values('dish__name').annotate(
-                total_portions=Sum('portions'),
-                total_sold=Sum('portions_sold'),
-                total_staff_portions=Sum('staff_portions')
-            )
+        productions_today = production_items_today.values('dish__name').annotate(
+            total_portions=Sum('portions'),
+            total_sold=Sum('portions_sold'),
+            total_staff_portions=Sum('staff_portions')
+        )
 
-            logger.info(productions_today)
-            production_data = productions_today
-        else:
-            production_data = {}
+        logger.info(productions_today)
+        production_data = productions_today
+        # else:
+        #     production_data = {}
 
         return render(request, 'end_of_day.html', {
             'date': today,
@@ -1591,7 +1591,7 @@ def send_end_of_day_report(request, buffer):
 
     logger.info(f' End of day report email sent.')
     
-def confirm_minor_raw_materials(request):
+def confirm_minor_raw(request):
     # payload 
     """
         {

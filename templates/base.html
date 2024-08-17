@@ -31,7 +31,7 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <title>
-        {% block title %}Urban Eats{% endblock title %}
+        {% block title %}{{ request.user.company.name }}{% endblock title %}
     </title>
 </head>
 <body>
@@ -41,7 +41,7 @@
                 <nav class="p-2">
                     <div class="d-flex justify-content-between align-items-center w-100">
                         <div>
-                            <h4 class="fw-bold">Urban Eats</h4>
+                            <h4 class="fw-bold">{{ request.user.company.name }}</h4>
                         </div>
                         <div>
                             <ul class="list-unstyled d-flex align-items-center">
