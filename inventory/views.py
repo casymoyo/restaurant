@@ -643,7 +643,6 @@ def create_production_plan(request):
         {
             "cart": [
                 {
-                    "raw_material": name (str),
                     "quantity": int,
                     "dish": name (str)
                 }
@@ -665,50 +664,41 @@ def create_production_plan(request):
         production_plan.save()
             
         for item in items:
-            raw_material_name = item.get('raw_material')
-            quantity = item.get('quantity')
+            portions = item.get('portions')
             dish_name = item.get('dish')
             rm_cf_quantity = item.get('rm_bf_quantity')
             lf_cf_quantity = item.get('lf_bf_quantity')
             actual_quantity = item.get('actual_quantity')
-            pct = item.get('timeout')
             total_cost = item.get('total_cost')
             
-            if not raw_material_name or not quantity or not dish_name:
+            if not portions or not dish_name:
                 return JsonResponse({'success': False, 'message': 'Missing data: raw material, quantity, or dish'}, status=400)
-            
-            try:
-                raw_material = Product.objects.get(name=raw_material_name)
-            except Product.DoesNotExist:
-                return JsonResponse({'success': False, 'message': f'Raw Material with ID: {raw_material_name} doesn\'t exist'}, status=404)
-                
             try:
                 dish = Dish.objects.get(name=dish_name)
             except Dish.DoesNotExist:
                 return JsonResponse({'success': False, 'message': f'Dish with ID: {dish_name} doesn\'t exist'}, status=404)
             
-            if (quantity - actual_quantity) >= 0:
+            if (portions - actual_quantity) >= 0:
                 logger.info(f'here:')
                 rm_cf_quantity = 0
                 lf_cf_quantity = 0
             
-            if quantity < rm_cf_quantity:
-                rm_cf_quantity -= quantity
+            if portions < rm_cf_quantity:
+                rm_cf_quantity -= portions
                 if rm_cf_quantity < 0:
                     rm_cf_quantity = 0
             
             
             production_item = ProductionItems.objects.create(
                 production=production_plan,
-                raw_material=raw_material,
-                quantity=quantity,
+                portions=portions,
                 dish=dish,
                 rm_carried_forward_quantity=rm_cf_quantity,
                 lf_carried_forward_quantity=lf_cf_quantity,
                 actual_quantity=actual_quantity,
-                production_completion_time=pct,
-                total_cost = total_cost
+                total_cost = total_cost,
             )
+            
             logger.info(f'{production_item} : Saved successfully')
         
         return JsonResponse(
@@ -728,6 +718,21 @@ def create_production_plan(request):
     return JsonResponse({'success': False, 'message': 'Invalid HTTP method'}, status=405)
 
 
+def dish_json_detail(request, dish_id):
+    try:
+        ingredients = []
+        dish = Dish.objects.filter(id=dish_id)
+        for ingredient in dish.ingredient.all():
+            ingredient.append(
+                {
+                    f'{ingredient.name}':ingredient.quantity,
+                    'cost': ingredient.raw_material.cost
+                }
+            )
+        return JsonResponse({'success':True, 'data':ingredients})
+    except Dish.DoesNotExist:
+        return JsonResponse({'success': False, 'message': f'Dish with ID: {dish_id} doesn\'t exist'}, status=404)
+
 def yeseterdays_left_overs(request):
     # payload
     """
@@ -736,6 +741,7 @@ def yeseterdays_left_overs(request):
         dish:id
     }
     """
+    
     
     if request.method == 'POST':
         try:

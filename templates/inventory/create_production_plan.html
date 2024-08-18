@@ -29,12 +29,9 @@
                     <thead class="bg-primary">
                         <th>Raw Material</th>
                         <th>Dish</th>
-                        <th>Quantity</th>
+                        <th>Portions</th>
+                        <th>Previous Portion B/F</th>
                         <th>Total Cost</th>
-                        <th>Previous Rameterial C/F Quantity</th>
-                        <th>Previous Portion C/F quantity</th>
-                        <th>Actual quantity</th>
-                        <th>PC Time</th>
                     </thead>
                     <tbody id="cart-items"></tbody>
                 </table>
@@ -56,7 +53,7 @@
 <script>
 $(document).ready(function() {
     let cart = [];
-    let product = '';
+    let dhishData = [];
     let unit_cost = 1;
     let unit_of_measurement = ''
 
@@ -66,12 +63,7 @@ $(document).ready(function() {
     let quantity = document.getElementById('id_quantity');
     let actual = document.getElementById('id_actual_quantity');
 
-    $('#id_raw_material').select2();
     $('#id_dish').select2();
-
-    $('#id_raw_material').on('change', function(e){
-        product = e.target.value;
-    });
 
     //reset button
     $('#id_reset').on('click', function(){
@@ -126,7 +118,7 @@ $(document).ready(function() {
             raw_material: product
         };
 
-        fetch('{% url "inventory:yeseterdays_left_overs" %}', {
+        fetch('{% url "inventory:dish_json_detail" %}', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -137,17 +129,7 @@ $(document).ready(function() {
         .then(response => response.json())
         .then(data => {
             if (data.success){
-                lf.value = parseFloat(data.data.left_over_portion_diff) || 0.00;
-                lf.readOnly = true;
-                lf.style.backgroundColor = 'lightgray';
-
-                rm.value = parseFloat(data.data.raw_material_dif) || 0.00;
-                rm.readOnly = true;
-                rm.style.backgroundColor = 'lightgray';
-
-                unit_cost = parseFloat(data.data.unit_cost);
-                unit_of_measurement = data.data.unit_of_measurement;
-                console.log(unit_of_measurement)
+                console.log(data)                                                                                 
             } else {
                 Swal.fire({
                     title: "Error",

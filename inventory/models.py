@@ -84,13 +84,10 @@ class Production(models.Model):
     
 class ProductionItems(models.Model):
     production = models.ForeignKey(Production, on_delete=models.CASCADE)
-    raw_material = models.ForeignKey(Product, on_delete=models.CASCADE)
-    quantity = models.FloatField()
     dish = models.ForeignKey('inventory.dish', on_delete=models.CASCADE)
-    rm_carried_forward_quantity = models.FloatField()
-    lf_carried_forward_quantity = models.FloatField()
+    portions = models.FloatField()
+    lf_brought_forward_quantity = models.FloatField()
     actual_quantity = models.FloatField()
-    production_completion_time = models.TimeField(null=True)
     total_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     remaining_raw_material = models.FloatField(default=0, null=True, blank=True)
     declared = models.BooleanField(default=False)
@@ -114,22 +111,29 @@ class MinorProductionItems(models.Model):
     def __str__(self) -> str:
         return f'{self.minor_raw_material}'
 
+class ProductionInventory(models.Model):
+    raw_material = models.ForeignKey(Product, on_delete=models.CASCADE)
+    quantity = models.FloatField()
+    
+    def __str__(self) -> str:
+        return f'{self.raw_material}: ({self.quantity})'
+
+
 class Dish(models.Model):
     name = models.CharField(max_length=100)
-    portion_multiplier = models.FloatField(default=1, null=True, blank=True)
-    major_raw_material = models.ForeignKey(Product, on_delete=models.CASCADE)
+    portion_mutiplier = models.FloatField()
+    ingredient = models.ManyToManyField('inventory.ingredient')
 
     def __str__(self) -> str:
         return self.name
 
 class Ingredient(models.Model):
-    dish = models.ForeignKey(Dish, on_delete=models.CASCADE, null=True)
     note = models.CharField(max_length=100, null=True)
     quantity = models.FloatField()
-    minor_raw_material = models.ForeignKey(Product, on_delete=models.CASCADE)
+    raw_material = models.ForeignKey(Product, on_delete=models.CASCADE)
 
     def __str__(self) -> str:
-        return self.minor_raw_material.name          
+        return self.raw_material.name          
     
 class MealCategory(models.Model):
     name = models.CharField(max_length=255)
