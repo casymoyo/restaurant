@@ -25,7 +25,7 @@
                 {{ dish_form | crispy }}
             </form>
 
-            <h5 class="mt-2 mb-2">Minor raw materials (Ingredients)</h5>
+            <h5 class="mt-2 mb-2">Ingredients</h5>
             <div class="col-9">
                 <table class="table">
                     <thead class="bg-primary">
@@ -54,7 +54,7 @@ $(document).ready(function() {
     let product = '';
     let unit_cost = 1;
     let unit_of_measurement = ''
-    
+
     $('#id_raw_material').select2();
     $('#id_dish').select2();
 
@@ -74,7 +74,6 @@ $(document).ready(function() {
         csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val(),
         cart: cart,
         name: document.getElementById('id_name').value,
-        major_raw_material: parseInt(document.getElementById('id_major_raw_material').value),
         portion_multiplier: parseFloat(document.getElementById('id_portion_multiplier').value)
     };
     console.log(postData)
@@ -114,12 +113,11 @@ $(document).ready(function() {
     $('#save-button').on('click', function() {
         const item = {
             note: document.getElementById('id_note').value,
-            raw_material: $('#id_minor_raw_material option:selected').text(),
+            raw_material: $('#id_raw_material option:selected').text(),
             quantity: parseFloat(document.getElementById('id_quantity').value),
         };
 
         cart.push(item);
-        console.log(cart)
         updateCartTable();
     });
 

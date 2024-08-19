@@ -106,7 +106,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME':  'urban-eats',
         'USER': 'postgres',
-        'PASSWORD': 'techcity',
+        'PASSWORD': 'neverfail',
         'HOST': 'localhost',
         'PORT': '5432'
     }

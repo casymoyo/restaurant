@@ -28,10 +28,11 @@ urlpatterns = [
     path('confirm/production_plan/<int:pp_id>/', confirm_production_plan, name='confirm_production_plan'),
     path('declare/production_plan/<int:pp_id>/', declare_production_plan, name='declare_production_plan'),
     path('process/production_plan/<int:pp_id>/', process_production_plan_confirmation, name='process_production_plan'),
-    path('process/minor_raw_materials/<int:pp_id>/', process_minor_raw_materials, name='process_minor_raw_materials'),
+    path('process/minor_raw_materials/<int:pp_id>/', process_raw_materials, name='process_minor_raw_materials'),
     path('minor_raw_materials/<int:pp_id>/', minor_raw_materials, name='minor_raw_materials'),
     path('confirm/minor_raw_materials/<int:pp_id>/', confirm_minor_raw_materials, name='confirm_minor_raw_materials'),
     path('confirm_minor_raw_materials/', confirm_minor_raw, name='confirm_minor_raw'),
+    path('production_raw_materials/', production_raw_materials, name='production_raw_materials'),
     
     # supplier
     path('suppliers/list', suppliers, name='suppliers'),
@@ -55,6 +56,7 @@ urlpatterns = [
     path('create/dish/', add_dish, name='dish_create'),
     path('dishes/<int:pk>/edit/', DishUpdateView.as_view(), name='dish_update'),
     path('dishes/<int:pk>/delete/', DishDeleteView.as_view(), name='dish_delete'),
+    path('dish_json_detail/', dish_json_detail, name='dish_json_detail'),
     
     # ingridients
     path('ingredients/', IngredientListView.as_view(), name='ingredient_list'),

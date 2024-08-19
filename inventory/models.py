@@ -54,7 +54,6 @@ class Product(models.Model):
     
     def __str__(self) -> str:
         return self.name
-    
 class ProductionRawMaterials(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.IntegerField()
@@ -85,9 +84,8 @@ class Production(models.Model):
 class ProductionItems(models.Model):
     production = models.ForeignKey(Production, on_delete=models.CASCADE)
     dish = models.ForeignKey('inventory.dish', on_delete=models.CASCADE)
-    portions = models.FloatField()
-    lf_brought_forward_quantity = models.FloatField()
-    actual_quantity = models.FloatField()
+    lf_brought_forward_quantity = models.FloatField(null=True, blank=True)
+    actual_quantity = models.FloatField(null=True, blank=True)
     total_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     remaining_raw_material = models.FloatField(default=0, null=True, blank=True)
     declared = models.BooleanField(default=False)
@@ -111,6 +109,15 @@ class MinorProductionItems(models.Model):
     def __str__(self) -> str:
         return f'{self.minor_raw_material}'
 
+
+class AllocatedRawMaterials(models.Model):
+    production = models.ForeignKey(Production, on_delete=models.CASCADE)
+    raw_material = models.ForeignKey(Product, on_delete=models.CASCADE)
+    remaining_quantity = models.FloatField(null=True)
+    quantity = models.FloatField()
+    
+    def __str__(self) -> str:
+        return f'{self.production} ({self.raw_material}: ({self.quantity}))'
 class ProductionInventory(models.Model):
     raw_material = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.FloatField()
@@ -121,13 +128,13 @@ class ProductionInventory(models.Model):
 
 class Dish(models.Model):
     name = models.CharField(max_length=100)
-    portion_mutiplier = models.FloatField()
-    ingredient = models.ManyToManyField('inventory.ingredient')
+    portion_multiplier = models.FloatField()
 
     def __str__(self) -> str:
         return self.name
 
 class Ingredient(models.Model):
+    dish = models.ForeignKey(Dish, on_delete=models.CASCADE, null=True)
     note = models.CharField(max_length=100, null=True)
     quantity = models.FloatField()
     raw_material = models.ForeignKey(Product, on_delete=models.CASCADE)

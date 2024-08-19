@@ -70,13 +70,12 @@ class ProductionPlanInlineForm(forms.ModelForm):
 class DishForm(forms.ModelForm):
     class Meta:
         model = Dish
-        fields = ['name', 'major_raw_material', 'portion_multiplier',]
-             
+        fields = ['name', 'portion_multiplier']
 
 class IngredientForm(forms.ModelForm):
     class Meta:
         model = Ingredient
-        fields = ['minor_raw_material', 'quantity', 'note',]
+        fields = ['raw_material', 'quantity', 'note',]
 
 class MealForm(forms.ModelForm):
     class Meta:

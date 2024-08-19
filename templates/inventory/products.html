@@ -21,18 +21,14 @@
         </div>
         <div>
             <ul class="list-unstyled d-flex mt-3">
-                <li>
-                    <a href="{% url 'inventory:create_purchase_order' %}" class="btn btn-outline-dark">Add Inventory</a>
-                </li>
                 <li class="mx-2">
                     {% comment %} <a href="{% url 'inventory:create_purchase_order' %}" class="btn btn-outline-dark">Transfer(s) to Production</a> {% endcomment %}
                 </li>
                 <li>
-                    <a href="{% url 'inventory:purchase_orders' %}" class="btn btn-outline-dark">Purchase Orders</a>
+                    <a href="{% url 'inventory:create_purchase_order' %}" class="btn btn-outline-dark mx-2">Add Inventory</a>
                 </li>
-                <li class="btn btn-outline-dark mx-2">Raw Materials</li>
                 <li>
-                    <a href="{% url 'inventory:finished_products' %}" class="btn btn-outline-dark">Products</a>
+                    <a href="{% url 'inventory:purchase_orders' %}" class="btn btn-outline-dark">Purchase Orders</a>
                 </li>
             </ul>
         </div>
@@ -43,7 +39,6 @@
                 <th>Name</th>
                 <th>Cost per unit</th>
                 <th>Quantity</th>
-                <th>Portion Multiplier</th>
                 <th>Action</th>
             </thead>
             <tbody>
@@ -52,7 +47,6 @@
                         <td><small>{{ raw_material.name }}</small></td>
                         <td><small>{{ raw_material.cost}}</small></td>
                         <td><small>{{ raw_material.quantity }} {{ raw_material.unit }}</small></td>
-                        <td><small>{{ raw_material.portion_multiplier }}</small></td>
                         <td>
                             <small>
                                 <span>

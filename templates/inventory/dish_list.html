@@ -21,7 +21,6 @@
             <tr>
                 <th>Name</th>
                 <th>Portion Multiplier</th>
-                <th>Major Raw Material</th>
                 <th>Ingredients</th>
                 <th>Actions</th>
             </tr>
@@ -31,11 +30,10 @@
                 <tr>
                     <td>{{ dish.name }}</td>
                     <td>{{ dish.portion_multiplier }}</td>
-                    <td>{{ dish.major_raw_material }}</td>
                     <td>
                         {% for ingredient in ingredients %}
                             {% if dish == ingredient.dish %}
-                                {{ ingredient.minor_raw_material.name }} ({{ ingredient.quantity }})<br>
+                                {{ ingredient.raw_material.name }} ({{ ingredient.quantity }})<br>
                             {% endif %}
                         {% endfor %}
                     </td>
