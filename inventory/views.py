@@ -28,6 +28,7 @@ from utils.email import EmailThread
 from django.core.mail import EmailMessage
 from finance.models import COGS
 from .tasks import send_production_creation_notification
+from datetime import timedelta
 
 from finance.models import (
     Sale,
@@ -1764,5 +1765,34 @@ def calculate_reorder_point(product):
     return reorder_point
 
 
-
+def order_list(request):
+    products = Product.objects.all()
+    six_days_ago = timezone.now() - timedelta(days=6)
+    lead_time = 1 # 1 days to be put to settings
+    
+    for product in products:
+        if product.min_stock_level >= product.quantity:
+            logger.info(product)
+            quantity_last_six_days = Logs.objects.filter(timestamp__gte=six_days_ago, product=product).aggregate(total_quantity=Sum('quantity'))['total_quantity'] 
+            
+            reorder_quantity = quantity_last_six_days * lead_time + product.min_stock_level
+            approx_days =  (product.quantity * 6) / reorder_quantity
+            
+            try:
+                Reorder.objects.get_or_create(
+                    product=product,
+                    
+                    defaults={
+                        'ordered':False,
+                        'approx_days':approx_days,
+                        'reorder_quantity':reorder_quantity,
+                    }
+                )
+            except Exception as e:
+                logger.info(e)
+                reorder_list = {}
+            
+    reorder_list = Reorder.objects.all()
+    
+    return render(request, 'inventory/reorder.html', {'reorders':reorder_list})
 

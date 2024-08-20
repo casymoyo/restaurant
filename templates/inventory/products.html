@@ -30,6 +30,9 @@
                 <li>
                     <a href="{% url 'inventory:purchase_orders' %}" class="btn btn-outline-dark">Purchase Orders</a>
                 </li>
+                <li>
+                    <a href="{% url 'inventory:order_list' %}" class="btn btn-outline-dark mx-2">Reorder List</a>
+                </li>
             </ul>
         </div>
     </nav>
@@ -76,33 +79,5 @@
 <script>
     new DataTable('#raw_materials_table')
     new DataTable('#products_table')
-    const navButtons = document.querySelectorAll('.inv-item');
-    const rawMaterials = document.getElementsByClassName('raw');
-    const products = document.getElementById('prod');
-
-    navButtons.forEach((btn) => {
-        btn.addEventListener('click', (event) => {
-            let name = event.target.getAttribute('data-name');
-
-            show(name);
-        });
-    });
-
-    function show(name) {
-        // Hide all elements in rawMaterials collection
-        Array.from(rawMaterials).forEach(el => el.classList.add('hidden'));
-
-        // Hide the products element if it exists
-        if (products) {
-            products.classList.add('hidden');
-        }
-
-        // Show the element that matches the name
-        const elementToShow = document.querySelector(`.${name}`);
-        if (elementToShow) {
-            elementToShow.classList.remove('hidden');
-        }
-    }
-
 </script>
 {% endblock content %}

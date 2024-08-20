@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Products{% endblock title %}
+{% block content %}
+<style>
+    .card{
+        border: none;
+    }
+    a{
+        text-decoration: none;
+        color: #333;
+    }
+</style>
+<div class="products m-2">
+    <nav class='mt-2 d-flex align-items-center justify-content-between'>
+        <div>
+            <ul class="list-unstyled d-flex align-items-center">
+                <li><a href='/' class='bx bx-home btn border fs-5 mt-1'></a></li>
+                <li class='mx-2 fs-5'>Reorder List</li>
+            </ul>
+        </div>
+    </nav>
+    <div class="tables">
+        <table class="table table-hover table-responsive raw" id="reorder_table" style="width: 100%;">
+            <thead class="bg-primary">
+                <th>Name</th>
+                <th>Quantity at hand</th>
+                <th>Approx Days Left</th>
+                <th>Reorder Quantity</th>
+                <th>Action/Status</th>
+            </thead>
+            <tbody>
+                {% for reorder in reorders  %}
+                    <tr>
+                        <td><small>{{ reorder.product.name }}</small></td>
+                        <td><small>{{ reorder.product.quantity }}</small></td>
+                        <td><small>{{ reorder.approx_days}}</small></td>
+                        <td><small>{{ reorder.reorder_quantity }}</small></td>
+                        <td>
+                            {% if reorder.ordered %}
+                                <small>Ordered</small>
+                            {% else %}
+                                <form method="post">
+                                    <input value='{{ reoder.product.id }}' hidden/>
+                                    <button type='submit' class='btn btn-secondary btn-sm'>order</button>
+                                </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+        </div>
+</div>
+<script>
+    new DataTable('#reorder_table')
+</script>
+{% endblock content %}
