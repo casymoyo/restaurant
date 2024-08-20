@@ -27,6 +27,7 @@ import io
 from utils.email import EmailThread
 from django.core.mail import EmailMessage
 from finance.models import COGS
+from .tasks import send_production_creation_notification
 
 from finance.models import (
     Sale,
@@ -682,6 +683,7 @@ def create_production_plan(request):
             )
             
             
+        send_production_creation_notification(production_plan.id)
         
         return JsonResponse(
             {

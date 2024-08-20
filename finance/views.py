@@ -118,7 +118,7 @@ def expenses(request):
             return JsonResponse({'success': True, 'messages':'Expense successfully created'}, status=201)
         except Exception as e:
             return JsonResponse({'success': False, 'message': str(e)}, status=400)
-        
+       
 def add_or_edit_expense(request):
     if request.method == 'POST':
         try:
@@ -346,8 +346,8 @@ def pl_overview(request):
         'net_income_change': net_income_change,
         'current_gross_profit': current_gross_profit,
         'previous_gross_profit': previous_gross_profit,
-        'gross_profit_change': gross_profit_change,
-        'current_gross_profit_margin': current_gross_profit_margin,
+        'gross_profit_change': f'{gross_profit_change:.2f}',
+        'current_gross_profit_margin': f'{current_gross_profit_margin:.2f}',
         'previous_gross_profit_margin': previous_gross_profit_margin,
         'gross_profit_margin_change': gross_profit_margin_change,
     }
