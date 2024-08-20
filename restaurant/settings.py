@@ -19,12 +19,11 @@ ALLOWED_HOSTS = [
     '127.0.0.1',
     'acb0-91-102-181-72.ngrok-free.app',
     '55d4-91-102-181-96.ngrok-free.app',
-    '47b3-91-102-181-96.ngrok-free.app '
+    '47b3-91-102-181-96.ngrok-free.app'
 ]
 CSRF_TRUSTED_ORIGINS = [
     'https://acb0-91-102-181-72.ngrok-free.app',
-    'https://55d4-91-102-181-96.ngrok-free.app',
-    'https://47b3-91-102-181-96.ngrok-free.app '
+    'https://47b3-91-102-181-96.ngrok-free.app'
 ]
 # Application definition
 
