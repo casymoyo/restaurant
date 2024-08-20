@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Products{% endblock title %}
+{% block content %}
+<style>
+    .card{
+        border: none;
+    }
+    a{
+        text-decoration: none;
+        color: #333;
+    }
+</style>
+<div class="products m-2">
+    <nav class='mt-2 d-flex align-items-center justify-content-between'>
+        <div>
+            <ul class="list-unstyled d-flex align-items-center">
+                <li><a href='/' class='bx bx-home btn border fs-5 mt-1'></a></li>
+                <li class='mx-2 fs-5'>Production Raw Materials</li>
+            </ul>
+        </div>
+    </nav>
+    <div class="tables">
+        <table class="table table-hover table-responsive raw" id="raw_materials_table" style="width: 100%;">
+            <thead class="bg-primary">
+                <th>Name</th>
+                <th>Quantity</th>
+            </thead>
+            <tbody>
+                {% for r_m in raw_materials  %}
+                    <tr>
+                        <td><small>{{ r_m.product.name}}</small></td>
+                        <td><small>{{ r_m.quantity}} {{ r_m.product.unit }}</small></td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+        </div>
+</div>
+<script>
+    new DataTable('#raw_materials_table')
+</script>
+{% endblock content %}

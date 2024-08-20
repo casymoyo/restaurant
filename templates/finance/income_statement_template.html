@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        /* Add any CSS styling here */
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .report-header {
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        .report-section {
+            margin-bottom: 15px;
+        }
+        .report-section h2 {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+        .report-section table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .report-section table, .report-section th, .report-section td {
+            border: 0.5px solid lightgray;
+        }
+        .report-section th, .report-section td {
+            padding: 8px;
+            text-align: left;
+        }
+        .report-footer {
+            text-align: right;
+            font-size: 16px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="report-header">
+        {{ user.company.name }} Income Statement - {{ time_frame|capfirst }} Report
+        {% if time_frame == 'custom' %}
+            ({{ start_date }} - {{ end_date }})
+        {% endif %}
+    </div>
+
+    <div class="report-section">
+        <table>
+            <tr>
+                <th>Total Sales</th>
+                <td>{{ sales_total }}</td>
+            </tr>
+            <tr>
+                <th>Total COGS</th>
+                <td>({{ cogs_total }})</td>
+            </tr>
+            <tr>
+                <th>Gross Profit</th>
+                <td>{{ gross_profit }}</td>
+            </tr>
+            <tr>
+                <th>Total Expenses</th>
+                <td>({{ expenses_total }})</td>
+            </tr>
+            <tr>
+                <th>Net Profit</th>
+                <td>{{ net_profit }}</td>
+            </tr>
+        </table>
+    </div>
+</body>
+</html>

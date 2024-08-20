@@ -16,7 +16,9 @@ from datetime import  timedelta
 from decimal import Decimal
 from . tasks import send_expense_creation_notification
 from loguru import logger
-# to calculate cost of sales
+from django.template.loader import render_to_string
+from xhtml2pdf import pisa
+from django.http import HttpResponse
 
 def get_previous_month():
     first_day_of_current_month = datetime.datetime.now().replace(day=1)
@@ -116,7 +118,7 @@ def expenses(request):
             return JsonResponse({'success': True, 'messages':'Expense successfully created'}, status=201)
         except Exception as e:
             return JsonResponse({'success': False, 'message': str(e)}, status=400)
-        
+       
 def add_or_edit_expense(request):
     if request.method == 'POST':
         try:
@@ -273,29 +275,57 @@ def calculate_percentage_change(current_value, previous_value):
         return 0 if current_value == 0 else 100
     return ((current_value - previous_value) / previous_value) * 100
 
+def cogs_list(request):
+    cogs = COGS.objects.all()
+    return render(request, 'finance/cogs.html', {'cogs':cogs})
+
 def pl_overview(request):
-    current_month = get_current_month()
-    previous_month = get_previous_month()
-    current_year = get_current_year()
-    today = datetime.date.today()
-    
     filter_option = request.GET.get('filter')
-    
+    today = datetime.date.today()
+    previous_month = get_previous_month()
+    current_year = today.year
+    current_month = today.month
+
     if filter_option == 'today':
-        current_month_sales = Sale.objects.filter(date=today).aggregate(total_sales=Sum('total_amount'))['total_sales'] or 0
-        current_month_expenses = Expense.objects.filter(date=today, cancel=False).aggregate(total_expenses=Sum('amount'))['total_expenses'] or 0
+        date_filter = today
+    elif filter_option == 'last_week':
+        last_week_start = today - datetime.timedelta(days=today.weekday() + 7)
+        last_week_end = last_week_start + datetime.timedelta(days=6)
+        date_filter = (last_week_start, last_week_end)
+    elif filter_option == 'this_month':
+        date_filter = (datetime.date(current_year, current_month, 1), today)
+    elif filter_option == 'year':
+        year = int(request.GET.get('year', current_year))
+        date_filter = (datetime.date(year, 1, 1), datetime.date(year, 12, 31))
     else:
-        current_month_sales = Sale.objects.filter(date__year=current_year, date__month=current_month).aggregate(total_sales=Sum('total_amount'))['total_sales'] or 0
-        current_month_expenses = Expense.objects.filter(date__year=current_year, date__month=current_month, cancel=False).aggregate(total_expenses=Sum('amount'))['total_expenses'] or 0
+        date_filter = (datetime.date(current_year, current_month, 1), today)
+
+    if filter_option == 'today':
+        current_month_sales = Sale.objects.filter(date=date_filter).aggregate(total_sales=Sum('total_amount'))['total_sales'] or 0
+        current_month_expenses = Expense.objects.filter(date=date_filter, cancel=False).aggregate(total_expenses=Sum('amount'))['total_expenses'] or 0
+        cogs_total = COGS.objects.filter(date=date_filter).aggregate(total_cogs=Sum('amount'))['total_cogs'] or 0
+    elif filter_option == 'last_week':
+        current_month_sales = Sale.objects.filter(date__range=date_filter).aggregate(total_sales=Sum('total_amount'))['total_sales'] or 0
+        current_month_expenses = Expense.objects.filter(date__range=date_filter, cancel=False).aggregate(total_expenses=Sum('amount'))['total_expenses'] or 0
+        cogs_total = COGS.objects.filter(date__range=date_filter).aggregate(total_cogs=Sum('amount'))['total_cogs'] or 0
+    else:
+        current_month_sales = Sale.objects.filter(date__range=date_filter).aggregate(total_sales=Sum('total_amount'))['total_sales'] or 0
+        current_month_expenses = Expense.objects.filter(date__range=date_filter, cancel=False).aggregate(total_expenses=Sum('amount'))['total_expenses'] or 0
+        cogs_total = COGS.objects.filter(date__range=date_filter).aggregate(total_cogs=Sum('amount'))['total_cogs'] or 0
 
     previous_month_sales = Sale.objects.filter(date__year=current_year, date__month=previous_month).aggregate(total_sales=Sum('total_amount'))['total_sales'] or 0
     previous_month_expenses = Expense.objects.filter(date__year=current_year, date__month=previous_month, cancel=False).aggregate(total_expenses=Sum('amount'))['total_expenses'] or 0
-
-    current_net_income = current_month_sales - current_month_expenses
-    previous_net_income = previous_month_sales - previous_month_expenses
-
-    current_gross_profit = current_month_sales - current_month_expenses
-    previous_gross_profit = previous_month_sales - previous_month_expenses
+    previous_cogs =  COGS.objects.filter(date__year=current_year, date__month=previous_month).aggregate(total_cogs=Sum('amount'))['total_cogs'] or 0
+    
+    current_net_income = current_month_sales
+    previous_net_income = previous_month_sales 
+    current_expenses = current_month_expenses 
+    
+    current_gross_profit = current_month_sales - cogs_total
+    previous_gross_profit = previous_month_sales - previous_cogs
+    
+    current_net_profit = current_gross_profit - current_month_expenses
+    previous_net_profit = previous_gross_profit - previous_month_expenses
 
     current_gross_profit_margin = (current_gross_profit / current_month_sales * 100) if current_month_sales != 0 else 0
     previous_gross_profit_margin = (previous_gross_profit / previous_month_sales * 100) if previous_month_sales != 0 else 0
@@ -304,18 +334,71 @@ def pl_overview(request):
     gross_profit_change = calculate_percentage_change(current_gross_profit, previous_gross_profit)
     gross_profit_margin_change = calculate_percentage_change(current_gross_profit_margin, previous_gross_profit_margin)
 
+
     data = {
+        'net_profit':current_net_profit,
+        'cogs_total':cogs_total,
+        'current_expenses':current_expenses,
+        'current_net_profit': current_net_profit,
+        'previous_net_profit':previous_net_profit,
         'current_net_income': current_net_income,
         'previous_net_income': previous_net_income,
         'net_income_change': net_income_change,
         'current_gross_profit': current_gross_profit,
         'previous_gross_profit': previous_gross_profit,
-        'gross_profit_change': gross_profit_change,
-        'current_gross_profit_margin': current_gross_profit_margin,
+        'gross_profit_change': f'{gross_profit_change:.2f}',
+        'current_gross_profit_margin': f'{current_gross_profit_margin:.2f}',
         'previous_gross_profit_margin': previous_gross_profit_margin,
         'gross_profit_margin_change': gross_profit_margin_change,
     }
-    logger.info(data)
     return JsonResponse(data)
 
 
+def generate_report(request):
+    time_frame = request.GET.get('timeFrame')
+    start_date = None
+    end_date = None
+
+    if time_frame == 'today':
+        start_date = end_date = datetime.datetime.today()
+    elif time_frame == 'weekly':
+        start_date = datetime.datetime.today()- timedelta(days=7)
+        end_date = datetime.datetime.today()
+    elif time_frame == 'monthly':
+        start_date = datetime.datetime.today() - timedelta(days=30)
+        end_date = datetime.datetime.today()
+    elif time_frame == 'yearly':
+        start_date = datetime.datetime.today() - timedelta(days=365)
+        end_date = datetime.datetime.today()
+    elif time_frame == 'custom':
+        start_date = datetime.strptime(request.GET.get('startDate'), '%Y-%m-%d')
+        end_date = datetime.strptime(request.GET.get('endDate'), '%Y-%m-%d')
+
+    sales_total = Sale.objects.filter(date__range=(start_date, end_date)).aggregate(total_sales=Sum('total_amount'))['total_sales'] or 0
+    expenses_total = Expense.objects.filter(date__range=(start_date, end_date), cancel=False).aggregate(total_expenses=Sum('amount'))['total_expenses'] or 0
+    cogs_total = COGS.objects.filter(date__range=(start_date, end_date)).aggregate(total_cogs=Sum('amount'))['total_cogs'] or 0
+    net_profit = sales_total - expenses_total - cogs_total
+    gross_profit = sales_total - cogs_total
+
+    context = {
+        'user':request.user,
+        'sales_total': sales_total,
+        'expenses_total': expenses_total,
+        'cogs_total': cogs_total,
+        'net_profit': net_profit,
+        'time_frame': time_frame,
+        'start_date': start_date,
+        'end_date': end_date,
+        'gross_profit': gross_profit
+    }
+
+    html_string = render_to_string('finance/income_statement_template.html', context)
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="income_statement_{time_frame}.pdf"'
+    pisa_status = pisa.CreatePDF(html_string, dest=response)
+
+    if pisa_status.err:
+        logger.info('We had some errors with generating the report')
+        return HttpResponse('We had some errors with generating the report')
+    
+    return response

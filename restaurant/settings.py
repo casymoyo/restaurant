@@ -17,13 +17,10 @@ DEBUG = True
 ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
-    'acb0-91-102-181-72.ngrok-free.app',
-    '55d4-91-102-181-96.ngrok-free.app',
-    '47b3-91-102-181-96.ngrok-free.app'
+    '4336-91-102-181-32.ngrok-free.app'
 ]
 CSRF_TRUSTED_ORIGINS = [
-    'https://acb0-91-102-181-72.ngrok-free.app',
-    'https://47b3-91-102-181-96.ngrok-free.app'
+    'https://4336-91-102-181-32.ngrok-free.app'
 ]
 # Application definition
 
@@ -169,9 +166,6 @@ MEDIA_URL = "/media/"
 
 # LOGGING
 # ------------------------------------------------------------------------------
-# https://docs.djangoproject.com/en/dev/ref/settings/#logging
-# See https://docs.djangoproject.com/en/dev/topics/logging for
-# more details on how to customize your logging configuration.
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,

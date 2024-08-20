@@ -40,13 +40,13 @@ class Product(models.Model):
     ]
     
     name = models.CharField(max_length=255)
-    quantity = models.IntegerField()
+    quantity = models.FloatField()
     cost = models.DecimalField(max_digits=10, decimal_places=2)
     price = models.DecimalField(max_digits=10, decimal_places=2, default=1) 
     unit = models.ForeignKey(UnitOfMeasurement, on_delete=models.CASCADE, null=True)
     category = models.ForeignKey(Category, on_delete=models.CASCADE)
     tax_type = models.CharField(max_length=50, choices=tax_choices)
-    min_stock_level = models.IntegerField(default=0, null=True)
+    min_stock_level = models.FloatField(default=0, null=True)
     raw_material = models.BooleanField(default=False)
     finished_product = models.BooleanField(default=False)
     description = models.TextField()
@@ -54,10 +54,9 @@ class Product(models.Model):
     
     def __str__(self) -> str:
         return self.name
-    
 class ProductionRawMaterials(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
-    quantity = models.IntegerField()
+    quantity = models.FloatField()
     
     def __str__(self) -> str:
         return self.product.name
@@ -84,22 +83,18 @@ class Production(models.Model):
     
 class ProductionItems(models.Model):
     production = models.ForeignKey(Production, on_delete=models.CASCADE)
-    raw_material = models.ForeignKey(Product, on_delete=models.CASCADE)
-    quantity = models.FloatField()
     dish = models.ForeignKey('inventory.dish', on_delete=models.CASCADE)
-    rm_carried_forward_quantity = models.FloatField()
-    lf_carried_forward_quantity = models.FloatField()
-    actual_quantity = models.FloatField()
-    production_completion_time = models.TimeField(null=True)
+    lf_brought_forward_quantity = models.FloatField(null=True, blank=True)
+    actual_quantity = models.FloatField(null=True, blank=True)
     total_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     remaining_raw_material = models.FloatField(default=0, null=True, blank=True)
     declared = models.BooleanField(default=False)
     left_overs = models.FloatField(default=0, null=True, blank=True)
     wastage = models.FloatField(default=0, null=True, blank=True)      
-    portions = models.IntegerField(default=0, null=True)
-    staff_portions = models.IntegerField(default=0, null=True)  
-    declared_quantity = models.IntegerField(default=0, null=True)
-    portions_sold = models.IntegerField(default=0, null=True)
+    portions = models.FloatField(default=0, null=True)
+    staff_portions = models.FloatField(default=0, null=True)  
+    declared_quantity = models.FloatField(default=0, null=True)
+    portions_sold = models.FloatField(default=0, null=True)
 
 class MinorProductionItems(models.Model):
     production = models.ForeignKey(Production, on_delete=models.CASCADE)
@@ -114,10 +109,26 @@ class MinorProductionItems(models.Model):
     def __str__(self) -> str:
         return f'{self.minor_raw_material}'
 
+
+class AllocatedRawMaterials(models.Model):
+    production = models.ForeignKey(Production, on_delete=models.CASCADE)
+    raw_material = models.ForeignKey(Product, on_delete=models.CASCADE)
+    remaining_quantity = models.FloatField(null=True)
+    quantity = models.FloatField()
+    
+    def __str__(self) -> str:
+        return f'{self.production} ({self.raw_material}: ({self.quantity}))'
+class ProductionInventory(models.Model):
+    raw_material = models.ForeignKey(Product, on_delete=models.CASCADE)
+    quantity = models.FloatField()
+    
+    def __str__(self) -> str:
+        return f'{self.raw_material}: ({self.quantity})'
+
+
 class Dish(models.Model):
     name = models.CharField(max_length=100)
-    portion_multiplier = models.FloatField(default=1, null=True, blank=True)
-    major_raw_material = models.ForeignKey(Product, on_delete=models.CASCADE)
+    portion_multiplier = models.FloatField()
 
     def __str__(self) -> str:
         return self.name
@@ -126,10 +137,10 @@ class Ingredient(models.Model):
     dish = models.ForeignKey(Dish, on_delete=models.CASCADE, null=True)
     note = models.CharField(max_length=100, null=True)
     quantity = models.FloatField()
-    minor_raw_material = models.ForeignKey(Product, on_delete=models.CASCADE)
+    raw_material = models.ForeignKey(Product, on_delete=models.CASCADE)
 
     def __str__(self) -> str:
-        return self.minor_raw_material.name          
+        return self.raw_material.name          
     
 class MealCategory(models.Model):
     name = models.CharField(max_length=255)
@@ -191,9 +202,9 @@ class PurchaseOrderItem(models.Model):
 
     purchase_order = models.ForeignKey(PurchaseOrder, on_delete=models.CASCADE, related_name='items')
     product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True)
-    quantity = models.IntegerField()
+    quantity = models.FloatField()
     unit_cost = models.DecimalField(max_digits=10, decimal_places=2)
-    received_quantity = models.IntegerField(default=0) 
+    received_quantity = models.FloatField(default=0) 
     received = models.BooleanField(default=False, null=True)
     note = models.CharField(default='', null=True, max_length=255)
 
@@ -244,8 +255,8 @@ class Logs(models.Model):
     user = models.ForeignKey('users.User', on_delete=models.SET_NULL, null=True)
     action = models.CharField(max_length=20, choices=ACTION_CHOICES)
     purchase_order = models.ForeignKey(PurchaseOrder, null=True, blank=True, on_delete=models.SET_NULL)
-    quantity = models.IntegerField()
-    total_quantity = models.IntegerField()
+    quantity = models.FloatField()
+    total_quantity = models.FloatField()
     timestamp = models.DateField(auto_now_add=True)
     description = models.CharField(max_length=255, null=True)
     

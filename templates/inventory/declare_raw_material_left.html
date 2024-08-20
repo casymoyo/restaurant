@@ -24,79 +24,48 @@
         </div>
         <div class="row">
             <div class="">
-                <table class="table">
+                <table class="table" id="minor">
                     <thead class="bg-primary">
-                        <th>Raw Material</th>
-                        <th>Dish</th>
-                        <th>Quantity</th>
-                        <th>Used Quantity</th>
-                        <th>Remaining Quantity</th>
-                        <th>Expected Portions</th>
+                        <tr>
+                            <th>Raw Material</th>
+                            <th>Planned Quantity</th>
+                            <th>Expected Quantity</th>
+                            <th>Allocated Quantity</th>
+                            <th>Used Quantity</th>
+                            <th>Status</th>
+                        </tr>
                     </thead>
                     <tbody>
-                        {% for item in production_plan_items %}
-                            <tr data-item-id="{{ item.id }}">
-                                <td><small>{{ item.raw_material }}</small></td>
-                                <td><small>{{ item.dish.name }}</small></td>
-                                <td><small>{{ item.quantity }} {{ item.raw_material.unit }}</small></td>
-                                <td>
-                                    <small>
-                                        <input type="number" class="form-control used-quantity" min="0" data-actual-quantity="{{ item.quantity }}" data-portion="{{ item.dish.portion_multiplier}}" />
-                                    </small>
-                                </td>
-                                <td><small class="remaining-quantity"></small></td>
-                                <td><small id="portions"></small></td>
-                            </tr>
+                        {% for item in raw_materials %}
+                        <tr data-id="{{ item.id }}"  data-raw-material="{{ item.id }}">
+                            <td><small>{{ item.name }}</small></td>
+                            <td><small>{{ item.quantity | floatformat:2 }}</small></td>
+                            <td><small>{{ item.expected_quantity }}</small></td>
+                            <td>
+                                <small>
+                                    {% for rm in allocated %}
+                                        {% if item.id == rm.raw_material.id %}
+                                            {{ rm.quantity }}
+                                        {% endif %}
+                                    {% endfor %}
+                                </small>
+                            </td>
+                            <td>
+                                <small>
+                                    <input type="number" class="form-control used-quantity" min="0">
+                                </small>
+                            </td>
+                            <td><small class="status-text"></small></td> 
+                        </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
         </div>
-        <table class="table" id="minor">
-                    <thead class="bg-primary">
-                        <tr>
-                            <th>Raw Material</th>
-                            <th>Quantity</th>
-                            <th>Used Quantity</th>
-                            <th>Remaining Quantity</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for item in production_plan_minor_items %}
-                        <tr data-id="{{ item.minor_raw_material.id }}">
-                            <td><small>{{ item.minor_raw_material }}</small></td>
-                            <td><small>{{ item.total_quantity_per_kg }}</small></td>
-                            <td><small>{{ item.planned_quantity }}</small></td>
-                            <td>
-                                <small data-expected-quantity="{{ item.expected_quantity }}">
-                                    {{ item.expected_quantity }}
-                                </small>
-                            </td>
-                            <td><small>{{ item.cost_per_kg }}</small></td>
-                            <td><small>{{ item.total_cost }}</small></td>
-                            {% if confirm %}
-                                <td>
-                                    <small data-kitchen-quantity="{{ k_item.quantity }}">
-                                        {% if k_item.id == item.id %}
-                                        {{ k_item.quantity }}
-                                        {% endif %}
-                                    </small>
-                                </td>
-                            {% endif %}
-                            <td><small id="actual_needed_quantity"></small></td>
-                            {% if confirm %}
-                            <td>
-                                {% csrf_token %}
-                                <input type="number" id="quantity">
-                            </td>
-                            {% endif %}
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-                <div class="d-flex justify-content-end mt-2">
-                    <button id="id_confirm" class="btn-primary text-light btn">Declare</button>
-                </div>
+        
+        <div class="d-flex justify-content-end mt-2">
+            <button id="id_confirm" class="btn-primary text-light btn">Confirm Declaration</button>
+        </div>
     </div>
 </div>
 
@@ -104,39 +73,29 @@
     document.addEventListener('DOMContentLoaded', function () {
         const inputElements = document.querySelectorAll('.used-quantity');
 
+        console.log(inputElements)
         inputElements.forEach(input => {
+            console.log('here')
             input.addEventListener('keydown', function (event) {
                 if (event.key === 'Enter') {
                     event.preventDefault();
                     const tr = input.closest('tr');
-                    const itemId = tr.getAttribute('data-item-id');
-                    const actualQuantity = parseFloat(input.getAttribute('data-actual-quantity'));
-                    const portionMultiplier = parseInt(input.getAttribute('data-portion'));
+                    const itemId = {{ production_plan.id }};
+                    const rmId = tr.getAttribute('data-raw-material');
                     const usedQuantity = parseFloat(input.value);
-
-                    if (isNaN(usedQuantity) || usedQuantity < 0) {
-                        Swal.fire({
-                            title: "Error",
-                            text: 'Please enter a valid quantity.',
-                            icon: "error"
-                        });
-                        return;
-                    }
+                    console.log(tr)
+                    
                     // revisit
-                    if (usedQuantity > actualQuantity) {
+                    {% comment %} if (usedQuantity > actualQuantity) {
                         Swal.fire({
                             title: "Error",
                             text: 'Quantity used can\'t be greater than Quantity.',
                             icon: "error"
                         });
                         return;
-                    } 
+                    }  {% endcomment %}
 
-                    const remainingQuantity = actualQuantity - usedQuantity;
-                    const portions = usedQuantity * portionMultiplier
-                    tr.querySelector('.remaining-quantity').textContent = remainingQuantity + ' kgs';
-                    tr.querySelector('#portions').textContent = usedQuantity * portionMultiplier + ' portions'
-
+                
                     fetch("{% url 'inventory:declare_production_plan' production_plan.id %}", {
                         method: 'POST',
                         headers: {
@@ -144,9 +103,9 @@
                             'X-CSRFToken': '{{ csrf_token }}'
                         },
                         body: JSON.stringify({
+                            raw_material_id:rmId,
                             production_plan_item: itemId,
                             quantity_used: usedQuantity,
-                            portions: portions
                         })
                     })
                     .then(response => response.json())
@@ -157,6 +116,9 @@
                                 text: data.message,
                                 icon: "error"
                             });
+                        }else{
+                            tr.querySelector('.status-text').innerText = "Declared";
+                            input.disabled = true;
                         }
                     })
                     .catch(error => {

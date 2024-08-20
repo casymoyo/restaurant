@@ -45,102 +45,72 @@
         <div class="row">
             <div class="">
                 <div class="d-flex align-items-center justify-content-between border rounded p-2 bg-dark text-light">
-                    <h5 class="fw-bold">Major Raw Materials</h5>
+                    <h5 class="fw-bold">Dishes</h5>
                     <h5 class="fw-bold">Total Cost: ${{ total_cost_items }}</h5>
                 </div>
                 <table class="table" id='plan_item_table' style="width:100%;">
                     <thead class="bg-primary">
-                        <th>Raw Material</th>
                         <th>Dish</th>
-                        <th>Quantity</th>
-                        <th>RM B/F Quantity</th>
-                        <th>LF B/f Quantity</th>
-                        <th>Actual Quantity</th>
-                        <th>Declared Quantity</th>
-                        <th>Portion Multiplier</th>
                         <th>Portions</th>
                         <th>Total Cost</th>
                     </thead>
                     <tbody>
                         {% for item in production_plan_items  %}
                           <tr>
-                            <td><small>{{ item.raw_material }}</small></td>
                             <td><small>{{ item.dish.name }}</small></td>
-                            <td><small>{{ item.quantity }} {{ item.raw_material.unit }}</small></td>
-                            <td><small>{{ item.rm_carried_forward_quantity }} {{ item.raw_material.unit }}</small></td>
-                            <td><small>{{ item.lf_carried_forward_quantity }} {{ item.raw_material.unit }}</small></td>
-                            <td><small>{{ item.actual_quantity }} {{ item.raw_material.unit }}</small></td>
-                            <td><small>{{ item.declared_quantity }}</small></td>
-                            <td><small>{{ item.dish.portion_multiplier }}</small></td>
-                            <td><small>{{ item.portions }} portions</small></td>
-                            <td><small>{{ item.total_cost }}</small></td>
+                            <td><small>{{ item.portions }} {{ item.raw_material.unit }}</small></td>
+                            <td><small>${{ item.total_cost }}</small></td>
                           </tr>
                         {% endfor %}
                     </tbody>
                 </table>
 
                 
-                <div class=" mt-4 mb-2 d-flex align-items-center justify-content-between border rounded p-2 bg-dark text-light">
-                    <h5 class="fw-bold">Minor Raw Materials</h5>
-                    <h5 class="fw-bold">Total Cost: ${{ total_cost_minor_items }}</h5>
+                <div class="d-flex mt-3 align-items-center justify-content-between border rounded p-2 bg-dark text-light">
+                    <h5 class="fw-bold">Raw Materials</h5>
                 </div>
 
                 <table class="table" id="minor">
                     <thead class="bg-primary">
                         <tr>
                             <th>Raw Material</th>
-                            <th>Total Ingr Quantity (per kg)</th>
-                            <th>Planned Quantity (kgs)</th>
-                            <th>Expected Quantity (Planned x Total Quantity)</th>
-                            <th>Cost (per kg)</th>
-                            <th>Total Cost</th>
-                            {% if confirm %}
-                                <th>Kitchen Raw Material</th>
-                            {% endif %}
-                            {% if confirm %}
-                                <th>Actual Quantity Needed</th>
-                            {%else%}
-                                <th>Declared Quantity</th>
-                            {% endif %}
-                            {% if confirm %}
-                                <th>Confirm Raw Material</th>
+                            <th>Planned Quantity</th>
+                            <th>Allocated Quantity</th>
+                            {% if not confirm %}
+                                <th>Remaing Quantity (kgs)</th>
                             {% endif %}
                         </tr>
                     </thead>
                     <tbody>
                         {% for item in production_plan_minor_items %}
-                        <tr data-id="{{ item.minor_raw_material.id }}">
-                            <td><small>{{ item.minor_raw_material }}</small></td>
-                            <td><small>{{ item.total_quantity_per_kg }}</small></td>
-                            <td><small>{{ item.planned_quantity }}</small></td>
-                            <td>
-                                <small data-expected-quantity="{{ item.expected_quantity }}">
-                                    {{ item.expected_quantity }}
-                                </small>
-                            </td>
-                            <td><small>{{ item.cost_per_kg }}</small></td>
-                            <td><small>{{ item.total_cost }}</small></td>
+                        <tr data-id="{{ item.id }}">
+                            <td><small>{{ item.name }}</small></td>
+                            <td><small>{{ item.quantity|floatformat:2 }}</small></td>
                             {% if confirm %}
                                 <td>
-                                    <small data-kitchen-quantity="{{ k_item.quantity }}">
-                                        {% if k_item.id == item.id %}
-                                        {{ k_item.quantity }}
-                                        {% endif %}
-                                    </small>
+                                    {% csrf_token %}
+                                    <input type="number" id="quantity" class='form-control'>
                                 </td>
-                            {% endif %}
-                            <td><small id="actual_needed_quantity"></small></td>
-                            {% if confirm %}
+                            {% else %}
                             <td>
-                                {% csrf_token %}
-                                <input type="number" id="quantity">
+                                {% for allocated in allocated_rm %}
+                                    {% if allocated.raw_material.id == item.id%}
+                                        <small>{{ allocated.quantity }}</small>
+                                    {% endif %}
+                                {% endfor %}
+                            </td>
+                            <td>
+                                {% for allocated in allocated_rm %}
+                                    {% if allocated.raw_material.name == item.name %}
+                                        <small>{{ allocated.remaining_quantity }}</small>
+                                    {% endif %}
+                                {% endfor %}
                             </td>
                             {% endif %}
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
-                
 
                 {% if confirm %}
                     <div class="d-flex justify-content-end mt-4">
@@ -157,24 +127,6 @@
         new DataTable('#plan_item_table');
         new DataTable('#minor');
         
-        // Function to calculate and update the actual quantity needed
-        function updateActualQuantities() {
-            document.querySelectorAll('#minor tbody tr').forEach(function (row) {
-                const expectedQuantity = parseFloat(row.querySelector('[data-expected-quantity]').textContent);
-                const kitchenRawMaterialQuantity = parseFloat(row.querySelector('[data-kitchen-quantity]').textContent) || 0;
-                console.log(expectedQuantity, kitchenRawMaterialQuantity)
-                if (!isNaN(expectedQuantity) && !isNaN(kitchenRawMaterialQuantity)) {
-                    const actualNeededQuantity = expectedQuantity - kitchenRawMaterialQuantity;
-                    row.querySelector('#actual_needed_quantity').textContent = actualNeededQuantity.toFixed(2);
-                } else {
-                    row.querySelector('#actual_needed_quantity').textContent = 'N/A'; // Handle cases where data might be missing
-                }
-            });
-        }
-
-        // Call the function to update quantities on page load
-        updateActualQuantities();
-        
         document.querySelectorAll('#minor input[type="number"]').forEach(function (input) {
             input.addEventListener('change', function () {
                 const quantityEntered = parseFloat(this.value);
@@ -182,20 +134,19 @@
                 console.log(quantityEntered)
 
                 if (!isNaN(quantityEntered)) {
-                   console.log(quantityEntered)
-                    // Mark the row as done
+                   
                     row.style.backgroundColor = 'lightgreen'; 
-                    
-                    // Send the confirmed quantity to the backend
+
                     const rawMaterialId = row.getAttribute('data-id');
-                    console.log(row)
+
                     fetch('/inventory/confirm_minor_raw_materials/', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'X-CSRFToken': $('input[name="csrfmiddlewaretoken"]').val(), // ensure you include the CSRF token
+                            'X-CSRFToken': $('input[name="csrfmiddlewaretoken"]').val(), 
                         },
                         body: JSON.stringify({
+                            production_id: {{ production_plan.id }},
                             raw_material_id: rawMaterialId,
                             quantity: quantityEntered,
                             csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val(),
@@ -204,11 +155,15 @@
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
-                            input.disabled = true; // This makes the input field readonly
+                            input.disabled = true; 
                             row.style.backgroundColor = '#d3d3d3';
                             console.log('Quantity confirmed');
                         } else {
-                            console.error('Error confirming quantity:', data.message);
+                            Swal.fire({
+                                title: "Error",
+                                text: data.message,
+                                icon: "error"
+                            });
                         }
                     })
                     .catch(error => {

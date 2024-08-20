@@ -27,14 +27,9 @@
             <div class="col-9">
                 <table class="table">
                     <thead class="bg-primary">
-                        <th>Raw Material</th>
                         <th>Dish</th>
-                        <th>Quantity</th>
+                        <th>Portions</th>
                         <th>Total Cost</th>
-                        <th>Previous Rameterial C/F Quantity</th>
-                        <th>Previous Portion C/F quantity</th>
-                        <th>Actual quantity</th>
-                        <th>PC Time</th>
                     </thead>
                     <tbody id="cart-items"></tbody>
                 </table>
@@ -46,7 +41,7 @@
             <div class="col-3">
                 <form id="production-plan-form" action="" method="post">
                     {% csrf_token %}
-                    {{ form.as_p }}
+                    {{ form | crispy }}
                     <button type="button" id="save-button" class="btn btn-secondary btn-sm w-100">Save</button>
                 </form>
             </div>
@@ -56,9 +51,10 @@
 <script>
 $(document).ready(function() {
     let cart = [];
-    let product = '';
     let unit_cost = 1;
-    let unit_of_measurement = ''
+    let unit_of_measurement = '';
+    let portion_multiplier = 1;
+    let ingredientsData = [];
 
     let lf = document.getElementById('id_lf_carried_forward_quantity');
     let rm = document.getElementById('id_rm_carried_forward_quantity');
@@ -66,12 +62,7 @@ $(document).ready(function() {
     let quantity = document.getElementById('id_quantity');
     let actual = document.getElementById('id_actual_quantity');
 
-    $('#id_raw_material').select2();
     $('#id_dish').select2();
-
-    $('#id_raw_material').on('change', function(e){
-        product = e.target.value;
-    });
 
     //reset button
     $('#id_reset').on('click', function(){
@@ -101,10 +92,9 @@ $(document).ready(function() {
                 title: "Success",
                 text: "Production plan created successfully!",
                 icon: "success"
+            }).then(()=>{
+                window.location.href="{% url 'inventory:production_plans' %}"
             });
-            cart = [];
-            updateCartTable();
-            window.location.href=`/inventory/minor_raw_materials/${data.data}/`
         } else {
             Swal.fire({
                 title: "Error",
@@ -120,13 +110,13 @@ $(document).ready(function() {
 
     $('#id_dish').on('change', function(e) {
         const selectedProductId = e.target.value;
+        console.log(selectedProductId)
         const postData = {
             csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val(),
-            dish: selectedProductId,
-            raw_material: product
+            dish_id: selectedProductId,
         };
 
-        fetch('{% url "inventory:yeseterdays_left_overs" %}', {
+        fetch('{% url "inventory:dish_json_detail" %}', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -137,17 +127,8 @@ $(document).ready(function() {
         .then(response => response.json())
         .then(data => {
             if (data.success){
-                lf.value = parseFloat(data.data.left_over_portion_diff) || 0.00;
-                lf.readOnly = true;
-                lf.style.backgroundColor = 'lightgray';
-
-                rm.value = parseFloat(data.data.raw_material_dif) || 0.00;
-                rm.readOnly = true;
-                rm.style.backgroundColor = 'lightgray';
-
-                unit_cost = parseFloat(data.data.unit_cost);
-                unit_of_measurement = data.data.unit_of_measurement;
-                console.log(unit_of_measurement)
+                ingredientsData.push(data.data)
+                portion_multiplier = data.portion_multiplier                                                                                
             } else {
                 Swal.fire({
                     title: "Error",
@@ -174,16 +155,25 @@ $(document).ready(function() {
         actual.style.backgroundColor = 'lightgray';
     });
 
+    function total_dish_cost(portions){
+        let cost_per_kg = 0;
+        let kgs = 0;
+
+        kgs = portions / portion_multiplier;
+        
+        ingredientsData[0].forEach((i)=>{
+            cost_per_kg += i.quantity * i.cost 
+        });
+        console.log(cost_per_kg)
+        return kgs * cost_per_kg;
+    }
+
     $('#save-button').on('click', function() {
+        portions = parseFloat(document.getElementById('id_portions').value);
         const item = {
-            raw_material: $('#id_raw_material option:selected').text(),
             dish: $('#id_dish option:selected').text(),
-            quantity: parseFloat(quantity.value),
-            total_cost: parseFloat(actual.value) * unit_cost, 
-            rm_bf_quantity: parseFloat(rm.value),
-            lf_bf_quantity: parseFloat(lf.value),
-            actual_quantity: parseFloat(actual.value),
-            timeout: document.getElementById('id_production_completion_time').value
+            portions: portions,
+            total_cost: total_dish_cost(portions), 
         };
 
         cart.push(item);
@@ -196,14 +186,9 @@ $(document).ready(function() {
         cart.forEach((item, index) => {
             cartItems.append(`
                 <tr>
-                    <td><button class="btn border bx bx-trash" onclick="deleteItem(${index})"></button> <span class='mx-2'>${item.raw_material}</span></td>
-                    <td>${item.dish}</td>
-                    <td><input type="number" class="form-control" value="${item.quantity}" onchange="updateQuantity(${index}, this.value)"></td>
+                    <td><button class="btn border bx bx-trash" onclick="deleteItem(${index})"></button> <span class='mx-2'>${item.dish}</span></td>
+                    <td><input type="number" class="form-control" value="${item.portions}" onchange="updateQuantity(${index}, this.value)"></td>
                     <td>${item.total_cost.toFixed(2)}</td>
-                    <td>${item.rm_bf_quantity.toFixed(2)}${unit_of_measurement}</td>
-                    <td>${item.lf_bf_quantity.toFixed(2)}${unit_of_measurement}</td>
-                    <td>${item.actual_quantity.toFixed(2)}${unit_of_measurement}</td>
-                    <td>${item.timeout}</td>
                 </tr>
             `);
         });
@@ -214,11 +199,10 @@ $(document).ready(function() {
         updateCartTable();
     }
 
-    window.updateQuantity = function(index, newQuantity) {
+    window.updateQuantity = function(index, newPortions) {
         const item = cart[index];
-        item.quantity = parseFloat(newQuantity);
-        item.actual_quantity = parseFloat(newQuantity - (parseFloat(item.lf_bf_quantity) + parseFloat(item.rm_bf_quantity)));
-        item.total_cost = item.actual_quantity * unit_cost;
+        item.portions = parseFloat(newPortions);
+        item.total_cost = total_dish_cost(newPortions)
         updateCartTable();
     }
 });

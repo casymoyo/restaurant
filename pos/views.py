@@ -75,6 +75,9 @@ def meal_detail_json(request, meal_id):
         
         return JsonResponse({'success':True, 'data': meal_data})
     
+from django.utils.timezone import localdate
+from datetime import datetime
+
 @login_required
 @transaction.atomic
 def process_sale(request):
@@ -89,52 +92,57 @@ def process_sale(request):
             sub_total = sum(item['price'] * item['quantity'] for item in items)
             logger.info(sub_total)
             
-            tax = sub_total * 0.15 #to be dynamically stipulated
+            tax = sub_total * 0.15 
             logger.info(tax)
             
-            total_amount = sub_total 
+            total_amount = sub_total
             
             sale = Sale.objects.create(
                 total_amount=total_amount,
                 tax=tax,
                 sub_total=sub_total,
                 cashier=request.user,
-                staff= True if staff else False
+                staff=True if staff else False
             )
-            
-            latest_plan = Production.objects.latest('time_created')
+
+            # Get today's production plans
+            today = localdate()
+            daily_productions = Production.objects.filter(date_created=today).order_by('time_created')
 
             for item in items:
                 if not item['type']:
                     meal = get_object_or_404(Meal, id=item['meal_id'])
                     
                     sale_item = SaleItem.objects.create(
-                    sale=sale,
-                    meal=meal,
-                    quantity=item['quantity'],
-                    price=meal.price
-                )
-                
-                for dish in meal.dish.all():
-                    try:
-                        pp_item = ProductionItems.objects.get(production=latest_plan, dish=dish)
-                        
-                        if pp_item.portions == pp_item.portions_sold:
-                            raise ValueError(f'Related dish ({pp_item.dish.name}) portions exhausted.')
-                        
-                        if staff:
-                            pp_item.staff_portions += sale_item.quantity
-                            logger.info('staff')
-                        else:
-                            pp_item.portions_sold += sale_item.quantity
-                            logger.info('sale')
+                        sale=sale,
+                        meal=meal,
+                        quantity=item['quantity'],
+                        price=meal.price
+                    )
+                    
+                    for production in daily_productions:
+                        try:
+                            pp_item = ProductionItems.objects.get(production=production, dish__in=meal.dish.all())
                             
-                        pp_item.left_overs -= sale_item.quantity
-                        pp_item.save()
+                            if pp_item.portions == pp_item.portions_sold:
+                                continue  # Move to the next production plan if portions are exhausted
+
+                            if staff:
+                                pp_item.staff_portions += sale_item.quantity
+                                logger.info('staff')
+                            else:
+                                pp_item.portions_sold += sale_item.quantity
+                                logger.info('sale')
+                                
+                            pp_item.left_overs -= sale_item.quantity
+                            pp_item.save()
+                            
+                            break  # Stop checking further productions for this dish
                         
-                    except ProductionItems.DoesNotExist:
-                        logger.info(f'Production item not found for dish {dish.name}')
-                        raise ValueError(f'Production item not found for dish {dish.name}')
+                        except ProductionItems.DoesNotExist:
+                            logger.info(f'Production item not found for dish.')
+                            continue  # Move to the next production plan if not found
+                        
                 else:
                     product = get_object_or_404(Product, id=item['meal_id'])
                     product.quantity -= item['quantity']
@@ -143,12 +151,12 @@ def process_sale(request):
                         sale=sale,
                         product=product,
                         quantity=item['quantity'],
-                        price=meal.price
+                        price=product.price  # Make sure to use the correct price here
                     )
                     
                     Logs.objects.create(
                         user=request.user, 
-                        action= 'sale',
+                        action='sale',
                         product=product,
                         quantity=sale_item.quantity,
                         total_quantity=product.quantity,
@@ -158,12 +166,12 @@ def process_sale(request):
                     
                 CashBook.objects.create(
                     sale=sale, 
-                    amount = sale.total_amount,
+                    amount=sale.total_amount,
                     debit=True,
                     description=f'Sale (Receipt number: {sale.receipt_number})'
                 )
                 
-                generate_receipt(request, sale)
+                # generate_receipt(request, sale)
                     
             logger.info(f'Sale: {sale.id} Processed')
             return JsonResponse({'success': True, 'sale_id': sale.id}, status=201)
@@ -172,6 +180,7 @@ def process_sale(request):
             transaction.set_rollback(True)
             logger.error(f'Error processing sale: {str(e)}')
             return JsonResponse({'success': False, 'message': str(e)}, status=400)
+
         
 @login_required
 def generate_receipt(request, sale):

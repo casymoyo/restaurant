@@ -25,7 +25,7 @@
                 {{ dish_form | crispy }}
             </form>
 
-            <h5 class="mt-2 mb-2">Minor raw materials (Ingredients)</h5>
+            <h5 class="mt-2 mb-2">Ingredients</h5>
             <div class="col-9">
                 <table class="table">
                     <thead class="bg-primary">
@@ -39,9 +39,20 @@
                 </div>
             </div>
             <div class="col-3 border p-2 rounded mt-2">
+               
                 <form id="production-plan-form" action="" method="post">
                     {% csrf_token %}
-                    {{ form | crispy }}
+
+<div id="div_id_raw_material" class="mb-3"> <label for="id_raw_material" class="form-label requiredField">
+            Choose Ingredients    <span class="asteriskField">*</span> </label> <select name="raw_material" required="" id="id_raw_material" tabindex="-1" class='form-control' aria-hidden="true"> 
+                <option value="" selected="" >---------</option> 
+                {% for r in r_m %}
+                    <option value="{{ r.id}}" selected="" >{{ r.name }}</option> 
+                {% endfor %}
+</select> </div> <div id="div_id_quantity" class="mb-3"> <label for="id_quantity" class="form-label requiredField">
+                Quantity <span id='unit'></span><span class="asteriskField">*</span> </label> <input type="number" name="quantity" step="any" class="numberinput form-control" required="" id="id_quantity"> </div> <div id="div_id_note" class="mb-3"> <label for="id_note" class="form-label requiredField">
+                Note<span class="asteriskField">*</span> </label> <input type="text" name="note" maxlength="100" class="textinput form-control" required="" id="id_note" spellcheck="false" data-ms-editor="true"> </div>
+
                     <button type="button" id="save-button" class="btn btn-secondary btn-sm w-100">Save</button>
                 </form>
             </div>
@@ -54,7 +65,8 @@ $(document).ready(function() {
     let product = '';
     let unit_cost = 1;
     let unit_of_measurement = ''
-    
+    let rawMaterialData = []
+
     $('#id_raw_material').select2();
     $('#id_dish').select2();
 
@@ -68,13 +80,49 @@ $(document).ready(function() {
       updateCartTable()
     })
 
+    $('#id_raw_material').on('change', function(e) {
+        const selectedProductId = e.target.value;
+        const postData = {
+            csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val(),
+            raw_material_id: selectedProductId,
+        };
+
+        console.log('here')
+
+        fetch('{% url "inventory:raw_material_json" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': $('input[name="csrfmiddlewaretoken"]').val()
+            },
+            body: JSON.stringify(postData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success){
+                console.log(data.data[0].unit__unit_name)
+                rawMaterialData.push(data.data)   
+                document.getElementById('unit').textContent=`(${data.data[0].unit__unit_name})`                                                                        
+            } else {
+                Swal.fire({
+                    title: "Error",
+                    text: data.message,
+                    icon: "error"
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error posting product data:', error);
+        });
+    });
+
+
     // submit button 
     $('#id_submit').on('click', function(){
       const postData = {
         csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val(),
         cart: cart,
         name: document.getElementById('id_name').value,
-        major_raw_material: parseInt(document.getElementById('id_major_raw_material').value),
         portion_multiplier: parseFloat(document.getElementById('id_portion_multiplier').value)
     };
     console.log(postData)
@@ -114,12 +162,11 @@ $(document).ready(function() {
     $('#save-button').on('click', function() {
         const item = {
             note: document.getElementById('id_note').value,
-            raw_material: $('#id_minor_raw_material option:selected').text(),
+            raw_material: $('#id_raw_material option:selected').text(),
             quantity: parseFloat(document.getElementById('id_quantity').value),
         };
 
         cart.push(item);
-        console.log(cart)
         updateCartTable();
     });
 

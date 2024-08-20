@@ -5,18 +5,17 @@ from loguru import logger
 
 def send_expense_creation_notification(expense_id):
     expense = Expense.objects.get(id=expense_id)
-    logger.info(expense)
-    email = EmailMessage(
-        f"Expense Notification:",
-        f"""
-        The email is to notify you, on the creation of an expense for {expense.description}
-        """
-        'admin@techcity.co.zw',
-        ['cassymyo@gmail.com']
-    )
-    # email.attach(f'EndOfDayReport.pdf', buffer.getvalue(), 'application/pdf')
     
-    # Run email sending in a thread
+    email = EmailMessage(
+        subject=f"Expense Notification:",
+        body=f"""
+        The email is to notify you on the creation of an expense for {expense.description}.
+        For an amount of ${expense.amount}.
+        """,
+        from_email='admin@techcity.co.zw',
+        to=['cassymyo@gmail.com'],
+    )
+    
     EmailThread(email).start()
     
     logger.info('send')

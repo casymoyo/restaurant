@@ -110,14 +110,10 @@
                     <div class="d-flex flex-row flex-md-nowrap align-items-center pt-3 pb-2 rounded">
                         <div class="mb-2 mt- w-100 d-flex">
                             <input type="search" class="form-control w-100" id="food_search" placeholder="Search">
-                            <!-- <button class="btn btn-outline-dark mx-2" id="foodButton">Food</button>
-                            <button class="btn btn-outline-dark" id="categoryButton">Dr</button> -->
                         </div>
                     </div>
                     <div>
-                        <div class="row" id="itemsContainer">
-                            <!-- Items will be rendered here by JavaScript -->
-                        </div>
+                        <div class="row" id="itemsContainer"></div>
                     </div>
                 </main>
                 <section class="col-md-3 bg-dark text-light sidebar rounded mt-3">
@@ -275,6 +271,45 @@
         const staffModal = new bootstrap.Modal(document.getElementById('staffModal'))
         const staffChargeModal = new bootstrap.Modal(document.getElementById('staffChargeModal'))
         const staff = document.getElementById('staff')
+
+        document.addEventListener('keydown', function(event) {
+            switch (event.code) {
+                case 'F2': // Hotkey for searching
+                    event.preventDefault();
+                    searchFunction(); 
+                    break;
+                case 'Space': // Hotkey for charge button
+                    event.preventDefault();
+                    chargeFunction(); 
+                    break;
+                case 'Enter': // Hotkey for finalizing sales
+                    event.preventDefault();
+                    finalizeSale(false)
+                    break;
+                default:
+                    break;
+            }
+        });
+    
+        function searchFunction() {
+            const searchField = document.getElementById('food_search');
+            searchField.focus(); 
+            searchField.select(); 
+            console.log('Search triggered');
+        }
+    
+        function chargeFunction() {
+            if (cart.length === 0){
+                Swal.fire({
+                    title: "Error",
+                    text: "Empty Order",
+                    icon: "error"
+                });
+            }else{
+                chargeModal.show()
+            }
+            console.log('Charge triggered');
+        }
 
         staff.addEventListener('click', ()=>{
             staffModal.hide()
@@ -443,11 +478,16 @@
     }
 
     function finalizeSale(staff) {
+        const amountField = document.getElementById('totalAmountInput');
+        setTimeout(() => {
+            amountField.focus();
+            amountField.select();
+        }, 100);
+
         const totalAmountInput = parseFloat(document.getElementById('totalAmountInput').value);
         const total = parseFloat(document.getElementById('total').innerText.slice(1));
         const change = totalAmountInput - total;
         document.getElementById('changeDisplay').value = `$${change.toFixed(2)}`;
-
         if(!totalAmountInput){
             Swal.fire({
                 title: "Error",

@@ -10,6 +10,11 @@ class ExpenseCategory(models.Model):
     def __str__(self) -> str:
         return self.name
 
+class COGS(models.Model):
+    date = models.DateField(auto_now_add=True)
+    production = models.ForeignKey('inventory.production', on_delete=models.CASCADE, null=True)
+    amount = models.DecimalField(max_digits=10, decimal_places=2, default=0) 
+    
 class Expense(models.Model):
     category = models.ForeignKey(ExpenseCategory, on_delete=models.CASCADE)
     amount = models.DecimalField(max_digits=10, decimal_places=2, default=0) 

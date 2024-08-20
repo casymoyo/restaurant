@@ -55,7 +55,7 @@
             let quantity = parseInt(quantityCell.textContent.trim(), 10);
 
             let total = unitCost * quantity;
-            console.log(total)
+            console.log(total, unitCost, quantity)
             totalCell.textContent = total.toFixed(2);
         });
     });

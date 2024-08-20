@@ -18,7 +18,12 @@ urlpatterns = [
     path('edit/expense/', add_or_edit_expense, name='add_or_edit_expense'),
     path('delete_expense/<int:expense_id>/', delete_expense, name='delete_expense'),
     
-    
     # cashbook 
-    path('cashbook/', cashbook, name='cashbook')
+    path('cashbook/', cashbook, name='cashbook'),
+    
+    # cogs
+    path('cogs/', cogs_list, name='cogs'),
+    
+    # reports
+    path('generate-report/', generate_report, name='generate_report'),
 ]
