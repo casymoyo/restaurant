@@ -34,13 +34,19 @@
         </div>
         <div>
             <div class=" mt-2 w-100">
-                <table class='table border table-hover rounded p-2' id='production_table' style="width: 100%;" >
+                <table class='table border table-bordered table-hover rounded p-2' id='production_table' style="width: 100%;" >
                         <thead class='bg-primary'>
                             <tr>
                                 <th>Date</th>
                                 <th>PP Number</th>
-                                <th>Confirmation Status</th>
-                                <th>Declaration Status</th>
+                                <th>
+                                    <span class='text-danger'>BY ADMIN</span>
+                                    <span class='mx-2'>(Confimation Status)</span>
+                                </th>
+                                <th>
+                                    <span class='text-danger'>BY CHEF</span>
+                                    <span class='mx-2'>(Confimation Status)</span>
+                                </th>
                                 <th>Actions</th>
                             </tr>
                             </thead>
@@ -49,24 +55,24 @@
                                 <tr>
                                     <td><small>{{ plan.date_created }} {{ plan.time_created }}</small></td>
                                     <td><small>{{ plan.production_plan_number }}</small></td>
-                                    <td>
-                                        <small>
+                                    <td> 
+                                        <small >
                                             {% if plan.status %}
-                                                <small class="bg-success fw-bold text-light p-2 rounded text-center w-100">Confirmed</small>
+                                                <small class="bg-success text-light p-2 rounded text-center w-100">Confirmed</small>
                                             {%else %}
-                                                <a href="{% url 'inventory:confirm_production_plan' plan.id %}" class="bg-secondary fw-bold text-light p-2 rounded text-center w-100">Waiting Confirmation</a>
+                                                <a href="{% url 'inventory:confirm_production_plan' plan.id %}" class="bg-danger text-light p-2 rounded text-center w-100">Waiting Confirmation</a>
                                             {% endif %}
                                         </small>
                                     </td>
                                     <td>
                                         <small>
                                             {% if plan.declared %}
-                                                <small class="bg-success fw-bold text-light p-2 rounded text-center w-100" disabled>Declared</small>
+                                                <small class="bg-success text-light p-2 rounded text-center w-100" disabled>Declared</small>
                                             {% else %}
                                                 {% if plan.status %}
-                                                    <a href="{% url 'inventory:declare_production_plan' plan.id %}" class="bg-secondary fw-bold text-light p-2 rounded text-center w-100">Waiting declaration</a>
+                                                    <a href="{% url 'inventory:declare_production_plan' plan.id %}" class="bg-danger text-light p-2 rounded text-center w-100">Waiting declaration</a>
                                                 {% else %}
-                                                    <small class="bg-primary fw-bold text-light p-2 rounded text-center w-100" disabled>Awaiting production plan confirmation</small>
+                                                    <small class="bg-danger text-light p-2 rounded text-center w-100" disabled>Awaiting production plan confirmation</small>
                                                 {% endif %}
                                             {% endif %}
                                         </small>

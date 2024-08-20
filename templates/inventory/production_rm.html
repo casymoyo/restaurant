@@ -30,7 +30,7 @@
                 {% for r_m in raw_materials  %}
                     <tr>
                         <td><small>{{ r_m.product.name}}</small></td>
-                        <td><small>{{ r_m.quantity}}</small></td>
+                        <td><small>{{ r_m.quantity}} {{ r_m.product.unit }}</small></td>
                     </tr>
                 {% endfor %}
             </tbody>

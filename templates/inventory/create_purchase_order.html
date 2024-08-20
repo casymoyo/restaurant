@@ -131,7 +131,9 @@
                                 >
                                 <p id="price_error" class="fs-6 text-danger"></p>
                             </div> 
-                            <div id="supplier_prices" class="mb-2"></div>
+                            <div id="supplier_prices" class="mb-2">
+
+                            </div>
                             <div id="div_id_quantity" class="mb-1"> 
                                 <label for="id_p_quantity" class="form-label requiredField">
                                     Quantity
@@ -739,10 +741,11 @@
                 console.log(data)
                 const supplierPrices = document.getElementById('supplier_prices')
                 supplierPrices.innerHTML = ''
+                supplierPrices.innerHTML = `<p class="text-danger">Last best prices for this product</p>`
                 data.suppliers.forEach((sup)=>{
                     console.log(sup)
                     supplierPrices.innerHTML += `
-                       <button type='button' class='btn btn-outline-dark' onclick="selectedSupplier(${sup?.id})">$${sup?.price}</button>
+                       <button type='button' aria-label='Click to choose supplier.' class='btn btn-outline-dark hint--bottom' onclick="selectedSupplier(${sup?.id})">$${sup?.price}</button>
                     `
                 })
               } else {

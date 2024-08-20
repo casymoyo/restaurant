@@ -164,7 +164,7 @@ $(document).ready(function() {
         ingredientsData[0].forEach((i)=>{
             cost_per_kg += i.quantity * i.cost 
         });
-
+        console.log(cost_per_kg)
         return kgs * cost_per_kg;
     }
 

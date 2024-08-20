@@ -28,7 +28,6 @@
                     <thead class="bg-primary">
                         <tr>
                             <th>Raw Material</th>
-                            <th>Quantity b/f</th>
                             <th>Planned Quantity</th>
                             <th>Expected Quantity</th>
                             <th>Allocated Quantity</th>
@@ -40,8 +39,7 @@
                         {% for item in raw_materials %}
                         <tr data-id="{{ item.id }}"  data-raw-material="{{ item.id }}">
                             <td><small>{{ item.name }}</small></td>
-                            <td><small>{{ item.quantity_b_f}}</small></td>
-                            <td><small>{{ item.quantity }}</small></td>
+                            <td><small>{{ item.quantity | floatformat:2 }}</small></td>
                             <td><small>{{ item.expected_quantity }}</small></td>
                             <td>
                                 <small>
@@ -64,51 +62,10 @@
                 </table>
             </div>
         </div>
-        {% comment %} <table class="table" id="minor">
-                    <thead class="bg-primary">
-                        <tr>
-                            <th>Raw Material</th>
-                            <th>Quantity</th>
-                            <th>Used Quantity</th>
-                            <th>Remaining Quantity</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for item in production_plan_minor_items %}
-                        <tr data-id="{{ item.minor_raw_material.id }}">
-                            <td><small>{{ item.minor_raw_material }}</small></td>
-                            <td><small>{{ item.total_quantity_per_kg }}</small></td>
-                            <td><small>{{ item.planned_quantity }}</small></td>
-                            <td>
-                                <small data-expected-quantity="{{ item.expected_quantity }}">
-                                    {{ item.expected_quantity }}
-                                </small>
-                            </td>
-                            <td><small>{{ item.cost_per_kg }}</small></td>
-                            <td><small>{{ item.total_cost }}</small></td>
-                            {% if confirm %}
-                                <td>
-                                    <small data-kitchen-quantity="{{ k_item.quantity }}">
-                                        {% if k_item.id == item.id %}
-                                        {{ k_item.quantity }}
-                                        {% endif %}
-                                    </small>
-                                </td>
-                            {% endif %}
-                            <td><small id="actual_needed_quantity"></small></td>
-                            {% if confirm %}
-                            <td>
-                                {% csrf_token %}
-                                <input type="number" id="quantity">
-                            </td>
-                            {% endif %}
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table> {% endcomment %}
-                <div class="d-flex justify-content-end mt-2">
-                    <button id="id_confirm" class="btn-primary text-light btn">Declare</button>
-                </div>
+        
+        <div class="d-flex justify-content-end mt-2">
+            <button id="id_confirm" class="btn-primary text-light btn">Confirm Declaration</button>
+        </div>
     </div>
 </div>
 

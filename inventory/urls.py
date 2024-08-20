@@ -10,6 +10,7 @@ urlpatterns = [
     path('edit/product/<int:product_id>/', edit_inventory, name='edit_inventory'),
     path('product/detail/<int:product_id>/', product_detail, name='product_detail'),
     path('add/product/category/', add_product_category, name='add_product_category'),
+    path('raw_material_json/', raw_material_json, name='raw_material_json'),
 
     path('inventory/', inventory, name='inventory_list'),
     path('finished_products/list/', finished_products, name='finished_products'),

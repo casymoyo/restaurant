@@ -46,7 +46,7 @@
                     <tr>
                         <td><small>{{ raw_material.name }}</small></td>
                         <td><small>{{ raw_material.cost}}</small></td>
-                        <td><small>{{ raw_material.quantity }} {{ raw_material.unit }}</small></td>
+                        <td><small>{{ raw_material.quantity | floatformat:3 }} {{ raw_material.unit }}</small></td>
                         <td>
                             <small>
                                 <span>
@@ -56,46 +56,6 @@
                                 </span>
                                 <span class='mx-3'>
                                     <a href="{% url 'inventory:edit_inventory' raw_material.id %}" class="text-dark">
-                                        <i class='bx bx-edit-alt'></i>
-                                    </a>
-                                </span>
-                                <span>
-                                    <span id='delete' data-id="" onclick="productId(this)" class="text-dark">
-                                        <i class='bx bx-trash-alt'></i>
-                                    </span>
-                                </span>
-                            </small>
-                        </td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-
-        <div class="prod hidden">
-            <table class="table table-hover table-responsive prod hidden" id="products_table" style="width: 100%;">
-            <thead class="bg-primary">
-                <th>Name</th>
-                <th>Quantity</th>
-                <th>Cost per unit</th>
-                <th>Price</th>
-                <th>Action</th>
-            </thead>
-            <tbody>
-                {% for product in finished_products %}
-                    <tr>
-                        <td><small>{{ product.name }}</small></td>
-                        <td><small>{{ product.quantity }}</small></td>
-                        <td><small>{{ product.cost}}</small></td>
-                        <td><small>{{ product.price }}</small></td>
-                        <td>
-                            <small>
-                                <span>
-                                    <a href="{% url 'inventory:product_detail' product.id %}" class='text-dark'>
-                                        <i class='bx bx-show'></i>
-                                    </a>
-                                </span>
-                                <span class='mx-3'>
-                                    <a href="{% url 'inventory:edit_inventory' product.id %}" class="text-dark">
                                         <i class='bx bx-edit-alt'></i>
                                     </a>
                                 </span>
