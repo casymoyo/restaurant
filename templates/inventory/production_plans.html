@@ -39,14 +39,17 @@
                             <tr>
                                 <th>Date</th>
                                 <th>PP Number</th>
+                                
                                 <th>
                                     <span class='text-danger'>BY ADMIN</span>
                                     <span class='mx-2'>(Confimation Status)</span>
                                 </th>
-                                <th>
-                                    <span class='text-danger'>BY CHEF</span>
-                                    <span class='mx-2'>(Confimation Status)</span>
-                                </th>
+                                {% if request.user.role != 'chef'%}
+                                    <th>
+                                        <span class='text-danger'>BY CHEF</span>
+                                        <span class='mx-2'>(Confimation Status)</span>
+                                    </th>
+                                {% endif %}
                                 <th>Actions</th>
                             </tr>
                             </thead>
@@ -55,27 +58,31 @@
                                 <tr>
                                     <td><small>{{ plan.date_created }} {{ plan.time_created }}</small></td>
                                     <td><small>{{ plan.production_plan_number }}</small></td>
-                                    <td> 
-                                        <small >
-                                            {% if plan.status %}
-                                                <small class="bg-success text-light p-2 rounded text-center w-100">Confirmed</small>
-                                            {%else %}
-                                                <a href="{% url 'inventory:confirm_production_plan' plan.id %}" class="bg-danger text-light p-2 rounded text-center w-100">Waiting Confirmation</a>
-                                            {% endif %}
-                                        </small>
+                                    <td>
+                                        {% if request.user.role != 'admin' or request.user.role != 'accountant' %}
+                                            <small >
+                                                {% if plan.status %}
+                                                    <small class="bg-success text-light p-2 rounded text-center w-100">Confirmed</small>
+                                                {%else %}
+                                                    <a href="{% url 'inventory:confirm_production_plan' plan.id %}" class="bg-danger text-light p-2 rounded text-center w-100">Waiting Confirmation</a>
+                                                {% endif %}
+                                            </small>
+                                        {% endif %}
                                     </td>
                                     <td>
-                                        <small>
-                                            {% if plan.declared %}
-                                                <small class="bg-success text-light p-2 rounded text-center w-100" disabled>Declared</small>
-                                            {% else %}
-                                                {% if plan.status %}
-                                                    <a href="{% url 'inventory:declare_production_plan' plan.id %}" class="bg-danger text-light p-2 rounded text-center w-100">Waiting declaration</a>
+                                        {% if request.user.role != 'chef'%}
+                                            <small>
+                                                {% if plan.declared %}
+                                                    <small class="bg-success text-light p-2 rounded text-center w-100" disabled>Declared</small>
                                                 {% else %}
-                                                    <small class="bg-danger text-light p-2 rounded text-center w-100" disabled>Awaiting production plan confirmation</small>
+                                                    {% if plan.status %}
+                                                        <a href="{% url 'inventory:declare_production_plan' plan.id %}" class="bg-danger text-light p-2 rounded text-center w-100">Waiting declaration</a>
+                                                    {% else %}
+                                                        <small class="bg-danger text-light p-2 rounded text-center w-100" disabled>Awaiting production plan confirmation</small>
+                                                    {% endif %}
                                                 {% endif %}
-                                            {% endif %}
-                                        </small>
+                                            </small>
+                                        {% endif %}
                                     </td>
                                     <td>
                                         <small>

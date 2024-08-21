@@ -76,4 +76,7 @@ urlpatterns = [
     path('save-end-of-day/', end_of_day_view, name='save_end_of_day'),
     path('confirm_end_of_day/', confirm_end_of_day, name='confirm_end_of_day'),
     path('end_of_day_detail/<int:e_o_d_id>/', end_of_day_detail, name='end_of_day_detail'),
+    
+    # reorder_lis
+    path('order_list', order_list, name='order_list')
 ]
