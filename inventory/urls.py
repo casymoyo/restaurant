@@ -13,7 +13,6 @@ urlpatterns = [
     path('raw_material_json/', raw_material_json, name='raw_material_json'),
 
     path('inventory/', inventory, name='inventory_list'),
-    path('finished_products/list/', finished_products, name='finished_products'),
     
     # unit of measurement 
     path('unit_of_measurement/', unit_of_measurement, name='unit_of_measurement'),

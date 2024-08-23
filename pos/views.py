@@ -1,20 +1,3 @@
-from django.http import JsonResponse
-from django.shortcuts import render, get_object_or_404
-from inventory.models import Meal, Production, ProductionItems, Product, Logs
-from loguru import logger
-import json, datetime
-from finance.models import Sale, SaleItem, CashBook
-from settings.models import Printer
-from django.contrib.auth import get_user_model
-from django.db import transaction
-from django.http import HttpResponse
-# from .tasks import print_receipt_task
-from django.contrib.auth.decorators import login_required
-from django.template.loader import get_template
-from xhtml2pdf import pisa
-from django.utils import timezone
-
-import os
 import tempfile
 import subprocess
 import json, datetime
@@ -22,7 +5,11 @@ from loguru import logger
 from django.db import transaction
 from reportlab.lib.units import cm
 from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import letter
+from django.http import JsonResponse
+from finance.models import Sale, SaleItem, CashBook
+from django.shortcuts import render, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from inventory.models import Meal, Production, ProductionItems, Product, Logs
 
 @login_required
 def pos(request):
@@ -105,7 +92,6 @@ def process_sale(request):
                 staff=True if staff else False
             )
 
-            # Get today's production plans
             today = localdate()
             daily_productions = Production.objects.filter(date_created=today).order_by('time_created')
 
