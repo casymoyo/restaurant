@@ -1724,7 +1724,7 @@ def generate_end_of_day_report(end_of_day, items, staff_sold_amount):
     return buffer
 
 
-@login_required
+@login_required # put to tasks
 def send_end_of_day_report(request, buffer):
     email = EmailMessage(
         f"End of Day Report:",
@@ -1734,7 +1734,6 @@ def send_end_of_day_report(request, buffer):
     )
     email.attach(f'EndOfDayReport.pdf', buffer.getvalue(), 'application/pdf')
     
-    # Run email sending in a thread
     EmailThread(email).start()
 
     logger.info(f' End of day report email sent.')

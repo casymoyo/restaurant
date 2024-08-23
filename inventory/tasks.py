@@ -3,6 +3,20 @@ from . models import Production, Transfer
 from django.core.mail import EmailMessage
 from loguru import logger
 
+def send_end_of_day_report(buffer):
+    email = EmailMessage(
+        f"End of Day Report:",
+        "Please find the attached End of Day report. The expected amount is to be calculated on cost price, since they are no stipulated prices per dishes, but if they to be put the expected table will be relavant.",
+        'admin@techcity.co.zw',
+        ['cassymyo@gmail.com'],
+    )
+    email.attach(f'EndOfDayReport.pdf', buffer.getvalue(), 'application/pdf')
+    
+    EmailThread(email).start()
+
+    logger.info(f' End of day report email sent.')
+ 
+
 def send_production_creation_notification(production_id):
     production = Production.objects.get(id=production_id)
     
