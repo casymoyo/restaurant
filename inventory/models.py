@@ -300,6 +300,36 @@ class Reorder(models.Model):
 
     def __str__(self) -> str:
         return f'{self.product.name}'
+    
+class Transfer(models.Model):
+    transfer_number = models.CharField(max_length=20, unique=True)
+    status = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def save(self, *args, **kwargs):
+        if not self.transfer_number:
+            self.transfer_number = self.get_next_transfer_number()
+        super().save(*args, **kwargs)
+
+    def get_next_transfer_number(self):
+        last_transfer = Transfer.objects.all().order_by('created_at').last()
+        if last_transfer:
+            last_number = int(last_transfer.transfer_number.lstrip('0'))
+            next_number = last_number + 1
+        else:
+            next_number = 1
+        return f'{next_number:05}'
+
+    def __str__(self):
+        return self.transfer_number
+
+class TransferItems(models.Model):
+    transfer = models.ForeignKey(Transfer, on_delete=models.CASCADE, related_name='items')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    quantity = models.FloatField()
+
+    def __str__(self):
+        return f'{self.quantity} of {self.product.name}'
 
     
 

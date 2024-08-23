@@ -1,6 +1,9 @@
 import os
 from pathlib import Path
 
+from decouple import config
+
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -102,7 +105,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME':  'urban-eats',
         'USER': 'postgres',
-        'PASSWORD': 'techcity',
+        'PASSWORD': 'neverfail',
         'HOST': 'localhost',
         'PORT': '5432'
     }
@@ -190,18 +193,18 @@ CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# celery
-CELERY_BROKER_URL = 'redis://localhost:6379/0' 
-CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'  
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
-CELERY_TIMEZONE = "Africa/Johannesburg"
+# Celery Configuration
+CELERY_BROKER_URL = config('CELERY_BROKER_URL', default='redis://localhost:6379/0')
+CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND', default='redis://localhost:6379/0')
+CELERY_ACCEPT_CONTENT = config('CELERY_ACCEPT_CONTENT', default='json', cast=lambda v: v.split(','))
+CELERY_TASK_SERIALIZER = config('CELERY_TASK_SERIALIZER', default='json')
+CELERY_RESULT_SERIALIZER = config('CELERY_RESULT_SERIALIZER', default='json')
+CELERY_TIMEZONE = config('CELERY_TIMEZONE', default='Africa/Johannesburg')
 
-# email backened
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'  
-EMAIL_HOST = 'mail.techcity.co.zw'  
-EMAIL_PORT = 465  
-EMAIL_USE_SSL = True 
-EMAIL_HOST_USER = 'admin@techcity.co.zw' 
-EMAIL_HOST_PASSWORD = 'kv]j[N~StShy'
+# Email Backend Configuration
+EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.smtp.EmailBackend')
+EMAIL_HOST = config('EMAIL_HOST', default='localhost')
+EMAIL_PORT = config('EMAIL_PORT', default=25, cast=int)
+EMAIL_USE_SSL = config('EMAIL_USE_SSL', default=False, cast=bool)
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')

@@ -8,7 +8,8 @@ from . models import (
     PurchaseOrder, 
     MealCategory,
     UnitOfMeasurement,
-    ProductionItems
+    ProductionItems,
+    TransferItems
 )
 from django import forms
 
@@ -88,4 +89,9 @@ class MealForm(forms.ModelForm):
 class MealCategoryForm(forms.ModelForm):
     class Meta:
         model = MealCategory
+        fields = '__all__'
+        
+class TransferForm(forms.Form):
+    class Meta:
+        model = TransferItems
         fields = '__all__'

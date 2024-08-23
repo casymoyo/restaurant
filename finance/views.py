@@ -371,8 +371,8 @@ def generate_report(request):
         start_date = datetime.datetime.today() - timedelta(days=365)
         end_date = datetime.datetime.today()
     elif time_frame == 'custom':
-        start_date = datetime.strptime(request.GET.get('startDate'), '%Y-%m-%d')
-        end_date = datetime.strptime(request.GET.get('endDate'), '%Y-%m-%d')
+        start_date = datetime.datetime.strptime(request.GET.get('startDate'), '%Y-%m-%d')
+        end_date = datetime.datetime.strptime(request.GET.get('endDate'), '%Y-%m-%d')
 
     sales_total = Sale.objects.filter(date__range=(start_date, end_date)).aggregate(total_sales=Sum('total_amount'))['total_sales'] or 0
     expenses_total = Expense.objects.filter(date__range=(start_date, end_date), cancel=False).aggregate(total_expenses=Sum('amount'))['total_expenses'] or 0
@@ -402,3 +402,4 @@ def generate_report(request):
         return HttpResponse('We had some errors with generating the report')
     
     return response
+ 

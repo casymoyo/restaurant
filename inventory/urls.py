@@ -32,7 +32,7 @@ urlpatterns = [
     path('process/minor_raw_materials/<int:pp_id>/', process_raw_materials, name='process_minor_raw_materials'),
     path('minor_raw_materials/<int:pp_id>/', minor_raw_materials, name='minor_raw_materials'),
     path('confirm/minor_raw_materials/<int:pp_id>/', confirm_minor_raw_materials, name='confirm_minor_raw_materials'),
-    path('confirm_minor_raw_materials/', confirm_minor_raw, name='confirm_minor_raw'),
+    path('confirm/minor_raw_materials/', confirm_minor_raw, name='confirm_minor_raw'),
     path('production_raw_materials/', production_raw_materials, name='production_raw_materials'),
     
     # supplier
@@ -78,5 +78,16 @@ urlpatterns = [
     path('end_of_day_detail/<int:e_o_d_id>/', end_of_day_detail, name='end_of_day_detail'),
     
     # reorder_lis
-    path('order_list', order_list, name='order_list')
+    path('order_list', order_list, name='order_list'),
+    
+    # transfers
+    path('transfers', transfers, name='transfers'),
+    path('add/transfer/', transfer_to_production, name='add_transfer'),
+    path('accept_transfer/<int:transfer_id>/', accept_transfer, name='accept_transfer'),
+    path('production_transfers/', production_transfers, name='production_transfers'),
+    path('receive_transfer_detail/<int:transfer_id>/', receive_transfers_detail, name='receive_transfer_detail'),
+    
+    # production sales
+    path('production_sales/', production_sales, name='production_sales'),
+
 ]

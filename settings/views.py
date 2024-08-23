@@ -1,29 +1,39 @@
-from django.shortcuts import render, redirect
-from .models import Printer
-# import cups
+from django.shortcuts import render, get_object_or_404, redirect
+from django.http import JsonResponse
+from .models import NotificationEmails
+from .forms import NotificationEmailForm
 
-# def settings(reques):
-#     pass
+def settings(request):
+    return render(request, 'settings/settings.html')
 
-# def list_printers(request):
-#     conn = cups.Connection()
-#     printers = conn.getPrinters()
-#     existing_printers = Printer.objects.all()
-#     return render(request, 'settings/printers/list.html', {'printers': printers, 'existing_printers': existing_printers})
+def list_emails(request):
+    emails = NotificationEmails.objects.all()
+    return render(request, 'settings/notifications/list.html', {'emails': emails})
 
-# def add_printer(request):
-#     if request.method == 'POST':
-#         printer_name = request.POST.get('printer_name')
-#         printer_location = request.POST.get('printer_location')
-#         is_default = request.POST.get('is_default', False)
+def create_email(request):
+    if request.method == 'POST':
+        form = NotificationEmailForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return JsonResponse({'status': 'success'})
+    else:
+        form = NotificationEmailForm()
+    return render(request, 'settings/notifications/create.html', {'form': form})
 
-#         Printer.objects.create(name=printer_name, location=printer_location, is_default=is_default)
-#         return redirect('list_printers')
-#     return render(request, 'settings/printers/add_printer.html')
+def update_email(request, pk):
+    email = get_object_or_404(NotificationEmails, pk=pk)
+    if request.method == 'POST':
+        form = NotificationEmailForm(request.POST, instance=email)
+        if form.is_valid():
+            form.save()
+            return JsonResponse({'status': 'success'})
+    else:
+        form = NotificationEmailForm(instance=email)
+    return render(request, 'settings/notifications/update.html', {'form': form, 'email': email})
 
-# def set_default_printer(request, printer_id):
-#     Printer.objects.update(is_default=False)
-#     printer = Printer.objects.get(id=printer_id)
-#     printer.is_default = True
-#     printer.save()
-#     return redirect('list_printers')
+def delete_email(request, pk):
+    email = get_object_or_404(NotificationEmails, pk=pk)
+    if request.method == 'POST':
+        email.delete()
+        return JsonResponse({'status': 'success'})
+    return render(request, 'settings/notifications/delete.html', {'email': email})

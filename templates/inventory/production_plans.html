@@ -15,16 +15,23 @@
                 <div>
                     <ul class="list-unstyled mt-2 d-flex">
                         <li class="">
-                            <a href="{% url 'inventory:create_production_plan' %}" class='btn btn-outline-dark mx-2'>Create Production Plan</a>
-                            </li>
-                            {% if request.user.role != 'chef'%}
-                                <li class="">
-                                    <a href="{% url 'inventory:meal_list' %}" class='btn btn-outline-dark'>Meals</a>
-                                </li>
-                                <li class="">
-                                    <a href="{% url 'inventory:dish_list' %}" class='btn btn-outline-dark mx-2'>Dishes</a>
-                                </li>
-                            {% endif %}
+                            <a href="{% url 'inventory:create_production_plan' %}" class='btn btn-outline-dark'>Create Production Plan</a>
+                        </li>
+                        <li class="">
+                            <a href="{% url 'inventory:production_sales' %}" class='btn btn-outline-dark mx-2'>Sales in portions</a>
+                        </li>
+                        <li class="">
+                            <a href="{% url 'inventory:meal_list' %}" class='btn btn-outline-dark mx-2'>Meals</a>
+                        </li>
+                        <li class="">
+                            <a href="{% url 'inventory:dish_list' %}" class='btn btn-outline-dark'>Dishes</a>
+                        </li>
+                        <li class="">
+                            <a href="{% url 'inventory:production_transfers' %}" class='btn btn-outline-dark mx-2'>
+                                Receive Transfers
+                                <span class='badge text-dark'>{{ transfer_count }}</span>
+                            </a>
+                        </li>
                         <li class="">
                             <a href="{% url 'inventory:production_raw_materials' %}" class='btn btn-outline-dark'>Production Raw Materials</a>
                         </li>
@@ -39,7 +46,6 @@
                             <tr>
                                 <th>Date</th>
                                 <th>PP Number</th>
-                                
                                 <th>
                                     <span class='text-danger'>BY ADMIN</span>
                                     <span class='mx-2'>(Confimation Status)</span>

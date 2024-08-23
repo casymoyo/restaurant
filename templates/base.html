@@ -51,8 +51,8 @@
                         </div>
                     </div>
                 </nav>
-                <div class='row bg-light mx-2'>
-                    <div class="app-area mx-2 col-12 overflow">
+                <div class='row bg-light'>
+                    <div class="app-area col-12 overflow">
                         {% if messages %}
                             {% for message in messages %}
                                 <div class="alert alert-dismissible {% if message.tags %}alert-{{ message.tags }}{% endif %}">
@@ -66,10 +66,44 @@
                             {% endfor %}
                         {% endif %}
                         {% block content %}{% endblock %}
+                        {% block notification %}
+        <div class='floating-box text-dark'>
+            
+            {% if request.user.role == 'Chef' %}
+                <ul class='list-unstyled'>
+                    {% for notis in chef_notifications %}
+                        <li>
+                            <a href=''>{{ notis }}</a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% elif request.user.role == 'Accountant' %}
+                <ul class='list-unstyled'>
+                    {% for notis in accountant_notifications %}
+                        <li>
+                            <a href=''>{{ notis }}</a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <ul class='list-unstyled'>
+                    {% for notis in admin_notifications %}
+                        <li>
+                            <a href=''>{{ notis }}</a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </div>
+    {% endblock notification %}
+    
                     </div>
                 </div>
             </nav>
         </div>
+
+        {% comment %} notifications {% endcomment %}
+        
 
         <!-- logout modal -->
         <div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="chargeModalLabel" aria-hidden="true">

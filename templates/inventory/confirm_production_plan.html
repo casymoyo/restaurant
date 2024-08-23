@@ -75,6 +75,8 @@
                         <tr>
                             <th>Raw Material</th>
                             <th>Planned Quantity</th>
+                            <th>Quantity B/F</th>
+                            <th>Expected Quantity</th>
                             <th>Allocated Quantity</th>
                             {% if not confirm %}
                                 <th>Remaing Quantity (kgs)</th>
@@ -86,10 +88,20 @@
                         <tr data-id="{{ item.id }}">
                             <td><small>{{ item.name }}</small></td>
                             <td><small>{{ item.quantity|floatformat:2 }}</small></td>
+                            <td><small>{{ item.quantity_b_f|floatformat:2 }}</small></td>
+                            <td>
+                                <small>
+                                    {% if item.expected_quantity < 0 %}
+                                        0.0
+                                    {% else %}
+                                        {{ item.expected_quantity|floatformat:2 }}
+                                    {% endif %}
+                                </small>
+                            </td>
                             {% if confirm %}
                                 <td>
                                     {% csrf_token %}
-                                    <input type="number" id="quantity" class='form-control'>
+                                    <input type="number" id="quantity" min='0' class='form-control'>
                                 </td>
                             {% else %}
                             <td>
@@ -131,15 +143,13 @@
             input.addEventListener('change', function () {
                 const quantityEntered = parseFloat(this.value);
                 const row = this.closest('tr');
-                console.log(quantityEntered)
+                
 
                 if (!isNaN(quantityEntered)) {
-                   
-                    row.style.backgroundColor = 'lightgreen'; 
 
                     const rawMaterialId = row.getAttribute('data-id');
-
-                    fetch('/inventory/confirm_minor_raw_materials/', {
+                    
+                    fetch('{% url "inventory:confirm_minor_raw"%}', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',

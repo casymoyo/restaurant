@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Transfers{% endblock title %}
+{% block content %}
+<div class="products m-2">
+    <nav class='mt-3 d-flex align-items-center justify-content-between'>
+        <div>
+            <ul class="list-unstyled d-flex align-items-center">
+                <li><a href='{% url "inventory:products"%}' class='border btn bx bx-arrow-back fs-5'></a></li>
+                <li><a href='/' class='bx bx-home btn border fs-5 mx-2'></a></li>
+                <li class='fs-5'>Transfer: {{ transfer.transfer_number }} </li>
+            </ul>
+        </div>
+    </nav>
+    <div class="tables">
+        <table class="table table-hover table-responsive raw" id="transfers_table" style="width: 100%;">
+            <thead class="bg-primary">
+                <th>Date</th>
+                <th>Transfer number</th>
+                <th>Product</th>
+                <th>Quantity</th>
+            </thead>
+            <tbody>
+                {% for item in transfer_items  %}
+                    <tr>
+                        <td>
+                            <small>
+                                <small>{{ item.transfer.created_at }}</small>
+                            </small>
+                        </td>
+                        <td>
+                            <small>
+                                <small>{{ item.transfer.transfer_number }}</small>
+                            </small>
+                        </td>
+                        <td>
+                            <small>
+                                <small>{{ item.product.name }}</small>
+                            </small>
+                        </td>
+                        <td>
+                            <small>
+                                <small>{{ item.quantity }}</small>
+                            </small>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class='d-flex justify-content-end mt-2'>
+        <a href='{% url "inventory:accept_transfer" transfer.id %}' class='btn btn-sm btn-primary text-light'>Accept</a>
+    </div>
+</div>
+<script>
+    new DataTable('#transfers_table')
+</script>
+{% endblock content %}

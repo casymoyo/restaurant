@@ -2,15 +2,6 @@
 {% load static %}
 {% block title %}Products{% endblock title %}
 {% block content %}
-<style>
-    .card{
-        border: none;
-    }
-    a{
-        text-decoration: none;
-        color: #333;
-    }
-</style>
 <div class="products m-2">
     <nav class='mt-2 d-flex align-items-center justify-content-between'>
         <div>
@@ -32,6 +23,9 @@
                 </li>
                 <li>
                     <a href="{% url 'inventory:order_list' %}" class="btn btn-outline-dark mx-2">Reorder List</a>
+                </li>
+                <li>
+                    <a href="{% url 'inventory:transfers' %}" class="btn btn-outline-dark">Transfers</a>
                 </li>
             </ul>
         </div>

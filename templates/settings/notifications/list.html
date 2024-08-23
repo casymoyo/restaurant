@@ -1,0 +1,97 @@
+
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Email List{% endblock title %}
+{% block content %}
+<div>
+    <h1>Notification Emails</h1>
+    <button id="create-btn">Create Email</button>
+    <table class='table'>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for email in emails %}
+            <tr id="email-{{ email.id }}">
+                <td>{{ email.name }}</td>
+                <td>{{ email.email }}</td>
+                <td>
+                    <button onclick="updateEmail({{ email.id }})" class='bx bx-edit mx-2'>Update</button>
+                    <button onclick="deleteEmail({{ email.id }})" class='bx bx-trash'>Delete</button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Modal for Create and Update -->
+    <div id="modal" style="display:none;">
+        <div id="modal-content">
+            <span id="close-btn">&times;</span>
+            <div id="modal-body"></div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('create-btn').addEventListener('click', function() {
+                showModal('settings/create/');
+            });
+
+            function showModal(url) {
+                fetch(url)
+                    .then(response => response.text())
+                    .then(html => {
+                        document.getElementById('modal-body').innerHTML = html;
+                        document.getElementById('modal').style.display = 'block';
+                        document.getElementById('close-btn').addEventListener('click', function() {
+                            document.getElementById('modal').style.display = 'none';
+                        });
+
+                        const form = document.getElementById('create-form') || document.getElementById('update-form');
+                        if (form) {
+                            form.addEventListener('submit', function(event) {
+                                event.preventDefault();
+                                const formData = new FormData(form);
+                                fetch(form.action, {
+                                    method: 'POST',
+                                    body: formData,
+                                    headers: {'X-Requested-With': 'XMLHttpRequest'}
+                                })
+                                .then(response => response.json())
+                                .then(data => {
+                                    if (data.status === 'success') {
+                                        location.reload();
+                                    }
+                                });
+                            });
+                        }
+                    });
+            }
+
+            window.updateEmail = function(id) {
+                showModal(`/update/${id}/`);
+            };
+
+            window.deleteEmail = function(id) {
+                if (confirm('Are you sure you want to delete this email?')) {
+                    fetch(`/delete/${id}/`, {
+                        method: 'POST',
+                        headers: {'X-Requested-With': 'XMLHttpRequest'}
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            document.getElementById(`email-${id}`).remove();
+                        }
+                    });
+                }
+            };
+        });
+    </script>
+</div>
+{% endblock content %}
