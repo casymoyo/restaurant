@@ -1,24 +1,22 @@
-from django.http import JsonResponse
-from django.db.models import Sum
-from .models import Sale, Expense 
 from . models import *
-from django.shortcuts import render, get_object_or_404
 import datetime, json
 from loguru import logger
 from . forms import (
     ExpensesForm,
     ExpenseCategoryForm
 )
-from django.db import transaction
-from django.utils import timezone
-from django.db.models import Q
-from datetime import  timedelta
-from decimal import Decimal
-from . tasks import send_expense_creation_notification
-from loguru import logger
-from django.template.loader import render_to_string
 from xhtml2pdf import pisa
-from django.http import HttpResponse
+from decimal import Decimal
+from datetime import  timedelta
+from django.db.models import Sum
+from django.db import transaction
+from .models import Sale, Expense 
+from django.http import JsonResponse, HttpResponse
+from django.template.loader import render_to_string
+from . tasks import send_expense_creation_notification
+from django.shortcuts import render, get_object_or_404
+from django.contrib.auth.decorators import login_required
+
 
 def get_previous_month():
     first_day_of_current_month = datetime.datetime.now().replace(day=1)
@@ -31,6 +29,8 @@ def get_current_month():
 def get_current_year():
     return datetime.datetime.now().year
 
+
+@login_required
 def sale(request):
     sales = Sale.objects.all()
     return render(request, 'finance/sales.html', 
@@ -38,7 +38,9 @@ def sale(request):
             'sales':sales
         }    
     )
-    
+ 
+ 
+@login_required   
 def finance(request):
     sales = Sale.objects.filter(date__month = get_current_month()).order_by('-date')[:8]
     expenses = Expense.objects.filter(date__month = get_current_month()).order_by('-date')[:8]
@@ -49,7 +51,9 @@ def finance(request):
             'expenses':expenses
         }
     )
-    
+ 
+ 
+@login_required   
 def get_expense(request, expense_id):
     expense = get_object_or_404(Expense, id=expense_id)
     data = {
@@ -60,7 +64,10 @@ def get_expense(request, expense_id):
     }
     return JsonResponse({'success': True, 'data': data})
 
-@transaction.atomic
+
+
+@transaction.atomic #use with atomic
+@login_required
 def expenses(request):
     form = ExpensesForm()
     cat_form = ExpenseCategoryForm()
@@ -118,7 +125,9 @@ def expenses(request):
             return JsonResponse({'success': True, 'messages':'Expense successfully created'}, status=201)
         except Exception as e:
             return JsonResponse({'success': False, 'message': str(e)}, status=400)
-       
+
+
+@login_required      
 def add_or_edit_expense(request):
     if request.method == 'POST':
         try:
@@ -160,6 +169,8 @@ def add_or_edit_expense(request):
             return JsonResponse({'success': False, 'message': str(e)}, status=400)
     return JsonResponse({'success': False, 'message': 'Invalid request method'}, status=400)
 
+
+@login_required
 @transaction.atomic
 def delete_expense(request, expense_id):
     if request.method == 'DELETE':
@@ -180,6 +191,8 @@ def delete_expense(request, expense_id):
     return JsonResponse({'success': False, 'message': 'Invalid request method'}, status=400)
 
 
+
+@login_required # tune the filters
 def cashbook(request):
     filter_option = request.GET.get('filter', 'this_week')
     now = datetime.datetime.now()
@@ -209,6 +222,7 @@ def cashbook(request):
     })
 
 
+@login_required
 def add_expense_category(request):
     categories = ExpenseCategory.objects.all().values()
     
@@ -226,6 +240,8 @@ def add_expense_category(request):
         return JsonResponse({'success':True}, status=201)
     return JsonResponse(list(categories), safe=False)
 
+
+@login_required
 def income_json(request):
     current_month = get_current_month()
     today = datetime.date.today()
@@ -241,6 +257,8 @@ def income_json(request):
     logger.info(f'Sales: {sales_total}')
     return JsonResponse({'sales_total': sales_total['total_amount__sum'] or 0})
 
+
+@login_required
 def expense_json(request):
     current_month = get_current_month()
     today = datetime.date.today()
@@ -257,12 +275,15 @@ def expense_json(request):
     return JsonResponse({'expense_total': expense_total['amount__sum'] or 0})
 
 
+@login_required
 def income_graph(request):
     current_year = get_current_year()
     monthly_sales = Sale.objects.filter(date__year=current_year).values('date__month').annotate(total=Sum('total_amount')).order_by('date__month')
     data = {month['date__month']: month['total'] for month in monthly_sales}
     return JsonResponse(data)
 
+
+@login_required
 def expense_graph(request):
     current_year = get_current_year()
     monthly_expenses = Expense.objects.filter(date__year=current_year).values('date__month').annotate(total=Sum('amount')).order_by('date__month')
@@ -270,15 +291,21 @@ def expense_graph(request):
     return JsonResponse(data)
 
 
+
+@login_required
 def calculate_percentage_change(current_value, previous_value):
     if previous_value == 0:
         return 0 if current_value == 0 else 100
     return ((current_value - previous_value) / previous_value) * 100
 
+
+@login_required
 def cogs_list(request):
     cogs = COGS.objects.all()
     return render(request, 'finance/cogs.html', {'cogs':cogs})
 
+
+@login_required
 def pl_overview(request):
     filter_option = request.GET.get('filter')
     today = datetime.date.today()
@@ -354,6 +381,7 @@ def pl_overview(request):
     return JsonResponse(data)
 
 
+@login_required
 def generate_report(request):
     time_frame = request.GET.get('timeFrame')
     start_date = None
