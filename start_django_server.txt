@@ -1,0 +1,17 @@
+@echo off
+cd /d C:\Users\PC\Desktop\restaurant
+
+:: Activate the virtual environment
+call venv\Scripts\activate
+
+:: Start the Django server
+start "" python manage.py runserver 0.0.0.0:8000
+
+:: Wait for the server to start
+timeout /t 10
+
+:: Open the default web browser
+start http://localhost:8000
+
+:: Pause to keep the Command Prompt window open
+pause

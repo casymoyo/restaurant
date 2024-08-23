@@ -96,6 +96,7 @@ def products(request):
     return render(request, 'inventory/products.html', 
         {
             'raw_materials':raw_materials,
+            'count':raw_materials.count()
         }
     )
 

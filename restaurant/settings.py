@@ -20,10 +20,10 @@ DEBUG = True
 ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
-    '2586-209-198-132-38.ngrok-free.app'
+    '25e8-209-198-132-38.ngrok-free.app'
 ]
 CSRF_TRUSTED_ORIGINS = [
-    'https://2586-209-198-132-38.ngrok-free.app' 
+    'https://25e8-209-198-132-38.ngrok-free.app' 
 ]
 # Application definition
 
@@ -105,8 +105,8 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME':  'urban-eats',
         'USER': 'postgres',
-        'PASSWORD': 'neverfail',
-        'HOST': 'localhost',
+        'PASSWORD': 'techcity',
+        'HOST': 'urban-eats.ddns.net',
         'PORT': '5432'
     }
 }
