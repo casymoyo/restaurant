@@ -30,7 +30,7 @@ def get_current_year():
     return datetime.datetime.now().year
 
 
-@login_required
+# @login_required
 def sale(request):
     sales = Sale.objects.all()
     return render(request, 'finance/sales.html', 
@@ -40,7 +40,7 @@ def sale(request):
     )
  
  
-@login_required   
+# @login_required   
 def finance(request):
     sales = Sale.objects.filter(date__month = get_current_month()).order_by('-date')[:8]
     expenses = Expense.objects.filter(date__month = get_current_month()).order_by('-date')[:8]
@@ -108,7 +108,7 @@ def expenses(request):
             expense = Expense.objects.create(
                 amount = amount,
                 category = category,
-                user = User.objects.get(id=1),
+                user = request.user,
                 cancel = False,
                 description = description
             )
@@ -305,7 +305,7 @@ def cogs_list(request):
     return render(request, 'finance/cogs.html', {'cogs':cogs})
 
 
-@login_required
+# @login_required
 def pl_overview(request):
     filter_option = request.GET.get('filter')
     today = datetime.date.today()
@@ -357,9 +357,9 @@ def pl_overview(request):
     current_gross_profit_margin = (current_gross_profit / current_month_sales * 100) if current_month_sales != 0 else 0
     previous_gross_profit_margin = (previous_gross_profit / previous_month_sales * 100) if previous_month_sales != 0 else 0
     
-    net_income_change = calculate_percentage_change(current_net_income, previous_net_income)
-    gross_profit_change = calculate_percentage_change(current_gross_profit, previous_gross_profit)
-    gross_profit_margin_change = calculate_percentage_change(current_gross_profit_margin, previous_gross_profit_margin)
+    # net_income_change = calculate_percentage_change(current_net_income, previous_net_income)
+    # gross_profit_change = calculate_percentage_change(current_gross_profit, previous_gross_profit)
+    # gross_profit_margin_change = calculate_percentage_change(current_gross_profit_margin, previous_gross_profit_margin)
 
 
     data = {
@@ -370,13 +370,13 @@ def pl_overview(request):
         'previous_net_profit':previous_net_profit,
         'current_net_income': current_net_income,
         'previous_net_income': previous_net_income,
-        'net_income_change': net_income_change,
+        # 'net_income_change': net_income_change,
         'current_gross_profit': current_gross_profit,
         'previous_gross_profit': previous_gross_profit,
-        'gross_profit_change': f'{gross_profit_change:.2f}',
+        # 'gross_profit_change': f'{gross_profit_change:.2f}',
         'current_gross_profit_margin': f'{current_gross_profit_margin:.2f}',
         'previous_gross_profit_margin': previous_gross_profit_margin,
-        'gross_profit_margin_change': gross_profit_margin_change,
+        # 'gross_profit_margin_change': gross_profit_margin_change,
     }
     return JsonResponse(data)
 
@@ -409,7 +409,7 @@ def generate_report(request):
     gross_profit = sales_total - cogs_total
 
     context = {
-        'user':request.user,
+        # 'user':request.user,
         'sales_total': sales_total,
         'expenses_total': expenses_total,
         'cogs_total': cogs_total,
