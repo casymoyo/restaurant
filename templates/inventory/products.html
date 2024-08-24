@@ -2,6 +2,18 @@
 {% load static %}
 {% block title %}Products{% endblock title %}
 {% block content %}
+<<<<<<< HEAD
+=======
+<style>
+    .card{
+        border: none;
+    }
+    a{
+        text-decoration: none;
+        color: #333;
+    }
+</style>
+>>>>>>> d1c14cc97287c67047ba0ba1f6f8c7790636586a
 <div class="products m-2">
     <nav class='mt-2 d-flex align-items-center justify-content-between'>
         <div>
@@ -14,6 +26,7 @@
         </div>
         <div>
             <ul class="list-unstyled d-flex mt-3">
+<<<<<<< HEAD
                 <li class="mx-2">
                     {% comment %} <a href="{% url 'inventory:create_purchase_order' %}" class="btn btn-outline-dark">Transfer(s) to Production</a> {% endcomment %}
                 </li>
@@ -28,6 +41,20 @@
                 </li>
                 <li>
                     <a href="{% url 'inventory:transfers' %}" class="btn btn-outline-dark">Transfers</a>
+=======
+                <li>
+                    <a href="{% url 'inventory:create_purchase_order' %}" class="btn btn-outline-dark">Add Inventory</a>
+                </li>
+                <li class="mx-2">
+                    <a href="{% url 'inventory:create_purchase_order' %}" class="btn btn-outline-dark">Transfer(s) to Production</a>
+                </li>
+                <li>
+                    <a href="{% url 'inventory:purchase_orders' %}" class="btn btn-outline-dark">Purchase Orders</a>
+                </li>
+                <li class="btn btn-outline-dark mx-2">Raw Materials</li>
+                <li>
+                    <a href="{% url 'inventory:finished_products' %}" class="btn btn-outline-dark">Products</a>
+>>>>>>> d1c14cc97287c67047ba0ba1f6f8c7790636586a
                 </li>
             </ul>
         </div>

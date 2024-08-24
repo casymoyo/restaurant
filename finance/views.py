@@ -7,6 +7,7 @@ from . forms import (
 )
 from xhtml2pdf import pisa
 from decimal import Decimal
+<<<<<<< HEAD
 from datetime import  timedelta
 from django.db.models import Sum
 from django.db import transaction
@@ -17,6 +18,11 @@ from . tasks import send_expense_creation_notification
 from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 
+=======
+from . tasks import send_expense_creation_notification
+from loguru import logger
+# to calculate cost of sales
+>>>>>>> d1c14cc97287c67047ba0ba1f6f8c7790636586a
 
 def get_previous_month():
     first_day_of_current_month = datetime.datetime.now().replace(day=1)
@@ -275,7 +281,10 @@ def expense_json(request):
     return JsonResponse({'expense_total': expense_total['amount__sum'] or 0})
 
 
+<<<<<<< HEAD
 @login_required
+=======
+>>>>>>> d1c14cc97287c67047ba0ba1f6f8c7790636586a
 def income_graph(request):
     current_year = get_current_year()
     monthly_sales = Sale.objects.filter(date__year=current_year).values('date__month').annotate(total=Sum('total_amount')).order_by('date__month')
@@ -298,6 +307,7 @@ def calculate_percentage_change(current_value, previous_value):
         return 0 if current_value == 0 else 100
     return ((current_value - previous_value) / previous_value) * 100
 
+<<<<<<< HEAD
 
 @login_required
 def cogs_list(request):
@@ -339,6 +349,22 @@ def pl_overview(request):
         current_month_sales = Sale.objects.filter(date__range=date_filter).aggregate(total_sales=Sum('total_amount'))['total_sales'] or 0
         current_month_expenses = Expense.objects.filter(date__range=date_filter, cancel=False).aggregate(total_expenses=Sum('amount'))['total_expenses'] or 0
         cogs_total = COGS.objects.filter(date__range=date_filter).aggregate(total_cogs=Sum('amount'))['total_cogs'] or 0
+=======
+def pl_overview(request):
+    current_month = get_current_month()
+    previous_month = get_previous_month()
+    current_year = get_current_year()
+    today = datetime.date.today()
+    
+    filter_option = request.GET.get('filter')
+    
+    if filter_option == 'today':
+        current_month_sales = Sale.objects.filter(date=today).aggregate(total_sales=Sum('total_amount'))['total_sales'] or 0
+        current_month_expenses = Expense.objects.filter(date=today, cancel=False).aggregate(total_expenses=Sum('amount'))['total_expenses'] or 0
+    else:
+        current_month_sales = Sale.objects.filter(date__year=current_year, date__month=current_month).aggregate(total_sales=Sum('total_amount'))['total_sales'] or 0
+        current_month_expenses = Expense.objects.filter(date__year=current_year, date__month=current_month, cancel=False).aggregate(total_expenses=Sum('amount'))['total_expenses'] or 0
+>>>>>>> d1c14cc97287c67047ba0ba1f6f8c7790636586a
 
     previous_month_sales = Sale.objects.filter(date__year=current_year, date__month=previous_month).aggregate(total_sales=Sum('total_amount'))['total_sales'] or 0
     previous_month_expenses = Expense.objects.filter(date__year=current_year, date__month=previous_month, cancel=False).aggregate(total_expenses=Sum('amount'))['total_expenses'] or 0
@@ -381,6 +407,7 @@ def pl_overview(request):
     return JsonResponse(data)
 
 
+<<<<<<< HEAD
 @login_required
 def generate_report(request):
     time_frame = request.GET.get('timeFrame')
@@ -431,3 +458,5 @@ def generate_report(request):
     
     return response
  
+=======
+>>>>>>> d1c14cc97287c67047ba0ba1f6f8c7790636586a

@@ -40,6 +40,7 @@ urlpatterns = [
     path('create/supplier/', create_supplier, name='create_supplier'),
     path('supplier/json/list/', supplier_list_json, name='supplier_list_json'),
     path('supplier_prices/<str:raw_material_name>/', supplier_prices, name='supplier_prices'),
+    path('supplier_prices/<str:raw_material_name>/', supplier_prices, name='supplier_prices'),
     
     # ppurchase orders
     path('purchase_orders/list/', purchase_orders, name='purchase_orders'),
@@ -53,6 +54,7 @@ urlpatterns = [
     
     # dishes
     path('dishes/', DishListView.as_view(), name='dish_list'),
+    path('create/dish/', add_dish, name='dish_create'),
     path('create/dish/', add_dish, name='dish_create'),
     path('dishes/<int:pk>/edit/', DishUpdateView.as_view(), name='dish_update'),
     path('dishes/<int:pk>/delete/', DishDeleteView.as_view(), name='dish_delete'),

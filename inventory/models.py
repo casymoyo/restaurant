@@ -64,9 +64,12 @@ class ProductionRawMaterials(models.Model):
 class Production(models.Model):
     date_created = models.DateField(auto_now_add=True)
     time_created = models.TimeField(auto_now_add=True)
+    date_created = models.DateField(auto_now_add=True)
+    time_created = models.TimeField(auto_now_add=True)
     status = models.BooleanField(default=False)
     production_plan_number = models.CharField(max_length=10, unique=True, default='')
     declared = models.BooleanField(default=False)
+    
     
     def save(self, *args, **kwargs):
         if not self.production_plan_number:
@@ -136,10 +139,12 @@ class Dish(models.Model):
 class Ingredient(models.Model):
     dish = models.ForeignKey(Dish, on_delete=models.CASCADE, null=True)
     note = models.CharField(max_length=100, null=True)
+    note = models.CharField(max_length=100, null=True)
     quantity = models.FloatField()
-    raw_material = models.ForeignKey(Product, on_delete=models.CASCADE)
+    minor_raw_material = models.ForeignKey(Product, on_delete=models.CASCADE)
 
     def __str__(self) -> str:
+        return self.minor_raw_material.name          
         return self.raw_material.name          
     
 class MealCategory(models.Model):
@@ -206,6 +211,7 @@ class PurchaseOrderItem(models.Model):
     unit_cost = models.DecimalField(max_digits=10, decimal_places=2)
     received_quantity = models.FloatField(default=0) 
     received = models.BooleanField(default=False, null=True)
+    note = models.CharField(default='', null=True, max_length=255)
     note = models.CharField(default='', null=True, max_length=255)
 
     def receive_items(self, quantity):

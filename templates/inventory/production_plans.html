@@ -15,6 +15,7 @@
                 <div>
                     <ul class="list-unstyled mt-2 d-flex">
                         <li class="">
+<<<<<<< HEAD
                             <a href="{% url 'inventory:create_production_plan' %}" class='btn btn-outline-dark'>Create Production Plan</a>
                         </li>
                         <li class="">
@@ -23,6 +24,18 @@
                         <li class="">
                             <a href="{% url 'inventory:meal_list' %}" class='btn btn-outline-dark mx-2'>Meals</a>
                         </li>
+=======
+                            <a href="{% url 'inventory:create_production_plan' %}" class='btn btn-outline-dark mx-2'>Create Production Plan</a>
+                            </li>
+                            {% if request.user.role != 'chef'%}
+                                <li class="">
+                                    <a href="{% url 'inventory:meal_list' %}" class='btn btn-outline-dark'>Meals</a>
+                                </li>
+                                <li class="">
+                                    <a href="{% url 'inventory:dish_list' %}" class='btn btn-outline-dark mx-2'>Dishes</a>
+                                </li>
+                            {% endif %}
+>>>>>>> d1c14cc97287c67047ba0ba1f6f8c7790636586a
                         <li class="">
                             <a href="{% url 'inventory:dish_list' %}" class='btn btn-outline-dark'>Dishes</a>
                         </li>

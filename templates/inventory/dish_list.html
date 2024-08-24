@@ -21,6 +21,10 @@
             <tr>
                 <th>Name</th>
                 <th>Portion Multiplier</th>
+<<<<<<< HEAD
+=======
+                <th>Major Raw Material</th>
+>>>>>>> d1c14cc97287c67047ba0ba1f6f8c7790636586a
                 <th>Ingredients</th>
                 <th>Actions</th>
             </tr>
@@ -30,10 +34,18 @@
                 <tr>
                     <td>{{ dish.name }}</td>
                     <td>{{ dish.portion_multiplier }}</td>
+<<<<<<< HEAD
                     <td>
                         {% for ingredient in ingredients %}
                             {% if dish == ingredient.dish %}
                                 {{ ingredient.raw_material.name }} ({{ ingredient.quantity }})<br>
+=======
+                    <td>{{ dish.major_raw_material }}</td>
+                    <td>
+                        {% for ingredient in ingredients %}
+                            {% if dish == ingredient.dish %}
+                                {{ ingredient.minor_raw_material.name }} ({{ ingredient.quantity }})<br>
+>>>>>>> d1c14cc97287c67047ba0ba1f6f8c7790636586a
                             {% endif %}
                         {% endfor %}
                     </td>

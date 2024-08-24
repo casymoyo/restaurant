@@ -56,6 +56,10 @@ class EditProductForm(forms.ModelForm):
 #     class Meta:
 #         model = Production
 #         fields = ['date_created', 'time_created']
+# class productionForm(forms.ModelForm):
+#     class Meta:
+#         model = Production
+#         fields = ['date_created', 'time_created']
         
 class ProductionPlanInlineForm(forms.ModelForm):
     class Meta:

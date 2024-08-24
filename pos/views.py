@@ -1,5 +1,12 @@
+<<<<<<< HEAD
 import tempfile
 import subprocess
+=======
+from django.http import JsonResponse
+from django.shortcuts import render, get_object_or_404
+from inventory.models import Meal, Production, ProductionItems, Product, Logs
+from loguru import logger
+>>>>>>> d1c14cc97287c67047ba0ba1f6f8c7790636586a
 import json, datetime
 from loguru import logger
 from django.db import transaction
@@ -9,7 +16,14 @@ from django.http import JsonResponse
 from finance.models import Sale, SaleItem, CashBook
 from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
+<<<<<<< HEAD
 from inventory.models import Meal, Production, ProductionItems, Product, Logs
+=======
+from django.template.loader import get_template
+from xhtml2pdf import pisa
+from django.utils import timezone
+user = get_user_model()
+>>>>>>> d1c14cc97287c67047ba0ba1f6f8c7790636586a
 
 @login_required
 def pos(request):
@@ -74,20 +88,32 @@ def process_sale(request):
             items = data['items']
             staff = data['staff']
             
+<<<<<<< HEAD
             logger.info(staff)
+=======
+            logger.info(data)
+>>>>>>> d1c14cc97287c67047ba0ba1f6f8c7790636586a
 
             sub_total = sum(item['price'] * item['quantity'] for item in items)
             logger.info(sub_total)
             
+<<<<<<< HEAD
             tax = sub_total * 0.15 
             logger.info(tax)
             
             total_amount = sub_total
+=======
+            tax = sub_total * 0.15 # To be dynamically stipulated
+            logger.info(tax)
+            
+            total_amount = sub_total + tax
+>>>>>>> d1c14cc97287c67047ba0ba1f6f8c7790636586a
             
             sale = Sale.objects.create(
                 total_amount=total_amount,
                 tax=tax,
                 sub_total=sub_total,
+<<<<<<< HEAD
                 cashier=request.user,
                 staff=True if staff else False
             )
@@ -98,6 +124,16 @@ def process_sale(request):
             for item in items:
                 if not item['type']:
                     meal = get_object_or_404(Meal, id=item['meal_id'])
+=======
+                cashier=user.objects.get(id=1),
+                staff=True if staff else False
+            )
+            
+            today = timezone.now().date()
+            for item in items:
+                meal = get_object_or_404(Meal, id=item['meal_id'])
+                if item['type'] == False:
+>>>>>>> d1c14cc97287c67047ba0ba1f6f8c7790636586a
                     
                     sale_item = SaleItem.objects.create(
                         sale=sale,
@@ -106,6 +142,7 @@ def process_sale(request):
                         price=meal.price
                     )
                     
+<<<<<<< HEAD
                     for production in daily_productions:
                         try:
                             pp_item = ProductionItems.objects.get(production=production, dish__in=meal.dish.all())
@@ -129,6 +166,46 @@ def process_sale(request):
                             logger.info(f'Production item not found for dish.')
                             continue  # Move to the next production plan if not found
                         
+=======
+                    for dish in meal.dish.all():
+                        remaining_quantity = sale_item.quantity
+                        production_items = ProductionItems.objects.filter(
+                            production__date_created=today, dish=dish
+                        ).order_by('production__time_created')  # Order by the time the production was created to follow FIFO
+
+                        for pp_item in production_items:
+                            if pp_item.portions == pp_item.portions_sold:
+                                continue  
+                            
+                            available_portions = pp_item.portions - pp_item.portions_sold
+                            
+                            if remaining_quantity <= available_portions:
+                                if staff:
+                                    pp_item.staff_portions += remaining_quantity
+                                    logger.info('staff')
+                                else:
+                                    pp_item.portions_sold += remaining_quantity
+                                    logger.info('sale')
+                                
+                                pp_item.left_overs -= remaining_quantity
+                                pp_item.save()
+                                break  # Done processing this sale item
+                            
+                            else:
+                                if staff:
+                                    pp_item.staff_portions += available_portions
+                                else:
+                                    pp_item.portions_sold += available_portions
+
+                                pp_item.left_overs -= available_portions
+                                pp_item.save()
+                                
+                                remaining_quantity -= available_portions  # Move to the next batch
+                        
+                        if remaining_quantity > 0:
+                            raise ValueError(f"Insufficient portions for dish {dish.name}.")
+                            
+>>>>>>> d1c14cc97287c67047ba0ba1f6f8c7790636586a
                 else:
                     product = get_object_or_404(Product, id=item['meal_id'])
                     product.quantity -= item['quantity']
@@ -137,7 +214,11 @@ def process_sale(request):
                         sale=sale,
                         product=product,
                         quantity=item['quantity'],
+<<<<<<< HEAD
                         price=product.price  # Make sure to use the correct price here
+=======
+                        price=meal.price
+>>>>>>> d1c14cc97287c67047ba0ba1f6f8c7790636586a
                     )
                     
                     Logs.objects.create(
@@ -156,8 +237,11 @@ def process_sale(request):
                     debit=True,
                     description=f'Sale (Receipt number: {sale.receipt_number})'
                 )
+<<<<<<< HEAD
                 
                 # generate_receipt(request, sale)
+=======
+>>>>>>> d1c14cc97287c67047ba0ba1f6f8c7790636586a
                     
             logger.info(f'Sale: {sale.id} Processed')
             return JsonResponse({'success': True, 'sale_id': sale.id}, status=201)
@@ -166,6 +250,7 @@ def process_sale(request):
             transaction.set_rollback(True)
             logger.error(f'Error processing sale: {str(e)}')
             return JsonResponse({'success': False, 'message': str(e)}, status=400)
+<<<<<<< HEAD
 
         
 @login_required
@@ -287,5 +372,7 @@ def generate_receipt(request, sale):
         ], check=True)
     except Exception as e:
         logger.error(f"Error printing the file: {e}")
+=======
+>>>>>>> d1c14cc97287c67047ba0ba1f6f8c7790636586a
 
 

@@ -9,6 +9,8 @@
             <div>
                 <a href='/' class='bx bx-home btn border fs-5'></a>
                 <span class='mt-2 fs-5 mx-2'>Users</span>
+                <a href='/' class='bx bx-home btn border fs-5'></a>
+                <span class='mt-2 fs-5 mx-2'>Users</span>
             </div>
             <div>
                 <ul class="list-unstyled mt-3">
@@ -34,10 +36,17 @@
             {% for user in users %}
             <tr>
                 <td><small>{{ user.id }}</small></td>
+                <td><small>{{ user.id }}</small></td>
                 <td><small>{{ user.get_full_name|default:user.username }}</small></td>
                 <td><small>{{ user.email }}</small></td>
                 <td><small>{{ user.role }}</small></td>  
+                <td><small>{{ user.role }}</small></td>  
                 <td>
+                    <small>
+                        <a data-toggle="tooltip" data-placement="top" title="view user profile" href="{% url 'users:user_detail' user.id %}" class="btn btn-light btn-sm ">
+                            <i class="bx bx-show"></i>
+                        </a>
+                    </small>
                     <small>
                         <a data-toggle="tooltip" data-placement="top" title="view user profile" href="{% url 'users:user_detail' user.id %}" class="btn btn-light btn-sm ">
                             <i class="bx bx-show"></i>

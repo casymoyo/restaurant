@@ -28,6 +28,8 @@ from datetime import timedelta
 from finance.models import (
     Sale,
     SaleItem,
+    Sale,
+    SaleItem,
     CashBook,
     Expense, 
     ExpenseCategory
@@ -229,6 +231,7 @@ def edit_inventory(request, product_id):
             
         Logs.objects.create(
             user=request.user, 
+            user=request.user, 
             action= 'Edit',
             product=product,
             quantity=product.quantity,
@@ -414,6 +417,7 @@ def create_purchase_order(request):
                     quantity = float(item_data['quantity'])
                     unit_cost = Decimal(item_data['price'])
                     note = item_data['note']
+                    note = item_data['note']
 
                     if not all([product_name, quantity, unit_cost]):
                         transaction.set_rollback(True)
@@ -431,6 +435,8 @@ def create_purchase_order(request):
                         quantity=quantity,
                         unit_cost=unit_cost,
                         received_quantity=0,
+                        received=False,
+                        note=note
                         received=False,
                         note=note
                     )
@@ -774,6 +780,7 @@ def yeseterdays_left_overs(request):
             return JsonResponse({'success': False, 'message': f'Raw Material with ID: {raw_material_id} doesn\t exist'}, status=404)
         
         try:
+            dish = Dish.objects.get(id=dish_id, major_raw_material=raw_material)
             dish = Dish.objects.get(id=dish_id, major_raw_material=raw_material)
         except Dish.DoesNotExist:
             return JsonResponse({'success': False, 'message': f'Dish with ID: {dish_id} doesn\'t exist'}, status=404)
@@ -1245,6 +1252,8 @@ class DishUpdateView(View):
         dish = get_object_or_404(Dish, pk=pk)
         dish_form = DishForm(instance=dish)
         return render(request, 'inventory/dish_form.html', {'dish_form': dish_form, 'dish': dish})
+        dish_form = DishForm(instance=dish)
+        return render(request, 'inventory/dish_form.html', {'dish_form': dish_form, 'dish': dish})
 
     def post(self, request, pk):
         dish = get_object_or_404(Dish, pk=pk)
@@ -1307,6 +1316,7 @@ class IngredientDeleteView(View):
 @login_required
 def add_dish(request): # didn't change the name of the template, it caters for both, dish and ingredient creation
     form = IngredientForm()
+    dish_form = DishForm()
     dish_form = DishForm()
     
     if request.method == 'GET':

@@ -30,6 +30,13 @@
                         <th>Dish</th>
                         <th>Portions</th>
                         <th>Total Cost</th>
+<<<<<<< HEAD
+=======
+                        <th>Previous Rameterial C/F Quantity</th>
+                        <th>Previous Portion C/F quantity</th>
+                        <th>Actual quantity</th>
+                        <th>PC Time</th>
+>>>>>>> d1c14cc97287c67047ba0ba1f6f8c7790636586a
                     </thead>
                     <tbody id="cart-items"></tbody>
                 </table>
@@ -95,6 +102,12 @@ $(document).ready(function() {
             }).then(()=>{
                 window.location.href="{% url 'inventory:production_plans' %}"
             });
+<<<<<<< HEAD
+=======
+            cart = [];
+            updateCartTable();
+            window.location.href=`/inventory/minor_raw_materials/${data.data}/`
+>>>>>>> d1c14cc97287c67047ba0ba1f6f8c7790636586a
         } else {
             Swal.fire({
                 title: "Error",
