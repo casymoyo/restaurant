@@ -378,6 +378,7 @@ def pl_overview(request):
         'previous_gross_profit_margin': previous_gross_profit_margin,
         'gross_profit_margin_change': gross_profit_margin_change,
     }
+    
     return JsonResponse(data)
 
 

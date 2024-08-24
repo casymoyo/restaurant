@@ -1814,7 +1814,7 @@ def order_list(request):
     for product in products:
         if product.min_stock_level >= product.quantity:
             logger.info(product)
-            quantity_last_six_days = Logs.objects.filter(timestamp__gte=six_days_ago, product=product).aggregate(total_quantity=Sum('quantity'))['total_quantity'] or 0
+            quantity_last_six_days = Logs.objects.filter(timestamp__gte=six_days_ago, product=product).aggregate(total_quantity=Sum('quantity'))['total_quantity'] or 1
             
             reorder_quantity = quantity_last_six_days * lead_time + product.min_stock_level
             approx_days =  (product.quantity * 6) / reorder_quantity
