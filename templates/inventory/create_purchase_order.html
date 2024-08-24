@@ -131,6 +131,9 @@
                                 >
                                 <p id="price_error" class="fs-6 text-danger"></p>
                             </div> 
+                            <div id="supplier_prices" class="mb-2">
+
+                            </div>
                             <div id="div_id_quantity" class="mb-1"> 
                                 <label for="id_p_quantity" class="form-label requiredField">
                                     Quantity
@@ -142,6 +145,19 @@
                                     min="0" 
                                     class="numberinput form-control" 
                                     required id="id_p_quantity"
+                                > 
+                            </div> 
+                            <div id="div_id_note" class="mb-1"> 
+                                <label for="id_p_quantity" class="form-label requiredField">
+                                    Note
+                                </label> 
+                                <input 
+                                    type="text" 
+                                    name="note"
+                                    value="" 
+                                    class="numberinput form-control bg-secondary text-light" 
+                                    required id="id_note"
+                                    placeholder = 'i.e number of pieces in one unit.'
                                 > 
                                 <p id="quantity_error" class="fs-6 text-danger"></p>
                                 <p id="cart_error" class="text-danger"></p>
@@ -506,6 +522,7 @@
     function reload(){
       window.location.reload()
     }
+  
 
     function unitSubmit(){
         
@@ -705,14 +722,57 @@
            fetch(`/inventory/inventory/?name=${product}`)
             .then(response => response.json())
             .then(data=>{
-                console.log(prodData)
                 prodData.push(data)
-                console.log(prodData)
+     
             })
           .catch(error => console.error('Error:', error))
-      })
+        
+          fetch(`/inventory/supplier_prices/${product}/`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-CSRFToken": getCookie("csrftoken"), 
+            },
+            body: JSON.stringify(),
+          })
+          .then(response => response.json())
+          .then(data=>{
+              if (data.success) {
+                console.log(data)
+                const supplierPrices = document.getElementById('supplier_prices')
+                supplierPrices.innerHTML = ''
+                supplierPrices.innerHTML = `<p class="text-danger">Last best prices for this product</p>`
+                data.suppliers.forEach((sup)=>{
+                    console.log(sup)
+                    supplierPrices.innerHTML += `
+                       <button type='button' aria-label='Click to choose supplier.' class='btn btn-outline-dark hint--bottom' onclick="selectedSupplier(${sup?.id})">$${sup?.price}</button>
+                    `
+                })
+              } else {
+                Swal.fire({
+                    title: "Error",
+                    text: data.message,
+                    icon: "error"
+                });
+              } 
+            })
+            .catch((error) => {
+              console.error("Error:", error);
+              addToCartError.textContent=data.message;
+            });
+        })
      
     })
+
+    function selectedSupplier(supplierId) {
+        const supplierSelect = document.getElementById('id_supplier');
+    
+        supplierSelect.value = supplierId;
+
+        const event = new Event('change');
+        supplierSelect.dispatchEvent(event);
+    }
+    
 
     $(document).ready(function() {
         $('#id_supplier').select2(
@@ -838,7 +898,8 @@
       const supplier = document.getElementById('id_supplier').value;
       const price = parseFloat(document.getElementById('id_p_price').value);
       const quantity =  Number(document.getElementById('id_p_quantity').value);
-      
+      const note = document.getElementById('id_note').value;
+
       console.log(product, supplier, price, quantity)
       // Validation checks
       if (!product || !quantity || !price  || !supplier) {
@@ -856,7 +917,8 @@
           unit:prodData[0][0]['unit__unit_name'],
           quantity: quantity,
           price:price,
-          supplier:supplier 
+          supplier:supplier, 
+          note: note
         };
         cart.push(newTransfer);
       }

@@ -2,38 +2,32 @@
 {% load static %}
 {% block title %}Products{% endblock title %}
 {% block content %}
-<style>
-    .card{
-        border: none;
-    }
-    a{
-        text-decoration: none;
-        color: #333;
-    }
-    .btn:hover{
-        background: #333;
-        color:white !important;
-    }
-</style>
 <div class="products m-2">
     <nav class='mt-2 d-flex align-items-center justify-content-between'>
         <div>
             <ul class="list-unstyled d-flex align-items-center">
                 <li><a href='/' class='bx bx-home btn border fs-5 mt-1'></a></li>
-                <li class='mx-2 fs-5'>Inventory</li>
+                <li class='mx-2 fs-5'>Inventory
+                    (<span class='mx-2 fw-bold'>{{ count }} items</span>)
+                </li>
             </ul>
         </div>
         <div>
             <ul class="list-unstyled d-flex mt-3">
-                <li class="btn border mx-2">
-                    <a href="{% url 'inventory:create_purchase_order' %}">Add Inventory</a>
+                <li class="mx-2">
+                    {% comment %} <a href="{% url 'inventory:create_purchase_order' %}" class="btn btn-outline-dark">Transfer(s) to Production</a> {% endcomment %}
                 </li>
                 <li>
-                    <a href="{% url 'inventory:purchase_orders' %}" class="btn border">Purchase Orders</a>
+                    <a href="{% url 'inventory:create_purchase_order' %}" class="btn btn-outline-dark mx-2">Add Inventory</a>
                 </li>
-                <li class="btn border mx-2 inv-item" data-name="raw">Raw Materials</li>
-                <li class="btn border prod inv-item">
-                    <a href="{% url 'inventory:finished_products' %}">Products</a>
+                <li>
+                    <a href="{% url 'inventory:purchase_orders' %}" class="btn btn-outline-dark">Purchase Orders</a>
+                </li>
+                <li>
+                    <a href="{% url 'inventory:order_list' %}" class="btn btn-outline-dark mx-2">Reorder List</a>
+                </li>
+                <li>
+                    <a href="{% url 'inventory:transfers' %}" class="btn btn-outline-dark">Transfers</a>
                 </li>
             </ul>
         </div>
@@ -44,7 +38,6 @@
                 <th>Name</th>
                 <th>Cost per unit</th>
                 <th>Quantity</th>
-                <th>Portion Multiplier</th>
                 <th>Action</th>
             </thead>
             <tbody>
@@ -52,8 +45,7 @@
                     <tr>
                         <td><small>{{ raw_material.name }}</small></td>
                         <td><small>{{ raw_material.cost}}</small></td>
-                        <td><small>{{ raw_material.quantity }} {{ raw_material.unit }}</small></td>
-                        <td><small>{{ raw_material.portion_multiplier }}</small></td>
+                        <td><small>{{ raw_material.quantity | floatformat:3 }} {{ raw_material.unit }}</small></td>
                         <td>
                             <small>
                                 <span>
@@ -77,79 +69,11 @@
                 {% endfor %}
             </tbody>
         </table>
-
-        <div class="prod hidden">
-            <table class="table table-hover table-responsive prod hidden" id="products_table" style="width: 100%;">
-            <thead class="bg-primary">
-                <th>Name</th>
-                <th>Quantity</th>
-                <th>Cost per unit</th>
-                <th>Price</th>
-                <th>Action</th>
-            </thead>
-            <tbody>
-                {% for product in finished_products %}
-                    <tr>
-                        <td><small>{{ product.name }}</small></td>
-                        <td><small>{{ product.quantity }}</small></td>
-                        <td><small>{{ product.cost}}</small></td>
-                        <td><small>{{ product.price }}</small></td>
-                        <td>
-                            <small>
-                                <span>
-                                    <a href="{% url 'inventory:product_detail' product.id %}" class='text-dark'>
-                                        <i class='bx bx-show'></i>
-                                    </a>
-                                </span>
-                                <span class='mx-3'>
-                                    <a href="{% url 'inventory:edit_inventory' product.id %}" class="text-dark">
-                                        <i class='bx bx-edit-alt'></i>
-                                    </a>
-                                </span>
-                                <span>
-                                    <span id='delete' data-id="" onclick="productId(this)" class="text-dark">
-                                        <i class='bx bx-trash-alt'></i>
-                                    </span>
-                                </span>
-                            </small>
-                        </td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
     </div>
         </div>
 </div>
 <script>
     new DataTable('#raw_materials_table')
     new DataTable('#products_table')
-    const navButtons = document.querySelectorAll('.inv-item');
-    const rawMaterials = document.getElementsByClassName('raw');
-    const products = document.getElementById('prod');
-
-    navButtons.forEach((btn) => {
-        btn.addEventListener('click', (event) => {
-            let name = event.target.getAttribute('data-name');
-
-            show(name);
-        });
-    });
-
-    function show(name) {
-        // Hide all elements in rawMaterials collection
-        Array.from(rawMaterials).forEach(el => el.classList.add('hidden'));
-
-        // Hide the products element if it exists
-        if (products) {
-            products.classList.add('hidden');
-        }
-
-        // Show the element that matches the name
-        const elementToShow = document.querySelector(`.${name}`);
-        if (elementToShow) {
-            elementToShow.classList.remove('hidden');
-        }
-    }
-
 </script>
 {% endblock content %}

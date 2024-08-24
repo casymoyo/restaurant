@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Email List{% endblock title %}
+{% block content %}
+<h2>Create Notification Email</h2>
+<form id="create-form">
+    {{ form.as_p }}
+    <button type="submit" class='btn bx bx-save btn-primary'></button>
+</form>
+{% endblock content %}

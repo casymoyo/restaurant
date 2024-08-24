@@ -1,0 +1,30 @@
+version: '3'
+
+services:
+  web:
+    build: .
+    command: gunicorn restaurantwsgi:application --bind 0.0.0.0:8000
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - redis
+      - celery
+    env_file:
+      - .env
+
+  celery:
+    build: .
+    command: celery -A restaurant worker --loglevel=info
+    volumes:
+      - .:/app
+    depends_on:
+      - redis
+    env_file:
+      - .env
+
+  redis:
+    image: redis:6.2-alpine
+    ports:
+      - "6379:6379"

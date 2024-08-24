@@ -2,17 +2,42 @@ from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 from django.db.models import Q
 from django.http import JsonResponse
-from django.views import View
 from django.shortcuts import render, redirect
 from loguru import logger
-from django.contrib.auth import get_user_model
 from utils.authenticate import authenticate_user
 from .models import User
 from .forms import UserRegistrationForm, UserDetailsForm, UserDetailsForm2
 from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.hashers import make_password
+from .models import Company, User
+from .forms import CompanyForm, CustomUserCreationForm
 
+def create_company(request):
+    if Company.objects.exists():
+        return redirect('users:login')
+
+    if request.method == 'POST':
+        company_form = CompanyForm(request.POST)
+        user_form = CustomUserCreationForm(request.POST)
+        
+        if company_form.is_valid() and user_form.is_valid():
+            # Save the company
+            company = company_form.save()
+            
+            # Create the user with the company
+            user = user_form.save(commit=False)
+            user.company = company
+            user.role = 'owner'  
+            user.save()
+            
+            login(request, user)  
+            return redirect('users:login')
+    else:
+        company_form = CompanyForm()
+        user_form = CustomUserCreationForm()
+
+    return render(request, 'create_company.html', {'company_form': company_form, 'user_form': user_form})
 
 def users(request):
     search_query = request.GET.get('q', '')
@@ -30,7 +55,7 @@ def users(request):
             user.save()
             messages.success(request, 'User successfully added')
         else:
-            messages.error(request, 'Invalid form data')
+            messages.warning(request, 'Invalid form data')
 
     return render(request, 'auth/users.html', {'users': users, 'form': form, 'user_details_form': user_details_form})
 
@@ -54,9 +79,11 @@ def login_view(request):
                 login(request, user)
                 logger.info(f'User: {user.first_name + " " + user.email} logged in')
                 logger.info(f'User role: {user.role}')
-                if user.role in ['accountant', 'chef', 'admin', 'owner']:
+                if user.role in ['accountant', 'admin', 'owner']:
                     logger.info(f'User: {user.first_name + " " + user.email} is an {user.role}')
                     return redirect('dashborad')
+                elif user.role == 'chef':
+                    return redirect('inventory:production_plans')
                 return redirect('pos:pos')
             else:
                 messages.error(request, 'Your account is not active, contact admin')
@@ -116,10 +143,6 @@ def register(request):
             user = form.save(commit=False)
             user.password = make_password(form.cleaned_data['password'])
             user.save()
-
-            # create notifications settings for the user
-            # NotificationsSettings.objects.create(user=user)
-
             messages.success(request, 'User successfully added')
         else:
             messages.error(request, 'Error')

@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% load static %}
+{% load crispy_forms_tags %}
+{% block title %} 
+    Prodoction Plan Minor Raw Materials
+{% endblock %}
+{% block content %}
+
+<div class="inventory">
+    <div class='add-production-plan'>
+        <div class='production-plan mt-2 d-flex justify-content-between align-items-center'>
+            <div>
+                <a href='{% url "inventory:production_plans" %}' class='border btn bx bx-arrow-back fs-5'></a>
+                <a href='/' class='bx bx-home btn border fs-5 mx-2'></a>
+                <span class='mt-2 fs-5'>Production Plan Minor Raw Materials : {{ production_plan.production_plan_number }}</span>
+            </div>
+            <div>
+                <ul class="list-unstyled mt-3 d-flex align-items-center">
+                    <li>
+                        <a href="{% url 'inventory:production_plans' %}" class="mx-2 btn border">Production Plan</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <div class="row">
+            <div class="">
+                <table class="table" id="minor">
+                    <thead class="bg-primary">
+                        <th>Raw Material</th>
+                        <th>Total Ingr Quantity (per kg)</th>
+                        <th>Planned Quantity (kgs)</th>
+                        <th>Expected Quantity (Planned x Total Quantity)</th>
+                        <th>Cost (per kg)</th>
+                        <th>Total Cost</th>
+                    </thead>
+                    <tbody id='m_r_m'></tbody>
+                </table>
+                {% csrf_token %}
+                <div class="d-flex justify-content-end">
+                    <button id="id_confirm" class="btn-primary text-light btn bx bx-save"></button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        new DataTable('#minor')
+        let items = []
+        const inputElements = document.querySelectorAll('.used-quantity');
+
+        {% comment %} inputElements.forEach(input => {
+            input.addEventListener('keydown', function (event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    const tr = input.closest('tr');
+                    const itemId = tr.getAttribute('data-item-id');
+                    const actualQuantity = parseFloat(input.getAttribute('data-actual-quantity'));
+                    const portionMultiplier = parseInt(input.getAttribute('data-portion'));
+                    const usedQuantity = parseFloat(input.value);
+
+                    if (isNaN(usedQuantity) || usedQuantity < 0) {
+                        Swal.fire({
+                            title: "Error",
+                            text: 'Please enter a valid quantity.',
+                            icon: "error"
+                        });
+                        return;
+                    }
+
+                    if (usedQuantity > actualQuantity) {
+                        Swal.fire({
+                            title: "Error",
+                            text: 'Quantity used can\'t be greater than Actual Quantity.',
+                            icon: "error"
+                        });
+                        return;
+                    }
+
+                    const remainingQuantity = actualQuantity - usedQuantity;
+                    const portions = usedQuantity * portionMultiplier
+                    tr.querySelector('.remaining-quantity').textContent = remainingQuantity + ' kgs';
+                    tr.querySelector('#portions').textContent = usedQuantity * portionMultiplier + ' portions'
+
+                } 
+            });
+        }); {% endcomment %}
+
+        document.getElementById('id_confirm').addEventListener('click', function () {
+            console.log(items)
+            fetch("{% url 'inventory:confirm_minor_raw_materials' production.id %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({items})
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) {
+                    Swal.fire({
+                        title: "Error",
+                        text: data.message,
+                        icon: "error"
+                    });
+                }else{
+                    Swal.fire({
+                        title: "success",
+                        text: data.message,
+                        icon: "success"
+                    }).then(()=>{
+                        window.location.href='{% url "inventory:production_plans" %}'
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        });
+
+        const table = document.getElementById('m_r_m')
+        // fetch minor raw_materials
+        fetch("{% url 'inventory:process_minor_raw_materials' production.id %}", {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            items.push(data)
+            table.innerHTML = ''
+            for (item in data){
+                let total = data[item].quantity * data[item].production_quantity * data[item].cost
+
+                table.innerHTML += `
+                    <tr>
+                        <td>${item}</td>
+                        <td>${data[item].quantity}</td>
+                        <td>${data[item].production_quantity}</td>
+                        <td>${data[item].quantity * data[item].production_quantity}</td>
+                        <td>${data[item].cost}</td>
+                        <td>${total.toFixed(2)}</td>
+                    </tr>
+                `
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+    });
+</script>
+
+{% endblock content %}

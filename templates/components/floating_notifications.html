@@ -1,0 +1,25 @@
+{% block content %}
+    <div class=''>
+        {% if request.user.role == 'Chef' %}
+                <ul class='list-unstyled'>
+                    {% for notis in chef_notifications  %}
+                        <li>
+                            <a href=''>{{ notits }}</a>
+                        </li>
+                    {% endfor %}
+                </ul>
+        {% elif request.user.role == 'Accountant' %}
+            {% for notis in accountant_notifications %}
+                <li>
+                    <a href=''>{{ notits }}</a>
+                </li>
+            {% endfor %}
+        {% else %}
+            {% for notis in admin_notifications %}
+                <li>
+                    <a href=''>{{ notits }}</a>
+                </li>
+            {% endfor %}
+        {% endif %}
+    </div>
+{% endblock content%}

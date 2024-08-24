@@ -5,25 +5,35 @@
 {% block content %}
    <div class="inventory">
         <div class="inventory-navbar">
-            <nav class="d-flex justify-content-between align-items-center p-2">
+            <nav class="d-flex justify-content-between align-items-center mt-2 mb-2">
                 <div class='fw-bold d-flex'>
-                    <a href='{% url "inventory:products"%}' class='border btn bx bx-arrow-back fs-5'></a>
-                    <a href='/' class='bx bx-home btn border fs-5 mx-2'></a>
-                    <span class='fs-5'>Production</span>
+                    {% if request.user.role != 'chef'%}
+                        <a href='/' class='bx bx-home btn border fs-5'></a>
+                    {% endif %}
+                    <span class='fs-5 mx-2'>Production</span>
                 </div>
                 <div>
                     <ul class="list-unstyled mt-2 d-flex">
                         <li class="">
-                            <a href="{% url 'inventory:create_production_plan' %}" class='btn btn-outline-dark mx-2'>Create Production Plan</a>
+                            <a href="{% url 'inventory:create_production_plan' %}" class='btn btn-outline-dark'>Create Production Plan</a>
                         </li>
                         <li class="">
-                            <a href="{% url 'inventory:meal_list' %}" class='btn btn-outline-dark'>Meals</a>
+                            <a href="{% url 'inventory:production_sales' %}" class='btn btn-outline-dark mx-2'>Sales in portions</a>
                         </li>
                         <li class="">
-                            <a href="{% url 'inventory:dish_list' %}" class='btn btn-outline-dark mx-2'>Dishes</a>
+                            <a href="{% url 'inventory:meal_list' %}" class='btn btn-outline-dark mx-2'>Meals</a>
                         </li>
                         <li class="">
-                            <a href="{% url 'inventory:declared_production_plan' %}" class='btn btn-outline-dark'>Declared Production Plans</a>
+                            <a href="{% url 'inventory:dish_list' %}" class='btn btn-outline-dark'>Dishes</a>
+                        </li>
+                        <li class="">
+                            <a href="{% url 'inventory:production_transfers' %}" class='btn btn-outline-dark mx-2'>
+                                Receive Transfers
+                                <span class='badge text-dark'>{{ transfer_count }}</span>
+                            </a>
+                        </li>
+                        <li class="">
+                            <a href="{% url 'inventory:production_raw_materials' %}" class='btn btn-outline-dark'>Production Raw Materials</a>
                         </li>
                     </ul>
                 </div>
@@ -31,13 +41,21 @@
         </div>
         <div>
             <div class=" mt-2 w-100">
-                <table class='table border table-hover rounded p-2' id='production_table' style="width: 100%;" >
+                <table class='table border table-bordered table-hover rounded p-2' id='production_table' style="width: 100%;" >
                         <thead class='bg-primary'>
                             <tr>
                                 <th>Date</th>
                                 <th>PP Number</th>
-                                <th>Confirmation Status</th>
-                                <th>Declaration Status</th>
+                                <th>
+                                    <span class='text-danger'>BY ADMIN</span>
+                                    <span class='mx-2'>(Confimation Status)</span>
+                                </th>
+                                {% if request.user.role != 'chef'%}
+                                    <th>
+                                        <span class='text-danger'>BY CHEF</span>
+                                        <span class='mx-2'>(Confimation Status)</span>
+                                    </th>
+                                {% endif %}
                                 <th>Actions</th>
                             </tr>
                             </thead>
@@ -47,30 +65,34 @@
                                     <td><small>{{ plan.date_created }} {{ plan.time_created }}</small></td>
                                     <td><small>{{ plan.production_plan_number }}</small></td>
                                     <td>
-                                        <small>
-                                            {% if plan.status %}
-                                                <small class="bg-success fw-bold text-light p-2 rounded text-center w-100">Confirmed</small>
-                                            {%else %}
-                                                <a href="{% url 'inventory:confirm_production_plan' plan.id %}" class="bg-secondary fw-bold text-light p-2 rounded text-center w-100">Waiting Confirmation</a>
-                                            {% endif %}
-                                        </small>
-                                    </td>
-                                    <td>
-                                        <small>
-                                            {% if plan.declared %}
-                                                <small class="bg-success fw-bold text-light p-2 rounded text-center w-100" disabled>Declared</small>
-                                            {% else %}
+                                        {% if request.user.role != 'admin' or request.user.role != 'accountant' %}
+                                            <small >
                                                 {% if plan.status %}
-                                                    <a href="{% url 'inventory:declare_production_plan' plan.id %}" class="bg-secondary fw-bold text-light p-2 rounded text-center w-100">Waiting declaration</a>
-                                                {% else %}
-                                                    <small class="bg-primary fw-bold text-light p-2 rounded text-center w-100" disabled>Awaiting production plan confirmation</small>
+                                                    <small class="bg-success text-light p-2 rounded text-center w-100">Confirmed</small>
+                                                {%else %}
+                                                    <a href="{% url 'inventory:confirm_production_plan' plan.id %}" class="bg-danger text-light p-2 rounded text-center w-100">Waiting Confirmation</a>
                                                 {% endif %}
-                                            {% endif %}
-                                        </small>
+                                            </small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if request.user.role != 'chef'%}
+                                            <small>
+                                                {% if plan.declared %}
+                                                    <small class="bg-success text-light p-2 rounded text-center w-100" disabled>Declared</small>
+                                                {% else %}
+                                                    {% if plan.status %}
+                                                        <a href="{% url 'inventory:declare_production_plan' plan.id %}" class="bg-danger text-light p-2 rounded text-center w-100">Waiting declaration</a>
+                                                    {% else %}
+                                                        <small class="bg-danger text-light p-2 rounded text-center w-100" disabled>Awaiting production plan confirmation</small>
+                                                    {% endif %}
+                                                {% endif %}
+                                            </small>
+                                        {% endif %}
                                     </td>
                                     <td>
                                         <small>
-                                            <a href="{% url 'inventory:production_plan_detail' plan.id %}" class="bx bx-show"></a>
+                                            <a href="{% url 'inventory:production_plan_detail' plan.id %}" class="bx bx-show mx-2"></a>
                                             <a href="" class="bx bx-printer"></a>
                                         </small>
                                     </td>

@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Email List{% endblock title %}
+{% block content %}
+<h2>Are you sure you want to delete "{{ email.name }}"?</h2>
+<form id="delete-form">
+    <button type="submit">Yes</button>
+    <a href="{% url 'list_emails' %}">No</a>
+</form>
+{% endblock content %}

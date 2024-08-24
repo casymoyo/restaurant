@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+{% block content %}
+<div>
+   <div class='production-plan mt-2 d-flex justify-content-between align-items-center'>
+        <div>
+            <a href='/' class='bx bx-home btn border fs-5 mx-2'></a>
+            <span class='mt-2 fs-5'>Settings</span>
+        </div>
+    </div>
+    <div class="row">
+        <a href="{% url 'settings:list_emails' %}">
+            <div class="col-4">
+                <div class="card border-none">
+                    <div class="card-body d-flex justify-content-center align-items-center">
+                        <p>Email Notifications</p>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+</div>
+{% endblock %}

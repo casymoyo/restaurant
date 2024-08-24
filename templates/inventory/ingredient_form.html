@@ -1,15 +1,15 @@
 {% extends "base.html" %}
 {% load static %}
 {% load crispy_forms_tags %}
-{% block title %} Create Ingredient {% endblock %}
+{% block title %} Create Dish {% endblock %}
 {% block content %}
 <div class="inventory">
     <div class='add-production-plan'>
         <div class='production-plan mt-2 d-flex justify-content-between align-items-center'>
             <div>
-                <a href='{% url "inventory:production_plans" %}' class='border btn bx bx-arrow-back fs-5'></a>
+                <a href='{% url "inventory:dish_list" %}' class='border btn bx bx-arrow-back fs-5'></a>
                 <a href='/' class='bx bx-home btn border fs-5 mx-2'></a>
-                <span class='mt-2 fs-5'>Add {{ dish.name }} Ingredients</span> 
+                <span class='mt-2 fs-5'>Add Dish</span> 
             </div>
             <div>
                 <ul class="list-unstyled mt-3">
@@ -20,10 +20,15 @@
             </div>
         </div>
         <div class="row">
+            <form action="post">
+                {% csrf_token %}
+                {{ dish_form | crispy }}
+            </form>
+
+            <h5 class="mt-2 mb-2">Ingredients</h5>
             <div class="col-9">
                 <table class="table">
                     <thead class="bg-primary">
-                        <th>Name</th>
                         <th>Raw Material</th>
                         <th>Quantity (kgs)</th>
                     <tbody id="cart-items"></tbody>
@@ -33,10 +38,21 @@
                   <button class="btn-primary btn sm bx bx-save" id="id_submit"></button>
                 </div>
             </div>
-            <div class="col-3 border p-2 rounded">
+            <div class="col-3 border p-2 rounded mt-2">
+               
                 <form id="production-plan-form" action="" method="post">
                     {% csrf_token %}
-                    {{ form | crispy }}
+
+<div id="div_id_raw_material" class="mb-3"> <label for="id_raw_material" class="form-label requiredField">
+            Choose Ingredients    <span class="asteriskField">*</span> </label> <select name="raw_material" required="" id="id_raw_material" tabindex="-1" class='form-control' aria-hidden="true"> 
+                <option value="" selected="" >---------</option> 
+                {% for r in r_m %}
+                    <option value="{{ r.id}}" selected="" >{{ r.name }}</option> 
+                {% endfor %}
+</select> </div> <div id="div_id_quantity" class="mb-3"> <label for="id_quantity" class="form-label requiredField">
+                Quantity <span id='unit'></span><span class="asteriskField">*</span> </label> <input type="number" name="quantity" step="any" class="numberinput form-control" required="" id="id_quantity"> </div> <div id="div_id_note" class="mb-3"> <label for="id_note" class="form-label requiredField">
+                Note<span class="asteriskField">*</span> </label> <input type="text" name="note" maxlength="100" class="textinput form-control" required="" id="id_note" spellcheck="false" data-ms-editor="true"> </div>
+
                     <button type="button" id="save-button" class="btn btn-secondary btn-sm w-100">Save</button>
                 </form>
             </div>
@@ -49,6 +65,7 @@ $(document).ready(function() {
     let product = '';
     let unit_cost = 1;
     let unit_of_measurement = ''
+    let rawMaterialData = []
 
     $('#id_raw_material').select2();
     $('#id_dish').select2();
@@ -63,15 +80,53 @@ $(document).ready(function() {
       updateCartTable()
     })
 
+    $('#id_raw_material').on('change', function(e) {
+        const selectedProductId = e.target.value;
+        const postData = {
+            csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val(),
+            raw_material_id: selectedProductId,
+        };
+
+        console.log('here')
+
+        fetch('{% url "inventory:raw_material_json" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': $('input[name="csrfmiddlewaretoken"]').val()
+            },
+            body: JSON.stringify(postData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success){
+                console.log(data.data[0].unit__unit_name)
+                rawMaterialData.push(data.data)   
+                document.getElementById('unit').textContent=`(${data.data[0].unit__unit_name})`                                                                        
+            } else {
+                Swal.fire({
+                    title: "Error",
+                    text: data.message,
+                    icon: "error"
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error posting product data:', error);
+        });
+    });
+
+
     // submit button 
     $('#id_submit').on('click', function(){
       const postData = {
         csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val(),
         cart: cart,
-        dish_id: {{ dish.id }}
+        name: document.getElementById('id_name').value,
+        portion_multiplier: parseFloat(document.getElementById('id_portion_multiplier').value)
     };
     console.log(postData)
-    fetch('{% url "inventory:ingredient_create" dish.id %}', {
+    fetch('{% url "inventory:dish_create" %}', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -81,15 +136,17 @@ $(document).ready(function() {
     })
     .then(response => response.json())
     .then(data => {
-        if (data.success){
+        if (data.success) {
             Swal.fire({
                 title: "Success",
-                text: "Production plan created successfully!",
+                text: "Dish created successfully!",
                 icon: "success"
+            }).then(() => {
+                cart = [];
+                updateCartTable();
+                window.location.href = "{% url 'inventory:dish_list' %}";
             });
-            cart = [];
-            updateCartTable();
-        } else {
+        }else {
             Swal.fire({
                 title: "Error",
                 text: data.message,
@@ -102,10 +159,9 @@ $(document).ready(function() {
     });
     })
 
-
     $('#save-button').on('click', function() {
         const item = {
-            name: document.getElementById('id_name').value,
+            note: document.getElementById('id_note').value,
             raw_material: $('#id_raw_material option:selected').text(),
             quantity: parseFloat(document.getElementById('id_quantity').value),
         };
@@ -121,8 +177,7 @@ $(document).ready(function() {
             cartItems.append(
                 `
                     <tr>
-                        <td><button class="btn border bx bx-trash" onclick="deleteItem(${index})"></button> <span class='mx-2'>${item.name}</span></td>
-                        <td>${item.raw_material}</td>
+                        <td><button class="btn border bx bx-trash" onclick="deleteItem(${index})"></button> <span class='mx-2'>${item.raw_material}</span></td>
                         <td><input type="number" class="form-control" value="${item.quantity}" onchange="updateQuantity(${index}, this.value)"></td>
                     </tr>
                 `

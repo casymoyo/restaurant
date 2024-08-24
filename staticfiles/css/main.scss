@@ -75,5 +75,38 @@
         background: #333;
         color: white !important;
     }
+
+    .floating-box {
+        background: #333;
+        position: fixed;
+        bottom: 20px;
+        left: 20px;
+        width: 250px; 
+        padding: 15px;
+        background-color: #f8f9fa; 
+        border: 1px solid #ddd; 
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); 
+        border-radius: 8px; 
+        z-index: 1000; 
+    }
+    
+    .floating-box ul {
+        margin: 0;
+        padding: 0;
+    }
+    
+    .floating-box li {
+        margin-bottom: 10px; 
+    }
+    
+    .floating-box a {
+        text-decoration: none;
+        color: #007bff; 
+    }
+    
+    .floating-box a:hover {
+        text-decoration: underline;
+    }
+    
  
 }

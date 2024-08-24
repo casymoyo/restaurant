@@ -31,7 +31,7 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <title>
-        {% block title %}Urban Eats{% endblock title %}
+        {% block title %}{{ request.user.company.name }}{% endblock title %}
     </title>
 </head>
 <body>
@@ -41,7 +41,7 @@
                 <nav class="p-2">
                     <div class="d-flex justify-content-between align-items-center w-100">
                         <div>
-                            <h4 class="fw-bold">Urban Eats</h4>
+                            <h4 class="fw-bold">{{ request.user.company.name }}</h4>
                         </div>
                         <div>
                             <ul class="list-unstyled d-flex align-items-center">
@@ -51,8 +51,8 @@
                         </div>
                     </div>
                 </nav>
-                <div class='row bg-light mx-2'>
-                    <div class="app-area mx-2 col-12 overflow">
+                <div class='row bg-light'>
+                    <div class="app-area col-12 overflow">
                         {% if messages %}
                             {% for message in messages %}
                                 <div class="alert alert-dismissible {% if message.tags %}alert-{{ message.tags }}{% endif %}">
@@ -66,10 +66,44 @@
                             {% endfor %}
                         {% endif %}
                         {% block content %}{% endblock %}
+                        {% block notification %}
+        <div class='floating-box text-dark'>
+            
+            {% if request.user.role == 'Chef' %}
+                <ul class='list-unstyled'>
+                    {% for notis in chef_notifications %}
+                        <li>
+                            <a href=''>{{ notis }}</a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% elif request.user.role == 'Accountant' %}
+                <ul class='list-unstyled'>
+                    {% for notis in accountant_notifications %}
+                        <li>
+                            <a href=''>{{ notis }}</a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <ul class='list-unstyled'>
+                    {% for notis in admin_notifications %}
+                        <li>
+                            <a href=''>{{ notis }}</a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </div>
+    {% endblock notification %}
+    
                     </div>
                 </div>
             </nav>
         </div>
+
+        {% comment %} notifications {% endcomment %}
+        
 
         <!-- logout modal -->
         <div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="chargeModalLabel" aria-hidden="true">

@@ -1,33 +1,237 @@
+{% extends 'base.html' %}
+{% block title %}
+  End Of Day
+{% endblock title %}
 {% block content %}
-    <div class="container mt-5">
-        <h2>End of Day: {{ latest_plan.production_plan_number }}</h2>
-
-        <form method="post">
-            {% csrf_token %}
-            {{ formset.management_form }}
-            <table class="table table-bordered">
-                <thead>
-                    <tr>
-                        <th>Dish</th>
-                        <th>Portions Produced</th>
-                        <th>Portions Sold</th>
-                        <th>Wastage</th>
-                        <th>Leftovers</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for form in formset %}
-                        <tr>
-                            <td>{{ form.dish }}</td>
-                            <td>{{ form.portions.value }}</td>
-                            <td>{{ form.portions_sold }}</td>
-                            <td>{{ form.wastage }}</td>
-                            <td>{{ form.left_overs }}</td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            <button type="submit" class="btn btn-primary">Submit</button>
-        </form>
+<div class="mt-3">
+    <nav class="d-flex justify-content-between align-items-center">
+        <div class='d-flex'>
+            <a href='{% url "pos:pos" %}' class='border btn bx bx-arrow-back fs-5'></a>
+            <span class='fs-5 mx-2 fw-bold'>End of Day Report for {{ date|date:"Y-m-d" }}</span>
+        </div>
+    </nav>
+    <div class="mt-4 mb-4">
+        <div>
+            <input type="number" class="form-control" id="cashed_amount" placeholder="Enter amount to be cashed">
+        </div>
     </div>
+    <form method="POST" class="mt-3" id="end-of-day-form">
+        {% csrf_token %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Dish</th>
+                    <th>Produced Portions</th>
+                    <th>Sold Portions</th>
+                    <th>Staff Portions</th>
+                    <th>Wastage</th>
+                    <th>Leftovers</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in production_today %}
+                    <tr>
+                        <td>{{ item.dish__name }}</td>
+                        <td>{{ item.total_portions }}</td>
+                        <td>{{ item.total_sold }}</td>
+                        <td>{{ item.total_staff_portions }}</td>
+                        <td><input type="text" class="form-control"></td>
+                        <td><input type="text" class="form-control"></td>
+                        <td class="action-cell"></td> 
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </form>
+    <div class="d-flex justify-content-end">
+        <button class="btn btn-primary" id="confirm">Confirm Report</button>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const confirmButton = document.getElementById('confirm');
+
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                
+                const focusedElement = document.activeElement;
+
+                if (focusedElement && focusedElement.tagName === 'INPUT' && focusedElement.closest('tr')) {
+                    const row = focusedElement.closest('tr');
+                    const inputs = row.querySelectorAll('input');
+                    let allFilled = true;
+
+                    inputs.forEach(input => {
+                        if (input.value.trim() === '') {
+                            allFilled = false;
+                            input.classList.add('is-invalid'); 
+                        } else {
+                            input.classList.remove('is-invalid');
+                        }
+                    });
+
+                    if (!allFilled) {
+                        Swal.fire({
+                            title: "Validation Error",
+                            text: "Please fill in all fields before submitting.",
+                            icon: "warning"
+                        });
+                        return;
+                    }
+
+                    const dishName = row.querySelector('td:first-child').innerText;
+                    const totalPortions = parseInt(row.querySelector('td:nth-child(2)').innerText);
+                    const totalSold = parseInt(row.querySelector('td:nth-child(3)').innerText);
+                    const staffPortions = parseInt(row.querySelector('td:nth-child(4)').innerText);
+                    const wastage = parseInt(row.querySelector('td:nth-child(5) input').value);
+                    const leftovers = parseInt(row.querySelector('td:nth-child(6) input').value);
+
+
+                    const data = {
+                        dish_name: dishName,
+                        total_portions: totalPortions,
+                        total_sold: totalSold,
+                        total_staff_portions: staffPortions,
+                        wastage: wastage,
+                        leftovers: leftovers,
+                        csrfmiddlewaretoken: '{{ csrf_token }}'
+                    };
+
+                    fetch('{% url "inventory:save_end_of_day" %}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': data.csrfmiddlewaretoken
+                        },
+                        body: JSON.stringify(data)
+                    })
+                    .then(response => response.json())
+                    .then(result => {
+                        if (result.success) {
+                            const actionCell = row.querySelector('.action-cell');
+                            actionCell.innerHTML = "<span class='badge bg-success'>Done</span>";
+
+                            inputs.forEach(input => {
+                                input.disabled = true;
+                            });
+                        } else {
+                            Swal.fire({
+                                title: "Error",
+                                text: result.message || "An error occurred.",
+                                icon: "error"
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        Swal.fire({
+                            title: "Error",
+                            text: "An error occurred while saving the data.",
+                            icon: "error"
+                        });
+                    });
+                }
+            }
+        });
+
+        confirmButton.addEventListener('click', function(event) {
+            event.preventDefault();
+
+            const rows = document.querySelectorAll('#end-of-day-form tbody tr');
+            let allFieldsFilled = true;
+
+            rows.forEach(row => {
+                const inputs = row.querySelectorAll('input');
+                let rowFieldsFilled = true;
+
+                inputs.forEach(input => {
+                    if (input.value.trim() === '') {
+                        rowFieldsFilled = false;
+                        input.classList.add('is-invalid');
+                    } else {
+                        input.classList.remove('is-invalid');
+                    }
+                });
+
+                if (!rowFieldsFilled) {
+                    allFieldsFilled = false;
+                }
+            });
+
+            if (!allFieldsFilled) {
+                Swal.fire({
+                    title: "Validation Error",
+                    text: "Please fill in all fields before confirming.",
+                    icon: "warning"
+                });
+                return;
+            }
+
+            cashed_amount = parseFloat(document.getElementById('cashed_amount').value)
+            cashed_amount_el = document.getElementById('cashed_amount')
+
+            if(!cashed_amount){
+                Swal.fire({
+                    title: "Error",
+                    text: "Please Enter Amount To Be Cashed",
+                    icon: "error"
+                }).then(()=>{
+                    cashed_amount_el.focus()
+                });
+                return;
+            }
+
+            const data = {
+                cashed_amount: parseFloat(document.getElementById('cashed_amount').value)
+            }
+
+            fetch('{% url "inventory:confirm_end_of_day" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    Swal.fire({
+                        title: "Success",
+                        text: "End of Day report confirmed!",
+                        icon: "success"
+                    }).then(() => {
+                        rows.forEach(row => {
+                            const actionCell = row.querySelector('.action-cell');
+                            actionCell.innerHTML = "<span class='badge bg-success'>Done</span>";
+                            
+                            const inputs = row.querySelectorAll('input');
+                            inputs.forEach(input => {
+                                input.disabled = true;
+                            });
+                        });
+                        window.location.href="{% url 'pos:pos'%}"
+                    });
+                } else {
+                    Swal.fire({
+                        title: "Error",
+                        text: result.message || "An error occurred.",
+                        icon: "error"
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Swal.fire({
+                    title: "Error",
+                    text: "An error occurred while confirming the report.",
+                    icon: "error"
+                });
+            });
+        });
+    });
+</script>
 {% endblock %}

@@ -1,6 +1,9 @@
 import os
 from pathlib import Path
 
+from decouple import config
+
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -14,9 +17,14 @@ SECRET_KEY = 'django-insecure-3m$$5om_jd5=rk*1x9(@=-=o8(j!^y(@!)iz^38q6*^w#6v+4n
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['*', 'https://restaurant-production-e103.up.railway.app/']
-
-
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    '25e8-209-198-132-38.ngrok-free.app'
+]
+CSRF_TRUSTED_ORIGINS = [
+    'https://25e8-209-198-132-38.ngrok-free.app' 
+]
 # Application definition
 
 
@@ -34,6 +42,7 @@ DJANGO_APPS = [
 THIRD_PARTY_APPS = [
   "crispy_forms",
   "crispy_bootstrap5",
+  'corsheaders',
 ]
 
 LOCAL_APPS = [
@@ -48,8 +57,10 @@ LOCAL_APPS = [
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
-CSRF_TRUSTED_ORIGINS = ['https://restaurant-production-e103.up.railway.app']
+# CSRF_TRUSTED_ORIGINS = ['https://94c6-91-102-181-72.ngrok-free.app', 'https://90ce-91-102-181-72.ngrok-free.app/']
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+CORS_ORIGIN_ALLOW_ALL = True
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -60,6 +71,8 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
+    
+    'users.middleware.CompanySetupMiddleware'
 ]
 
 ROOT_URLCONF = 'restaurant.urls'
@@ -89,8 +102,12 @@ LOGIN_URL = "users:login"
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME':  'urban-eats',
+        'USER': 'postgres',
+        'PASSWORD': 'techcity',
+        'HOST': 'urban-eats.ddns.net',
+        'PORT': '5432'
     }
 }
 
@@ -152,9 +169,6 @@ MEDIA_URL = "/media/"
 
 # LOGGING
 # ------------------------------------------------------------------------------
-# https://docs.djangoproject.com/en/dev/ref/settings/#logging
-# See https://docs.djangoproject.com/en/dev/topics/logging for
-# more details on how to customize your logging configuration.
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -179,9 +193,18 @@ CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-CELERY_BROKER_URL = 'redis://localhost:6379/0' 
-CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'  
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
-CELERY_TIMEZONE = "Africa/Johannesburg"
+# Celery Configuration
+CELERY_BROKER_URL = config('CELERY_BROKER_URL', default='redis://localhost:6379/0')
+CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND', default='redis://localhost:6379/0')
+CELERY_ACCEPT_CONTENT = config('CELERY_ACCEPT_CONTENT', default='json', cast=lambda v: v.split(','))
+CELERY_TASK_SERIALIZER = config('CELERY_TASK_SERIALIZER', default='json')
+CELERY_RESULT_SERIALIZER = config('CELERY_RESULT_SERIALIZER', default='json')
+CELERY_TIMEZONE = config('CELERY_TIMEZONE', default='Africa/Johannesburg')
+
+# Email Backend Configuration
+EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.smtp.EmailBackend')
+EMAIL_HOST = config('EMAIL_HOST', default='localhost')
+EMAIL_PORT = config('EMAIL_PORT', default=25, cast=int)
+EMAIL_USE_SSL = config('EMAIL_USE_SSL', default=False, cast=bool)
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')

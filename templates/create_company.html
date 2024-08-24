@@ -1,0 +1,30 @@
+{% load static i18n %}
+{% load crispy_forms_tags %}
+{% block css %}
+    <link rel="stylesheet" href="{% static 'css/main.css'%}">
+    <link rel="stylesheet" href="{% static 'css/bootstrap/css/bootstrap.css'%}">
+    <link rel="stylesheet" href="{% static 'assets/hint.css/hint.min.css'%}">
+    <link rel="stylesheet" href="{% static 'assets/DataTables/datatables.min.css'%}">
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <link href='{% static "assets/boxicons/css/boxicons.css"%}' rel='stylesheet'>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+{% endblock css %}
+{% block content %}
+<div class="container mt-5">
+    <h2>Initial Setup</h2>
+    <h4>Create Company</h4>
+    <form method="post">
+        {% csrf_token %}
+        <div class="border p-3 rounded">
+            {{ company_form | crispy }}
+        </div>
+        <div class="mt-4 p-3 border rounded">
+            <h4>Company owner</h4>
+            {{ user_form | crispy }}
+        </div>
+        <button type="submit" class="btn btn-primary">Create Company</button>
+    </form>
+</div>
+{% endblock %}

@@ -18,6 +18,7 @@
                     <thead class='bg-primary'>
                             <th>Date</th>
                             <th>Order Number</th>
+                            <th>Note</th>
                             <th>Product</th>
                             <th>Unit Cost</th>
                             <th>Quantity</th>
@@ -28,6 +29,7 @@
                         <tr>
                             <td data-id={{ order.id }}><small>{{ order.purchase_order.order_date }}</small></td>
                             <td data-id={{ order.id }}><small>{{ order.purchase_order.order_number }}</small></td> 
+                            <td data-id={{ order.id }}><small>{{ order.note }}</small></td>
                             <td data-id={{ order.id }}><small>{{ order.product.name }}</small></td>
                             <td data-id={{ order.id }}><small>{{ order.unit_cost }}</small></td>
                             <td data-id={{ order.id }}><small>{{ order.quantity }}</small></td>
@@ -53,7 +55,7 @@
             let quantity = parseInt(quantityCell.textContent.trim(), 10);
 
             let total = unitCost * quantity;
-            console.log(total)
+            console.log(total, unitCost, quantity)
             totalCell.textContent = total.toFixed(2);
         });
     });

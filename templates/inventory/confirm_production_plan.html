@@ -44,37 +44,90 @@
         </div>
         <div class="row">
             <div class="">
+                <div class="d-flex align-items-center justify-content-between border rounded p-2 bg-dark text-light">
+                    <h5 class="fw-bold">Dishes</h5>
+                    <h5 class="fw-bold">Total Cost: ${{ total_cost_items }}</h5>
+                </div>
                 <table class="table" id='plan_item_table' style="width:100%;">
                     <thead class="bg-primary">
-                        <th>Raw Material</th>
                         <th>Dish</th>
-                        <th>Quantity</th>
-                        <th>Total Cost</th>
-                        <th>RM B/F quantity</th>
-                        <th>LF B/f quantity</th>
-                        <th>Actual quantity</th>
-                        <th>PC Time</th>
                         <th>Portions</th>
+                        <th>Total Cost</th>
                     </thead>
                     <tbody>
                         {% for item in production_plan_items  %}
                           <tr>
-                            <td><small>{{ item.raw_material }}</small></td>
                             <td><small>{{ item.dish.name }}</small></td>
-                            <td><small>{{ item.quantity }} {{ item.raw_material.unit }}</small></td>
-                            <td><small>{{ item.total_cost }}</small></td>
-                            <td><small>{{ item.rm_carried_forward_quantity }} {{ item.raw_material.unit }}</small></td>
-                            <td><small>{{ item.lf_carried_forward_quantity }} {{ item.raw_material.unit }}</small></td>
-                            <td><small>{{ item.actual_quantity }} {{ item.raw_material.unit }}</small></td>
-                            <td><small>{{ item.production_completion_time }}</small></td>
-                            <td><small>{{ item.portions }} portions</small></td>
+                            <td><small>{{ item.portions }} {{ item.raw_material.unit }}</small></td>
+                            <td><small>${{ item.total_cost }}</small></td>
                           </tr>
                         {% endfor %}
                     </tbody>
                 </table>
+
+                
+                <div class="d-flex mt-3 align-items-center justify-content-between border rounded p-2 bg-dark text-light">
+                    <h5 class="fw-bold">Raw Materials</h5>
+                </div>
+
+                <table class="table" id="minor">
+                    <thead class="bg-primary">
+                        <tr>
+                            <th>Raw Material</th>
+                            <th>Planned Quantity</th>
+                            <th>Quantity B/F</th>
+                            <th>Expected Quantity</th>
+                            <th>Allocated Quantity</th>
+                            {% if not confirm %}
+                                <th>Remaing Quantity (kgs)</th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in production_plan_minor_items %}
+                        <tr data-id="{{ item.id }}">
+                            <td><small>{{ item.name }}</small></td>
+                            <td><small>{{ item.quantity|floatformat:2 }}</small></td>
+                            <td><small>{{ item.quantity_b_f|floatformat:2 }}</small></td>
+                            <td>
+                                <small>
+                                    {% if item.expected_quantity < 0 %}
+                                        0.0
+                                    {% else %}
+                                        {{ item.expected_quantity|floatformat:2 }}
+                                    {% endif %}
+                                </small>
+                            </td>
+                            {% if confirm %}
+                                <td>
+                                    {% csrf_token %}
+                                    <input type="number" id="quantity" min='0' class='form-control'>
+                                </td>
+                            {% else %}
+                            <td>
+                                {% for allocated in allocated_rm %}
+                                    {% if allocated.raw_material.id == item.id%}
+                                        <small>{{ allocated.quantity }}</small>
+                                    {% endif %}
+                                {% endfor %}
+                            </td>
+                            <td>
+                                {% for allocated in allocated_rm %}
+                                    {% if allocated.raw_material.name == item.name %}
+                                        <small>{{ allocated.remaining_quantity }}</small>
+                                    {% endif %}
+                                {% endfor %}
+                            </td>
+                            {% endif %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
                 {% if confirm %}
-                    <div class="d-flex justify-content-end">
-                        <a href="{% url 'inventory:process_production_plan' production_plan.id %}" class="btn-primary text-light btn w-100 bx bx-save"></a>
+                    <div class="d-flex justify-content-end mt-4">
+                        <a href="" class="btn btn-danger text-light mx-2">Cancel</a>
+                        <a href="{% url 'inventory:process_production_plan' production_plan.id %}" class="btn-primary text-light btn">Confirm</a>
                     </div>
                 {% endif %}
             </div>
@@ -82,6 +135,54 @@
     </div>
 </div>
 <script>
-    new DataTable('#plan_item_table')
+    document.addEventListener('DOMContentLoaded', function () {
+        new DataTable('#plan_item_table');
+        new DataTable('#minor');
+        
+        document.querySelectorAll('#minor input[type="number"]').forEach(function (input) {
+            input.addEventListener('change', function () {
+                const quantityEntered = parseFloat(this.value);
+                const row = this.closest('tr');
+                
+
+                if (!isNaN(quantityEntered)) {
+
+                    const rawMaterialId = row.getAttribute('data-id');
+                    
+                    fetch('{% url "inventory:confirm_minor_raw"%}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': $('input[name="csrfmiddlewaretoken"]').val(), 
+                        },
+                        body: JSON.stringify({
+                            production_id: {{ production_plan.id }},
+                            raw_material_id: rawMaterialId,
+                            quantity: quantityEntered,
+                            csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val(),
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            input.disabled = true; 
+                            row.style.backgroundColor = '#d3d3d3';
+                            console.log('Quantity confirmed');
+                        } else {
+                            Swal.fire({
+                                title: "Error",
+                                text: data.message,
+                                icon: "error"
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                    });
+                }
+            });
+        });
+    });
 </script>
+
 {% endblock content %}

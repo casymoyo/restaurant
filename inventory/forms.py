@@ -8,7 +8,8 @@ from . models import (
     PurchaseOrder, 
     MealCategory,
     UnitOfMeasurement,
-    ProductionItems
+    ProductionItems,
+    TransferItems
 )
 from django import forms
 
@@ -51,46 +52,31 @@ class EditProductForm(forms.ModelForm):
         model = Product
         exclude = ['quantity']
 
-class productionForm(forms.ModelForm):
-    class Meta:
-        model = Production
-        fields = ['date_created', 'time_created']
+# class productionForm(forms.ModelForm):
+#     class Meta:
+#         model = Production
+#         fields = ['date_created', 'time_created']
         
 class ProductionPlanInlineForm(forms.ModelForm):
     class Meta:
         model = ProductionItems
         fields = [
-            'raw_material', 
             'dish', 
-            'quantity', 
-            'rm_carried_forward_quantity', 
-            'lf_carried_forward_quantity', 
-            'actual_quantity',
-            'production_completion_time'
+            'portions', 
         ]
-        widgets = {
-            'raw_material': forms.Select(attrs={'class': 'form-control'}),
-            'dish': forms.Select(attrs={'class': 'form-control'}),
-            'quantity': forms.NumberInput(attrs={'class': 'form-control'}),
-            'rm_carried_forward_quantity': forms.NumberInput(attrs={'class': 'form-control'}),
-            'lf_carried_forward_quantity': forms.NumberInput(attrs={'class': 'form-control'}),
-            'actual_quantity': forms.NumberInput(attrs={'class': 'form-control'}),
-            'production_completion_time': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
-        }
-
-    def __init__(self, *args, **kwargs):
-        super(ProductionPlanInlineForm, self).__init__(*args, **kwargs)
-        self.fields['raw_material'].queryset = Product.objects.filter(raw_material=True)
+    # def __init__(self, *args, **kwargs):
+    #     super(ProductionPlanInlineForm, self).__init__(*args, **kwargs)
+    #     self.fields['raw_material'].queryset = Product.objects.filter(raw_material=True)
 
 class DishForm(forms.ModelForm):
     class Meta:
         model = Dish
-        fields = ['name', 'portion_multiplier', 'raw_material']
+        fields = ['name', 'portion_multiplier']
 
 class IngredientForm(forms.ModelForm):
     class Meta:
         model = Ingredient
-        fields = ['name', 'quantity', 'raw_material']
+        fields = ['raw_material', 'quantity', 'note',]
 
 class MealForm(forms.ModelForm):
     class Meta:
@@ -103,4 +89,9 @@ class MealForm(forms.ModelForm):
 class MealCategoryForm(forms.ModelForm):
     class Meta:
         model = MealCategory
+        fields = '__all__'
+        
+class TransferForm(forms.Form):
+    class Meta:
+        model = TransferItems
         fields = '__all__'
