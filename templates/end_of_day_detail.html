@@ -3,61 +3,81 @@
   End Of Day Detail
 {% endblock title %}
 {% block content %}
+<style>
+    .card{
+        border:none;
+    }
+</style>
 <div>
-    <h2 class="text-center mt-2">End Of Day Report: {{ end_of_day.date }}</h2>
+    <h2 class="text-center mt-2 p-2 bg-dark text-light shadow rounded">End Of Day Report: {{ end_of_day.date }}</h2>
     <div class="row justify-content-center mt-4">
-        <div class="col-1">
-            <div class="card">
-                <div class="card-body text-center">
-                    <h6 class="fw-bold text-primary">Taken Stock Value</h6>
-                    <p>${{ taken_stock_value|floatformat:2 }}</p>
+        <div class="col-4">
+            <div class="row">
+                <div class="col-4">
+                    <div class="card shadow">
+                        <div class="card-body text-center">
+                            <h6 class="fw-bold text-primary">Taken Stock Value</h6>
+                            <p class="fs-4">${{ taken_stock_value|floatformat:2 }}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-4 ">
+                    <div class="card shadow">
+                        <div class="card-body text-center">
+                            <h6 class="fw-bold text-primary">Staff Stock Value</h6>
+                            <p class="fs-4">${{ staff_value }}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="card shadow">
+                        <div class="card-body text-center">
+                            <h6 class="fw-bold text-primary">Declared Stock Value</h6>
+                            <p class="fs-4">${{ taken_stock_value|floatformat:2 }}</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col-1">
-            <div class="card">
-                <div class="card-body text-center">
-                    <h6 class="fw-bold text-primary">Staff Stock Value</h6>
-                    <p>${{ staff_value }}</p>
+        
+        <div class="col-4">
+            <div class="row">
+                <div class="col-4">
+                    <div class="card shadow">
+                        <div class="card-body text-center">
+                            <h6 class="fw-bold text-primary">Sold Stock Value</h6>
+                            <p class="fs-4">${{ total_amount_sold_today }}</p>
+                        </div>
+                    </div>
                 </div>
+                <div class="col-4">
+                    <div class="card shadow">
+                        <div class="card-body text-center">
+                            <h6 class="fw-bold text-primary">Portions Difference</h6>
+                            <p class="fs-4">${{ portion_cost_value }}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="card shadow">
+                        <div class="card-body text-center">
+                            <h6 class="fw-bold text-primary">Cashed Amount</h6>
+                            <p class="fs-4">${{ end_of_day.cashed_amount }}</p>
+                        </div>
+                    </div>
+                </div> 
             </div>
         </div>
-        <div class="col-1">
-            <div class="card">
-                <div class="card-body text-center">
-                    <h6 class="fw-bold text-primary">Declared Stock Value</h6>
-                    <p>${{ taken_stock_value|floatformat:2 }}</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-1">
-            <div class="card">
-                <div class="card-body text-center">
-                    <h6 class="fw-bold text-primary">Sold Stock Value</h6>
-                    <p>${{ total_amount_sold_today }}</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-1">
-            <div class="card">
-                <div class="card-body text-center">
-                    <h6 class="fw-bold text-primary">Portions Difference</h6>
-                    <p>${{ portion_cost_value }}</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-1">
-            <div class="card">
-                <div class="card-body text-center">
-                    <h6 class="fw-bold text-primary">Cashed Amount</h6>
-                    <p>${{ end_of_day.cashed_amount }}</p>
-                </div>
-            </div>
-        </div> 
-        <div class="col-1">
-            <div class="card">
-                <div class="card-body text-center">
-                    <h6 class="fw-bold text-primary">Gross Profit</h6>
+        
+        <div class="col-4">
+            <div class="row align-content-center">
+                <div class="col-12">
+                    <div class="card shadow">
+                        <div class="card-body text-center">
+                            <h6 class="fw-bold text-primary">Gross Profit</h6>
+                            <p class="fs-4">${{ gross_profit }}</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -127,7 +147,7 @@
             </table>
         </div>
     </div> -->
-    <div class="main">
+    <div class="main mt-4">
         <h3 class="mt-2 mb-2">Dishes</h3>
         <table class="table">
             <thead>

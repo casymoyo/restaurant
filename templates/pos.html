@@ -8,16 +8,13 @@
         position: fixed;
         bottom: 20px;
         left: 20px;
-        width: 50px;
+        width: 100%;
         height: 50px;
-        background-color: #333;
         color: #fff;
-        border-radius: 50%;
+        border-radius: 2%;
         display: flex;
-        justify-content: center;
         align-items: center;
         cursor: pointer;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
         z-index: 1000;
     }
 
@@ -153,6 +150,12 @@
                         <h5 class="modal-title" id="chargeModalLabel">Finalize Sale</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
+                    
+                    <div class='m-2'>
+                        <button id="sitting-btn" class="order-type-btn btn btn-outline-dark w-100">Sitting</button>
+                        <button id="takeaway-btn" class="order-type-btn btn btn-outline-dark w-100 mt-2">Takeaway</button>
+                        <input type="hidden" id="order-type-input">
+                    </div>
                     <div class="modal-body">
                         <div class="mb-3">
                             <label for="totalAmountInput" class="form-label">Total Amount</label>
@@ -169,14 +172,8 @@
                     </div>
                 </div>
             </div>
-            <script>
-                function focusInput() {
-                    document.getElementById('totalAmountInput').focus();
-                }
-                focusInput()
-            </script>
         </div>
-
+        
         <div class="modal fade" id="staffChargeModal" tabindex="-1" aria-labelledby="chargeModalLabel" aria-hidden="true">
             <div class="modal-dialog bg modal-dialog-centered">
                 <div class="modal-content">
@@ -204,8 +201,18 @@
             </script>
         </div>
         <!-- Floating Button -->
-        <div id="floatingButton" class="floating-button" onclick="toggleFloatingContent()">
+        <div id="floatingButton" class="floating-button">
             <i class="bx bx-menu"></i> 
+            <li><a href="{% url 'inventory:end_of_day_view' %}" class="btn btn-outline-dark w-100">End of day</a></li>
+            <li class='mx-2'>
+                <button class="btn btn-outline-dark w-100" id="chargeStaff">Staff</button>
+            </li>
+            <li>
+                <button class="btn btn-outline-dark w-100">F2 Seacrch</button>
+            </li>
+            <li class='mx-2'>
+                <button class="btn btn-outline-dark w-100">Spacebar Charge</button>
+            </li >
         </div>
     
         
@@ -213,6 +220,7 @@
             <div class="content-header d-flex justify-content-between align-items-center">
                 <h6>More Options</h6>
                 <button type="button" class="btn-close text-light" onclick="toggleFloatingContent()"></button>
+                
             </div>
             <div class="content-body">
                 <ul>
@@ -271,7 +279,117 @@
         const chargeModal = new bootstrap.Modal(document.getElementById('chargeModal'));
         const staffModal = new bootstrap.Modal(document.getElementById('staffModal'))
         const staffChargeModal = new bootstrap.Modal(document.getElementById('staffChargeModal'))
-        const staff = document.getElementById('staff')
+        const staff = document.getElementById('staff')     
+
+        document.addEventListener("DOMContentLoaded", function() {
+            let selectedOrderType = null;
+        
+            const sittingBtn = document.getElementById("sitting-btn");
+            const takeawayBtn = document.getElementById("takeaway-btn");
+            const chargeBtn = document.querySelector(".btn-primary");
+            const orderTypeInput = document.getElementById("order-type-input");
+            const totalAmountInput = document.getElementById("totalAmountInput");
+        
+            function activateButton(button) {
+                sittingBtn.classList.remove("btn-dark");
+                takeawayBtn.classList.remove("btn-dark");
+        
+                button.classList.add("btn-dark");
+    
+                selectedOrderType = button.id === "sitting-btn" ? "sitting" : "takeaway";
+                orderTypeInput.value = selectedOrderType;
+        
+                chargeBtn.disabled = false;
+            }
+        
+            sittingBtn.addEventListener("click", function() {
+                activateButton(sittingBtn);
+            });
+        
+            takeawayBtn.addEventListener("click", function() {
+                activateButton(takeawayBtn);
+            });
+        
+            window.finalizeSale = function(staff) {
+                setTimeout(() => {
+                    totalAmountInput.focus();
+                    totalAmountInput.select();
+                }, 100);
+        
+                const totalAmount = parseFloat(totalAmountInput.value);
+                const total = parseFloat(document.getElementById('total').innerText.slice(1));
+                const change = totalAmount - total;
+                document.getElementById('changeDisplay').value = `$${change.toFixed(2)}`;
+                
+                if (!totalAmount) {
+                    Swal.fire({
+                        title: "Error",
+                        text: "Please insert amount.",
+                        icon: "error"
+                    });
+                    return;
+                }
+        
+                if (!selectedOrderType) {
+                    Swal.fire({
+                        title: "Error",
+                        text: "Please select an order type before finalizing the sale.",
+                        icon: "error"
+                    });
+                    return;
+                }
+        
+                const saleData = {
+                    received_amount: totalAmount,
+                    staff: staff,
+                    order_type: selectedOrderType,
+                    items: cart.map(meal => ({
+                        meal_id: meal.id,
+                        quantity: meal.quantity,
+                        price: meal.price,
+                        type: meal.type,
+                    }))
+                };
+        
+                console.log(saleData);
+        
+                fetch('{% url "pos:process_sale" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify(saleData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        console.log('Sale processed successfully:', data);
+                        Swal.fire({
+                            title: "Success",
+                            text: "Processing Receipt",
+                            icon: "success"
+                        }).then(()=>{
+                            cart = [];
+                            updateOrderDetails();
+                            window.location.reload()
+                        });
+                    } else {
+                        Swal.fire({
+                            title: "Error",
+                            text: data.message,
+                            icon: "error"
+                        });
+                        const chargeModal = bootstrap.Modal.getInstance(document.getElementById('chargeModal'));
+                        chargeModal.hide();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            }
+        });
+        
 
         document.addEventListener('keydown', function(event) {
             switch (event.code) {

@@ -71,7 +71,7 @@ class ProductionPlanInlineForm(forms.ModelForm):
 class DishForm(forms.ModelForm):
     class Meta:
         model = Dish
-        fields = ['name', 'portion_multiplier']
+        fields = '__all__'
 
 class IngredientForm(forms.ModelForm):
     class Meta:

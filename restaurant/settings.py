@@ -20,10 +20,10 @@ DEBUG = True
 ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
-    '25e8-209-198-132-38.ngrok-free.app'
+    'bfc2-34-239-110-18.ngrok-free.app'
 ]
 CSRF_TRUSTED_ORIGINS = [
-    'https://25e8-209-198-132-38.ngrok-free.app' 
+    'https://bfc2-34-239-110-18.ngrok-free.app' 
 ]
 # Application definition
 
@@ -101,14 +101,14 @@ LOGIN_URL = "users:login"
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME':  'urban-eats',
-        'USER': 'postgres',
-        'PASSWORD': 'techcity',
-        'HOST': 'urban-eats.ddns.net',
-        'PORT': '5432'
-    }
+    # 'default': {
+    #     'ENGINE': 'django.db.backends.postgresql',
+    #     'NAME':  'urban-eats',
+    #     'USER': 'postgres',
+    #     'PASSWORD': 'techcity',
+    #     'HOST': 'urban-eats.ddns.net',
+    #     'PORT': '5432'
+    # }
     # 'default': {
     #     'ENGINE': 'django.db.backends.postgresql',
     #     'NAME':  'urban-eats',
@@ -117,6 +117,10 @@ DATABASES = {
     #     # 'HOST': 'local',
     #     'PORT': '5432'
     # }
+     'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
 }
 
 

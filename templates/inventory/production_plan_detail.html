@@ -3,12 +3,8 @@
 {% load static %}
 {% load crispy_forms_tags %}
 {% block title %} 
-    {% if confirm %}
-        Confirm Production Plan
-    {% else %}
-        Production Plan Detail
-    {% endif %}
- {% endblock %}
+    Production Plan Detail
+{% endblock title %}
 {% block content %}
 
 <div class="inventory">
@@ -17,11 +13,7 @@
             <div>
                 <a href='{% url "inventory:production_plans" %}' class='border btn bx bx-arrow-back fs-5'></a>
                 <a href='/' class='bx bx-home btn border fs-5 mx-2'></a>
-                {% if confirm %}
-                    <span class='mt-2 fs-5'>Confirm Production Plan : {{ production_plan.production_plan_number }}</span>
-                {% else %}
-                    <span class='mt-2 fs-5'>Production Plan : {{ production_plan.production_plan_number }} Detail</span>
-                {% endif %}
+                <span class='mt-2 fs-5'>Production Plan : {{ production_plan.production_plan_number }} Detail</span>
               </div>
             <div>
                 <ul class="list-unstyled mt-3 d-flex align-items-center">
@@ -74,49 +66,16 @@
                     <thead class="bg-primary">
                         <tr>
                             <th>Raw Material</th>
-                            {% if confirm %}
-                                <th>Quantity B/F</th>
-                            {% endif %}
                             <th>Planned Quantity</th>
-                            <th>Expected Quantity</th>
                             <th>Allocated Quantity</th>
-                            {% if not confirm %}
-                                <th>Remaing Quantity (kgs)</th>
-                            {% endif %}
+                            <th>Remaining Quantity</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for item in production_plan_minor_items %}
                         <tr data-id="{{ item.id }}">
                             <td><small>{{ item.name }}</small></td>
-                            {% if confirm %}
-                                <td>
-                                    <small>
-                                        {% if not confirm %}
-
-                                        {% else %}
-                                            {{ item.quantity_b_f|floatformat:2 }}
-                                        {% endif %}
-                                    </small>
-                                </td>
-                            {% endif %}
                             <td><small>{{ item.quantity|floatformat:2 }}</small></td>
-                            <td>
-                                <small>
-                                    {% if item.expected_quantity < 0 %}
-                                        0.0
-                                    {% else %}
-                                        {{ item.expected_quantity|floatformat:2 }}
-                                    {% endif %}
-                                </small>
-                            </td>
-
-                            {% if confirm %}
-                                <td>
-                                    {% csrf_token %}
-                                    <input type="number" id="quantity" min='0' class='form-control'>
-                                </td>
-                            {% else %}
                             <td>
                                 {% for allocated in allocated_rm %}
                                     {% if allocated.raw_material.id == item.id%}
@@ -131,7 +90,6 @@
                                     {% endif %}
                                 {% endfor %}
                             </td>
-                            {% endif %}
                         </tr>
                         {% endfor %}
                     </tbody>

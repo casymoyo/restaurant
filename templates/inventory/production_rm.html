@@ -16,12 +16,22 @@
             <thead class="bg-primary">
                 <th>Name</th>
                 <th>Quantity</th>
+                <th>Actions</th>
             </thead>
             <tbody>
                 {% for r_m in raw_materials  %}
                     <tr>
                         <td><small>{{ r_m.product.name}}</small></td>
                         <td><small>{{ r_m.quantity|floatformat:2}} {{ r_m.product.unit }}</small></td>
+                        <td>
+                            <small>
+                                <span>
+                                    <a href="{% url 'inventory:production_rm_detail' r_m.id %}" class='text-dark'>
+                                        <i class='bx bx-show'></i>
+                                    </a>
+                                </span>
+                            </small>
+                        </td>
                     </tr>
                 {% endfor %}
             </tbody>

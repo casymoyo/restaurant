@@ -129,6 +129,7 @@ class ProductionInventory(models.Model):
 class Dish(models.Model):
     name = models.CharField(max_length=100)
     portion_multiplier = models.FloatField()
+    selling_price_per_portion = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
     def __str__(self) -> str:
         return self.name
@@ -331,6 +332,19 @@ class TransferItems(models.Model):
     def __str__(self):
         return f'{self.quantity} of {self.product.name}'
 
-    
 
+class ProductionLogs(models.Model):
     
+    ACTION_CHOICES = [
+        ('stock in', 'stock in'),
+        ('declared', 'declared'),
+        ('to production', 'to production'),
+    ]
+    
+    product = models.ForeignKey(ProductionRawMaterials, on_delete=models.CASCADE)
+    user = models.ForeignKey('users.User', on_delete=models.SET_NULL, null=True)
+    action = models.CharField(max_length=20, choices=ACTION_CHOICES)
+    quantity = models.FloatField()
+    total_quantity = models.FloatField()
+    timestamp = models.DateField(auto_now_add=True)
+    description = models.CharField(max_length=255, null=True)   
