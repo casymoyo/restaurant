@@ -10,3 +10,8 @@ class ExpenseCategoryForm(forms.ModelForm):
     class Meta:
         model = ExpenseCategory
         fields = ['name']
+
+class CashUpForm(forms.ModelForm):
+    class Meta:
+        model = CashUp
+        fields = ['cashier', 'cashed_amount']

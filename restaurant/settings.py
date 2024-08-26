@@ -109,6 +109,14 @@ DATABASES = {
         'HOST': 'urban-eats.ddns.net',
         'PORT': '5432'
     }
+    # 'default': {
+    #     'ENGINE': 'django.db.backends.postgresql',
+    #     'NAME':  'urban-eats',
+    #     'USER': 'postgres',
+    #     'PASSWORD': 'neverfail',
+    #     # 'HOST': 'local',
+    #     'PORT': '5432'
+    # }
 }
 
 

@@ -109,9 +109,10 @@
                     <nav class="d-flex justify-content-between align-items-center">
                         <h1><a href='/' class='bx bx-home btn border fs-1 mx-1'></a> Finance</h1>
                         <div>
-                            <a href="{% url 'finance:cogs' %}" class="btn btn-outline-dark">Cogs</a>
+                            <a href="{% url 'finance:cogs' %}" class="btn btn-outline-dark mx-2">Cashiers</a>
+                            <a href="{% url 'finance:cogs' %}" class="btn btn-outline-dark mx-2">Cogs</a>
                             <a href="{% url 'finance:cashbook' %}" class="btn btn-outline-dark">Cashbook</a>
-                            {% comment %} <a class="btn btn-outline-dark mx-2">Sales</a> {% endcomment %}
+                            <a href="{% url 'finance:cash_up' %}" class="btn btn-outline-dark mx-2">Cashups</a>
                             <a href="{% url 'finance:expenses' %}" class="btn btn-outline-dark">Expenses</a>
                             <button type="button" class="btn btn-outline-dark" data-bs-toggle="modal" data-bs-target="#timeFrameModal">
                                 Reports

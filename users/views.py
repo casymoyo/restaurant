@@ -39,6 +39,7 @@ def create_company(request):
 
     return render(request, 'create_company.html', {'company_form': company_form, 'user_form': user_form})
 
+
 def users(request):
     search_query = request.GET.get('q', '')
     users = User.objects.filter(Q(username__icontains=search_query) | Q(email__icontains=search_query)).order_by(

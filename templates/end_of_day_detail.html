@@ -5,7 +5,64 @@
 {% block content %}
 <div>
     <h2 class="text-center mt-2">End Of Day Report: {{ end_of_day.date }}</h2>
-    <div class="row">
+    <div class="row justify-content-center mt-4">
+        <div class="col-1">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h6 class="fw-bold text-primary">Taken Stock Value</h6>
+                    <p>${{ taken_stock_value|floatformat:2 }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-1">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h6 class="fw-bold text-primary">Staff Stock Value</h6>
+                    <p>${{ staff_value }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-1">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h6 class="fw-bold text-primary">Declared Stock Value</h6>
+                    <p>${{ taken_stock_value|floatformat:2 }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-1">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h6 class="fw-bold text-primary">Sold Stock Value</h6>
+                    <p>${{ total_amount_sold_today }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-1">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h6 class="fw-bold text-primary">Portions Difference</h6>
+                    <p>${{ portion_cost_value }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-1">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h6 class="fw-bold text-primary">Cashed Amount</h6>
+                    <p>${{ end_of_day.cashed_amount }}</p>
+                </div>
+            </div>
+        </div> 
+        <div class="col-1">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h6 class="fw-bold text-primary">Gross Profit</h6>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- <div class="row">
         <div class="col">
             <h3 class="mt-2 mb-2">Sales</h3>
             <table class="table table-borderless">
@@ -69,13 +126,13 @@
                 </tbody>
             </table>
         </div>
-    </div>
+    </div> -->
     <div class="main">
         <h3 class="mt-2 mb-2">Dishes</h3>
         <table class="table">
             <thead>
                 <th>Dish Name</th>
-                <th>System Auto Calculated Portions</th>
+                <th>Auto Calculated Portions</th>
                 <th>Portions Sold</th>
                 <th>Staff Portions</th>
                 <th>Price Per Unit</th>
@@ -90,19 +147,73 @@
                     <tr>
                         <td>{{ item.dish_name }}</td>
                         <td>{{ item.total_portions }}</td>
-                        <td>{{ item.total_sold}}</td>
+                        <td class="portions_sold">{{ item.total_sold}}</td>
                         <td>{{ item.staff_portions }}</td>
                         <td>{{ item.price_per_unit }}</td>
-                        <td>{{ item.wastage }}</td>
-                        <td>{{ item.leftovers}}</td>
-                        <td>{{ item.expected}}</td>
+                        <td class="wastage">{{ item.wastage }}</td>
+                        <td class="leftovers">{{ item.leftovers}}</td>
+                        <td class="o_l">{{ item.expected}}</td>
                         <!-- <td></td>
                         <td></td>
                         <td></td> -->
                     </tr>
                 {% endfor %}
             </tbody>
+            <tfoot>
+                <td>Totals</td>
+                <td></td>
+                <td class="portions_sold_value"></td>
+                <td></td>
+                <td></td>
+                <td class="wastage_value"></td>
+                <td class="leftovers_value"></td>
+                <td class="o_l_value"></td>
+            </tfoot>
         </table>
     </div>
 </div>
+<script>
+    const portionsSold = document.querySelectorAll('.portions_sold')
+    const wastage = document.querySelectorAll('.wastage')
+    const leftovers = document.querySelectorAll('.leftovers')
+    const o_l = document.querySelectorAll('.o_l')
+
+    console.log(portionsSold)
+
+    total_sold = 0
+    total_wastage = 0
+    total_leftovers = 0
+    total_o_l = 0
+
+    portionsSold.forEach((tr)=>{
+        let value = parseFloat(tr.textContent)
+        total_sold += value
+    })
+    
+    wastage.forEach((tr)=>{
+        let value = parseFloat(tr.textContent)
+        total_wastage += value
+    })
+
+    leftovers.forEach((tr)=>{
+        let value = parseFloat(tr.textContent)
+        total_leftovers += value
+
+        
+    })
+
+    o_l.forEach((tr)=>{
+        let value = parseFloat(tr.textContent)
+        total_o_l += value
+
+        
+    })
+
+    document.querySelector('.portions_sold_value').innerHTML=total_sold
+    document.querySelector('.o_l_value').innerHTML=total_o_l
+    document.querySelector('.leftovers_value').innerHTML=total_leftovers
+    document.querySelector('.wastage_value').innerHTML=total_wastage
+
+    console.log(total_sold, total_o_l, total_leftovers, total_wastage)
+</script>
 {% endblock content%}

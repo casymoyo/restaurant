@@ -80,6 +80,26 @@ class transactionLog(models.Model):
     action = models.CharField(max_length=10, choices=action_choice)
     
     
+class CashUp(models.Model):
+    cashier = models.ForeignKey(User, on_delete=models.CASCADE, related_name='cashier')
+    cashed_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0) 
+    sales = models.DecimalField(max_digits=10, decimal_places=2, default=0) 
+    date = models.DateField(auto_now_add=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    status = models.BooleanField(default=False)
+    
+    def __str__(self) -> str:
+        return f'{self.date}'
+    
+class CashierAccount(models.Model):
+    cashier = models.ForeignKey(User, on_delete=models.CASCADE)
+    cash_up = models.ForeignKey(CashUp, on_delete=models.CASCADE, null=True)
+    amount = models.DecimalField(max_digits=10, decimal_places=2, default=0) 
+    status = models.BooleanField(default=False)
+    
+    def __str__(self) -> str:
+        return f'{self.cashier.username} ({self.amount})'
+    
 class EmailNotifications(models.Model):
     expense_notification = models.BooleanField(default=True)
     

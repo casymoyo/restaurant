@@ -2,6 +2,7 @@ from . models import *
 import datetime, json
 from loguru import logger
 from . forms import (
+    CashUpForm,
     ExpensesForm,
     ExpenseCategoryForm
 )
@@ -212,13 +213,19 @@ def cashbook(request):
 
     entries = CashBook.objects.filter(date__gte=start_date).order_by('-date')
     
-    debit_entries = entries.filter(debit=True)
-    credit_entries = entries.filter(credit=True)
+
+    total_debit = entries.filter(debit=True).aggregate(Sum('amount'))['amount__sum'] or 0
+    total_credit = entries.filter(credit=True).aggregate(Sum('amount'))['amount__sum'] or 0
+    
+    difference = total_debit - total_credit
 
     return render(request, 'finance/cashbook.html', {
         'filter_option': filter_option,
-        'debit_entries': debit_entries,
-        'credit_entries': credit_entries,
+        'debit_entries': entries.filter(debit=True),
+        'credit_entries': entries.filter(credit=True),
+        'total_debit': total_debit,
+        'total_credit': total_credit,
+        'difference': difference,
     })
 
 
@@ -432,3 +439,132 @@ def generate_report(request):
     
     return response
  
+@login_required
+def cash_up(request):
+    if request.method == 'GET':
+        form = CashUpForm()
+        cashups = CashUp.objects.all()
+        cashier_list = User.objects.filter(role='sales')
+        logger.info(cashier_list)
+        return render(request, 'finance/cashups.html', {'form':form, 'cashups':cashups, 'cashier_list':cashier_list})
+    
+    if request.method == 'POST':
+        # payload
+        """
+            {
+              cashier:id,
+              cashed_amount:float,  
+            } 
+        """
+        
+        try:
+            data = json.loads(request.body)
+            cashed_amount = float(data.get('cashed_amount'))
+            cashier = int(data.get('cashier'))
+            
+            if cashed_amount < 0:
+                return JsonResponse({'success':False, 'message':f'Cashed amount cannot be less than zero.'}, status=400)
+            
+            total_sales = Sale.objects.filter(date=datetime.datetime.today()).aggregate(total_sales=Sum('total_amount'))['total_sales'] or 0
+            
+            CashUp.objects.create(
+                cashier = User.objects.get(id=cashier),
+                cashed_amount = cashed_amount,
+                sales = total_sales,
+                user = request.user, 
+                status = True if cashed_amount == total_sales else False
+            )
+        except Exception as e:
+            return JsonResponse({'success':False, 'message':f'{e}'}, status=400)
+        return JsonResponse({'success':True, 'message':f'Cash Up successfully created'}, status=201)
+    return JsonResponse({'success':False, 'message':f'Invalid request'}, status=405)
+
+@login_required
+@transaction.atomic
+def claim_cashup_difference(request, cashup_id):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            cashup_id = data.get('cashup_id')
+            claim_amount = data.get('claim_amount')
+
+            cash_up = CashUp.objects.select_for_update().get(id=cashup_id)
+            
+            if cash_up.status:
+                return JsonResponse({'success': False, 'message': f'Cash up already processed'}, status=400)
+            
+            cash_up.status = True
+            cash_up.save()
+
+            CashBook.objects.create(
+                amount=claim_amount,
+                debit=True,
+                credit=False,
+                description='Over cash up claim',
+            )
+
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': f'{e}'}, status=400)
+        return JsonResponse({'success': True, 'message': 'Cash Up successfully claimed'}, status=201)
+    return JsonResponse({'success': False, 'message': 'Invalid request'}, status=405)
+
+@login_required
+@transaction.atomic
+def charge_cashup_difference(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            cashup_id = data.get('cashup_id')
+            charge_amount = data.get('claim_amount')
+
+            cash_up = CashUp.objects.select_for_update().get(id=cashup_id)
+            
+            if cash_up.status:
+                return JsonResponse({'success': False, 'message': f'Cash up already processed'}, status=400)
+            
+            cash_up.status = True
+            cash_up.save()
+
+            CashierAccount.objects.create(
+                cashier = cash_up.cashier,
+                cash_up = cash_up,
+                amount=charge_amount,
+                status = False
+            )
+
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': f'{e}'}, status=400)
+        return JsonResponse({'success': True, 'message': 'Cash Up successfully claimed'}, status=201)
+    return JsonResponse({'success': False, 'message': 'Invalid request'}, status=405)
+
+@login_required
+def cashiers_list(request):
+    
+    if request.method == 'GET':
+        cashiers = User.objects.filter(role='cashier')
+        return render(request, 'finance/cashiers.html', {'cashiers':cashiers})
+
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            cashier_id = data.get('cashier_id')
+            amount = Decimal(data.get('amount'))
+            cashup_id = data.get('cashup_id')
+            
+            cashier = CashierAccount.objects.get(id=cashier_id)
+            cashup = CashUp.objects.get(id=cashup_id)
+             
+            if (cashup.sales - cashup.cashed_amount - amount) == 0:
+                cashier.status = True
+                
+            cashier.status.save()
+            
+            CashBook.objects.create(
+                amount=cashier.amount,
+                debit=True,
+                credit=False,
+                description=f'Cash up balance paid {cashier.user.first_name}',
+            )
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': f'{e}'}, status=400)

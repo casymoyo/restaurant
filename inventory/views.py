@@ -24,6 +24,7 @@ from utils.email import EmailThread
 from django.core.mail import EmailMessage
 from finance.models import COGS
 from datetime import timedelta
+import datetime
 
 from finance.models import (
     Sale,
@@ -1558,7 +1559,7 @@ def confirm_end_of_day(request):
         e_o_d.cashed_amount = Decimal(amount)
         e_o_d.done = True
         e_o_d.save()
-        
+        logger.info('saved')
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)})
     return JsonResponse({'success': True})
@@ -1607,10 +1608,41 @@ def end_of_day_detail(request, e_o_d_id):
         total_amount_staff_sold_today = Sale.objects.filter(date=localdate(), staff=True).aggregate(total_amount=Sum('total_amount'))['total_amount'] or 0
         total_quantity_sold_today = SaleItem.objects.filter(sale__date=localdate(),).aggregate(total_quantity=Sum('quantity'))['total_quantity'] or 0
         total_staff_portions = SaleItem.objects.filter(sale__date=localdate(), sale__staff=True).aggregate(total_staff_portions=Sum('quantity'))['total_staff_portions'] or 0
-        
-        logger.info(end_of_day_items)
-        
         difference =  end_of_day.cashed_amount - (total_amount_sold_today - total_amount_staff_sold_today) 
+        
+        taken_stock_value = Decimal(0)
+        staff_portions_value = Decimal(0)
+        portion_cost_value = Decimal(0)
+        
+        production_items = ProductionItems.objects.filter(production__date_created=end_of_day.date)
+
+        
+        ingredients = Ingredient.objects.select_related('raw_material').all()
+
+        
+        dish_to_ingredient = {ing.dish_id: ing for ing in ingredients}
+
+        for item in production_items:
+            for ing in dish_to_ingredient:
+                ingr = dish_to_ingredient.get(item.dish.id)
+                if ingr:
+                    
+                    kgs_taken = Decimal(item.portions) / Decimal(item.dish.portion_multiplier)
+                    taken_stock_value += kgs_taken * ingr.raw_material.cost
+                    logger.info({item})
+                    logger.info({kgs_taken})
+                    if item.staff_portions > 0:
+                        kgs_staff = Decimal(item.staff_portions) / Decimal(item.dish.portion_multiplier)
+                        staff_portions_value += kgs_staff * ing.raw_material.cost
+
+        # for end in end_of_day_items:
+        #     ing = dish_to_ingredient.get(end.dish.id)
+        #     if ing:
+        #         portion_cost_value += end.expected * ing.raw_material.cost
+  
+        
+        logger.info(portion_cost_value)
+        
         # total_staff_portions= end_of_day_items.objects.aggregate(total_staff_portions=Sum('staff_portions'))['total_staff_portions'] or 0
         
         buffer = generate_end_of_day_report(end_of_day, end_of_day_items, total_amount_staff_sold_today)
@@ -1629,7 +1661,10 @@ def end_of_day_detail(request, e_o_d_id):
             'total_amount_staff_sold_today':total_amount_staff_sold_today,
             'non_staff_quantity': total_quantity_sold_today - total_staff_portions,
             'non_staff_total_amount': total_amount_sold_today - total_amount_staff_sold_today,
-            'difference': difference
+            'difference': difference,
+            'taken_stock_value':taken_stock_value,
+            'staff_value':staff_portions_value,
+            'portion_cost_value':portion_cost_value
         }
     )
     

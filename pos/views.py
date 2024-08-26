@@ -289,3 +289,7 @@ def generate_receipt(request, sale):
         logger.error(f"Error printing the file: {e}")
 
 
+@login_required
+def x_read(request):
+    pass
+

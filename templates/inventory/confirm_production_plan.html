@@ -75,7 +75,9 @@
                         <tr>
                             <th>Raw Material</th>
                             <th>Planned Quantity</th>
-                            <th>Quantity B/F</th>
+                            {% if confirm %}
+                                <th>Quantity B/F</th>
+                            {% endif %}
                             <th>Expected Quantity</th>
                             <th>Allocated Quantity</th>
                             {% if not confirm %}
@@ -88,7 +90,18 @@
                         <tr data-id="{{ item.id }}">
                             <td><small>{{ item.name }}</small></td>
                             <td><small>{{ item.quantity|floatformat:2 }}</small></td>
-                            <td><small>{{ item.quantity_b_f|floatformat:2 }}</small></td>
+
+                            {% if confirm %}
+                                <td>
+                                    <small>
+                                        {% if not confirm %}
+
+                                        {% else %}
+                                            {{ item.quantity_b_f|floatformat:2 }}
+                                        {% endif %}
+                                    </small>
+                                </td>
+                            {% endif %}
                             <td>
                                 <small>
                                     {% if item.expected_quantity < 0 %}

@@ -26,4 +26,9 @@ urlpatterns = [
     
     # reports
     path('generate-report/', generate_report, name='generate_report'),
+    
+    # cash-ups
+    path('cash_up/', cash_up, name='cash_up'),
+    path('claim-cashup/<int:cashup_id>/', claim_cashup_difference, name='claim-cashup'),
+    path('charge_cashup_difference/', charge_cashup_difference, name='charge_cashup_difference')
 ]
