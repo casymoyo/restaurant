@@ -304,11 +304,13 @@
                     const selectedOption = element.options[element.selectedIndex]
 
                     console.log(selectedOption)
+                    
+                    price = parseFloat(selectedOption.getAttribute('data-price'))
 
                     addToCart(
                             selectedOption.value, 
                             selectedOption.text, 
-                            selectedOption.getAttribute('data-price'), 
+                            price, 
                             selectedOption.getAttribute('data-type')
                         );
 
@@ -353,9 +355,13 @@
             function activateButton(button) {
                 sittingBtn.classList.remove("btn-dark");
                 takeawayBtn.classList.remove("btn-dark");
-        
+
+                sittingBtn.classList.remove("text-light");
+                takeawayBtn.classList.remove("text-light");
+                
                 button.classList.add("btn-dark");
-    
+                button.classList.add("text-light");
+
                 selectedOrderType = button.id === "sitting-btn" ? "sitting" : "takeaway";
                 orderTypeInput.value = selectedOrderType;
         

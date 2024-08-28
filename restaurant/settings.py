@@ -110,22 +110,22 @@ DATABASES = {
     #     'HOST': 'urban-eats.ddns.net',
     #     'PORT': '5432'
     # }==============-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------=
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'postgres',
-        'USER': 'postgres.tgugrfxaribykdezopjn',
-        'PASSWORD': 'tQHxThDsWN3NDgat',
-        'HOST': 'aws-0-us-west-1.pooler.supabase.com',
-        'PORT': '6543',
-    }
     # 'default': {
     #     'ENGINE': 'django.db.backends.postgresql',
-    #     'NAME':  'urban-eats',
-    #     'USER': 'postgres',
-    #     'PASSWORD': 'neverfail',
-    #     # 'HOST': 'local',
-    #     'PORT': '5432'
-    #  }
+    #     'NAME': 'postgres',
+    #     'USER': 'postgres.tgugrfxaribykdezopjn',
+    #     'PASSWORD': 'tQHxThDsWN3NDgat',
+    #     'HOST': 'aws-0-us-west-1.pooler.supabase.com',
+    #     'PORT': '6543',
+    # }
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME':  'urban-eats',
+        'USER': 'postgres',
+        'PASSWORD': 'neverfail',
+        # 'HOST': 'local',
+        'PORT': '5432'
+     }
     #  'default': {
     #     'ENGINE': 'django.db.backends.sqlite3',
     #     'NAME': BASE_DIR / 'db.sqlite3',
