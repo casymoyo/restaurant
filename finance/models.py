@@ -22,6 +22,7 @@ class Expense(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     description = models.CharField(max_length=255)
     cancel = models.BooleanField(default=False)
+    status = models.BooleanField(default=False)
     
     def __str__(self) -> str:
         return f'{self.amount}'
@@ -65,6 +66,7 @@ class CashBook(models.Model):
     credit = models.BooleanField(default=False, null=True)
     description = models.CharField(max_length=255, default='')
     date = models.DateField(auto_now_add=True)
+    status = models.BooleanField(default=False)
     
     def __str__(self) -> str:
         return f'{self.amount}'

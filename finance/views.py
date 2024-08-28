@@ -45,11 +45,101 @@ def sale(request):
 def finance(request):
     sales = Sale.objects.filter(date__month = get_current_month()).order_by('-date')[:8]
     expenses = Expense.objects.filter(date__month = get_current_month()).order_by('-date')[:8]
+    current_month = get_current_month()
+
+    sales = Sale.objects.filter(date__month = current_month, staff=False)
+    cogs = COGS.objects.filter(date__month = current_month)
+    
+    # first_day_sale = sales.first()
+    # first_day_cog = cogs.first()
+    
+    # first_limit = first_day_sale.date + timedelta(days=7)
+    # second_limit = first_limit + timedelta(days=7)
+    # third_limit = second_limit + timedelta(days=7)
+    # fourth_limit = third_limit + timedelta(days=7)
+    
+    # first_limit_cogs = first_day_cog.date + timedelta(days=7)
+    # second_limit_cogs = first_limit_cogs + timedelta(days=7)
+    # third_limit_cogs = second_limit_cogs + timedelta(days=7)
+    # fourth_limit_cogs = third_limit_cogs + timedelta(days=7)
+    
+    # # sales
+    # first_week_sales = sales.filter(date__lte = first_limit).values('total_amount', 'date')
+    # first_week_sales_total = first_week_sales.\
+    #     aggregate(total_sales=Sum('total_amount'))['total_sales'] or 0
+    
+    # second_week_sales = sales.filter(date__gte = first_limit, date__lt=second_limit).\
+    #     values('total_amount', 'date')
+    # second_week_sales_total = second_week_sales.\
+    #     aggregate(total_sales=Sum('total_amount'))['total_sales'] or 0
+    
+    # third_week_sales =  sales.filter(date__gte = second_limit, date__lt=third_limit).\
+    #     values('total_amount', 'date')
+    # third_week_sales_total = third_week_sales .\
+    #     aggregate(total_sales=Sum('total_amount'))['total_sales'] or 0
+
+    # fourth_week_sales = sales.filter(date__gte = third_limit).values('total_amount', 'date').\
+    #     values('total_amount', 'date')
+    # fourth_week_sales_total = fourth_week_sales.\
+    #     aggregate(total_sales=Sum('total_amount'))['total_sales'] or 0
+    
+    # # cogs
+    # first_week_cogs = cogs.filter(date__lte = first_limit_cogs).values('total_amount', 'date').\
+    #     values('amount', 'date')
+    # first_week_cogs_total = first_week_cogs.\
+    #     aggregate(total_amount=Sum('amount'))['total_amount'] or 0
+    
+    # second_week_cogs = cogs.filter(date__gte = first_limit_cogs, date__lt=second_limit_cogs).\
+    #     values('amount', 'date')
+    # second_week_cogs_total = second_week_cogs.\
+    #     aggregate(total_amount=Sum('amount'))['total_amount'] or 0
+    
+    # third_week_cogs = cogs.filter(date__gte = second_limit_cogs, date__lt=third_limit_cogs).\
+    #     values('amount', 'date') 
+    # third_week_cogs_total = third_week_cogs.\
+    #     aggregate(total_amount=Sum('amount'))['total_amount'] or 0
+    
+    # fourth_week_cogs = cogs.filter(date__gte = third_limit_cogs).\
+    #     values('amount', 'date')
+    # fourth_week_cogs_total = fourth_week_cogs.\
+    #     aggregate(total_amount=Sum('amount'))['total_amount'] or 0
+    
+    # logger.info(f'first week sales:{first_week_cogs_total}')
+    
+    # gross profit
+    
+    # # total_first_week_sales = first_week_sales.aggregate(total_sales=Sum('total_amount'))['total_sales'] or
+    # data = {
+    #     'week 1': {
+    #             'cogs':first_week_cogs,
+    #             'sales':first_week_sales,
+    #             'total_sales':first_week_sales_total,
+    #             'total_cogs':first_week_cogs_total
+    #     },
+    #     'week 2':  {
+    #         'cogs':second_week_cogs,
+    #         'sales':second_week_sales,
+    #         'total_sales':second_week_sales_total,
+    #         'total_cogs':second_week_cogs_total
+    #     },
+    #     'week 3':  {
+    #         'cogs':third_week_cogs,
+    #         'sales':third_week_sales,
+    #         'total_sales':third_week_sales_total,
+    #         'total_cogs':third_week_cogs_total
+    #     },
+    #     'week 4':  {
+    #         'cogs':fourth_week_cogs,
+    #         'sales':fourth_week_sales,
+    #         'total_sales':fourth_week_sales_total,
+    #         'total_cogs':fourth_week_cogs_total
+    #     },
+    # }
     
     return render(request, 'finance/finance.html', 
         {
             'sales':sales,
-            'expenses':expenses
+            'expenses':expenses,
         }
     )
  
@@ -364,9 +454,9 @@ def pl_overview(request):
     current_gross_profit_margin = (current_gross_profit / current_month_sales * 100) if current_month_sales != 0 else 0
     previous_gross_profit_margin = (previous_gross_profit / previous_month_sales * 100) if previous_month_sales != 0 else 0
     
-    net_income_change = calculate_percentage_change(current_net_income, previous_net_income)
-    gross_profit_change = calculate_percentage_change(current_gross_profit, previous_gross_profit)
-    gross_profit_margin_change = calculate_percentage_change(current_gross_profit_margin, previous_gross_profit_margin)
+    # net_income_change = calculate_percentage_change(current_net_income, previous_net_income)
+    # gross_profit_change = calculate_percentage_change(current_gross_profit, previous_gross_profit)
+    # gross_profit_margin_change = calculate_percentage_change(current_gross_profit_margin, previous_gross_profit_margin)
 
 
     data = {
@@ -377,13 +467,10 @@ def pl_overview(request):
         'previous_net_profit':previous_net_profit,
         'current_net_income': current_net_income,
         'previous_net_income': previous_net_income,
-        'net_income_change': net_income_change,
         'current_gross_profit': current_gross_profit,
         'previous_gross_profit': previous_gross_profit,
-        'gross_profit_change': f'{gross_profit_change:.2f}',
         'current_gross_profit_margin': f'{current_gross_profit_margin:.2f}',
         'previous_gross_profit_margin': previous_gross_profit_margin,
-        'gross_profit_margin_change': gross_profit_margin_change,
     }
     
     return JsonResponse(data)
@@ -568,3 +655,70 @@ def cashiers_list(request):
             
         except Exception as e:
             return JsonResponse({'success': False, 'message': f'{e}'}, status=400)
+
+@login_required      
+def update_transaction_status(request, pk):
+    if request.method == 'POST':
+        entry = get_object_or_404(CashBook, pk=pk)
+        
+        data = json.loads(request.body)
+        
+        status =data.get('status')
+        
+        logger.info(status)
+        entry.status = status
+        logger.info(entry.status)
+        entry.save()
+        return JsonResponse({'success': True, 'status': entry.status})
+    return JsonResponse({'success': False}, status=400)
+
+@login_required
+def update_expense_status(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            expense_id = data.get('id')
+            status = data.get('status')
+
+            expense = Expense.objects.get(id=expense_id)
+            expense.status = status
+            expense.save()
+
+            return JsonResponse({'success': True, 'message': 'Status updated successfully.'})
+        except Expense.DoesNotExist:
+            return JsonResponse({'success': False, 'message': 'Expense not found.'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)})
+    return JsonResponse({'success': False, 'message': 'Invalid request method.'})
+
+@login_required
+def days_data(request):
+    current_month = get_current_month()
+
+    sales = Sale.objects.filter(date__month=current_month, staff=False)
+    cogs = COGS.objects.filter(date__month=current_month)
+
+    first_day = min(sales.first().date, cogs.first().date)
+    
+    def get_week_data(queryset, start_date, end_date, amount_field):
+        week_data = queryset.filter(date__gte=start_date, date__lt=end_date).values(amount_field, 'date')
+        total = week_data.aggregate(total=Sum(amount_field))['total'] or 0
+        return week_data, total
+
+    data = {}
+    for week in range(1, 5):
+        week_start = first_day + timedelta(days=(week-1)*7)
+        week_end = week_start + timedelta(days=7)
+        
+        sales_data, sales_total = get_week_data(sales, week_start, week_end, 'total_amount')
+        cogs_data, cogs_total = get_week_data(cogs, week_start, week_end, 'amount')
+        
+        data[f'week {week}'] = {
+            'sales': list(sales_data),
+            'cogs': list(cogs_data),
+            'total_sales': sales_total,
+            'total_cogs': cogs_total
+        }
+    logger.info(data)
+    return JsonResponse(data)
+

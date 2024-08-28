@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Dashboard{% endblock title %}
+{% block content %}
+<style>
+    .card{
+        border: none;
+    }
+    a{
+        text-decoration: none;
+    }
+    .card:hover{
+        background: #333;
+        color:white;
+    }
+</style>
+<div class="row mx-3 mt-3 align-items-center" style="height: 80vh;">
+    <a href="{% url 'pos:pos'%}" class="col col-4 mb-2">
+        <div class="card">
+            <div class="card-body d-flex justify-content-center align-items-center flex-column">
+                <div>
+                    <img src="{% static 'assets/pngs/sell.png'%}" alt="sell_icon" width="100rem">
+                </div>
+                <p class="mt-1">Point Of Sale</p>
+            </div>
+        </div>
+    </a>
+    <a href="{% url 'analytics_index' %}" class="col col-4 mb-2">
+        <div class="card">
+            <div class="card-body d-flex justify-content-center align-items-center flex-column">
+                <div>
+                    <img src="{% static 'assets/pngs/dashboard.png'%}" alt="dashboard_icon" width="100rem">
+                </div>
+                <p class="mt-1">Analytics</p>
+            </div>
+        </div>
+    </a>
+    <a href="{% url 'inventory:products' %}" class="col col-4 mb-2">
+        <div class="card">
+            <div class="card-body d-flex justify-content-center align-items-center flex-column">
+                <div>
+                    <img src="{% static 'assets/pngs/product.png'%}" alt="product_icon" width="100rem">
+                </div>
+                <p class="mt-1">Products</p>
+            </div>
+        </div>
+    </a>
+    <a href="{% url 'inventory:production_plans' %}" class="col col-4 mb-2">
+        <div class="card">
+            <div class="card-body d-flex justify-content-center align-items-center flex-column">
+                <div>
+                    <img src="{% static 'assets/pngs/plan.png'%}" alt="plan_icon" width="100rem">
+                </div>
+                <p class="mt-1">Production</p>
+            </div>
+        </div>
+    </a>
+    <a href="{% url 'finance:finance' %}" class="col col-4 mb-2">
+        <div class="card">
+            <div class="card-body d-flex justify-content-center align-items-center flex-column">
+                <div>
+                    <img src="{% static 'assets/pngs/bars.png'%}" alt="plan_icon" width="100rem">
+                </div>
+                <p class="mt-1">Finance</p>
+            </div>
+        </div>
+    </a>
+    <a href="{% url 'users:users' %}" class="col col-4 mb-2">
+        <div class="card">
+            <div class="card-body d-flex justify-content-center align-items-center flex-column">
+                <div>
+                    <img src="{% static 'assets/pngs/users.png'%}" alt="plan_icon" width="100rem">
+                </div>
+                <p class="mt-1">Users</p>
+            </div>
+        </div>
+    </a>
+    <a href="{% url 'settings:settings' %}" class="col col-4 mb-2">
+        <div class="card">
+            <div class="card-body d-flex justify-content-center align-items-center flex-column">
+                <div>
+                    <img src="{% static 'assets/pngs/settings.png'%}" alt="plan_icon" width="100rem">
+                </div>
+                <p class="mt-1">Settings</p>
+            </div>
+        </div>
+    </a>
+    <a href="{% url 'inventory:end_of_day_list' %}" class="col col-4 mb-2">
+        <div class="card">
+            <div class="card-body d-flex justify-content-center align-items-center flex-column">
+                <div>
+                    <img src="{% static 'assets/pngs/reports.jpg'%}" alt="plan_icon" width="100rem">
+                </div>
+                <p class="mt-1">End Of Day List</p>
+            </div>
+        </div>
+    </a>
+</div>
+{% endblock content %}

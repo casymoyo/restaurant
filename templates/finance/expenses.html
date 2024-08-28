@@ -1,10 +1,10 @@
 {% extends "base.html" %}
-{% load static%}
+{% load static %}
 {% load crispy_forms_tags %}
-{% block title%} Expenses {% endblock%}
+{% block title %} Expenses {% endblock %}
 {% block content %}
-<div class="Finance">
-    <nav class="d-flex justify-content-between align-items-center rounded mb-2 p-2">
+<div class="Finance container">
+    <nav class="d-flex justify-content-between align-items-center rounded mb-2 py-2">
         <div>
             <a href='{% url "finance:finance"%}' class='border btn bx bx-arrow-back fs-5'></a>
             <a href='/' class='bx bx-home btn border fs-5 mx-2'></a>
@@ -24,6 +24,7 @@
                 <th>Category</th>
                 <th>Amount</th>
                 <th>By</th>
+                <th>Status</th>
                 <th>Actions</th>
             </tr>
         </thead>
@@ -35,6 +36,11 @@
                 <td class="{% if expense.cancel %}text-decoration-line-through text-danger{% endif %}"><small>{{ expense.category.name }}</small></td>
                 <td class="{% if expense.cancel %}text-decoration-line-through text-danger{% endif %}"><small>{{ expense.amount }}</small></td>
                 <td class="{% if expense.cancel %}text-decoration-line-through text-danger{% endif %}"><small>{{ expense.user.username }}</small></td>
+                <td>
+                    <input type="checkbox" 
+                           onchange="updateExpenseStatus({{ expense.id }})"
+                           {% if expense.status %}checked{% endif %}>
+                </td>
                 <td>
                     {% if expense.cancel %}
                       <span class="text-decoration-line-through text-danger">Cancelled</span>
@@ -55,7 +61,8 @@
             {% endfor %}
         </tbody>
     </table>
-
+    
+    
     <div class="modal fade" id="editExpenseModal" tabindex="-1" aria-labelledby="editExpenseModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -157,8 +164,42 @@
             </div>
         </div>
     </div>
-
+    
     <script>
+        // JavaScript for updating expense status
+        function updateExpenseStatus(expenseId) {
+            const checkbox = document.querySelector(`input[onchange="updateExpenseStatus(${expenseId})"]`);
+            const status = checkbox.checked;
+
+            fetch(`/finance/update_expense_status/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken'),
+                },
+                body: JSON.stringify({id: expenseId, status: status}),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) {
+                    Swal.fire({
+                        title: 'Error!',
+                        text: data.message,
+                        icon: 'error',
+                        confirmButtonText: 'OK'
+                    });
+                }
+            })
+            .catch(error => {
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'An error occurred while updating the status.',
+                    icon: 'error',
+                    confirmButtonText: 'OK'
+                });
+            });
+        }
+        
         new DataTable('#expense_table')
 
         const addModal = new bootstrap.Modal(document.getElementById('AddExpenseModal'))
@@ -430,6 +471,6 @@
         }
         return cookieValue;
     }
-    </script>    
+    </script>
 </div>
 {% endblock %}

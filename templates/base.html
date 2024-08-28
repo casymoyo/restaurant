@@ -38,7 +38,7 @@
     <div class="Urban-Eat">
         <div class="row">
             <div class=" top-bar">
-                <nav class="p-2">
+                <nav class="p-2 border">
                     <div class="d-flex justify-content-between align-items-center w-100">
                         <div>
                             <h4 class="fw-bold">{{ request.user.company.name }}</h4>
@@ -51,59 +51,30 @@
                         </div>
                     </div>
                 </nav>
-                <div class='row bg-light'>
-                    <div class="app-area col-12 overflow">
-                        {% if messages %}
-                            {% for message in messages %}
-                                <div class="alert alert-dismissible {% if message.tags %}alert-{{ message.tags }}{% endif %}">
-                                {{ message }}
-                                <button type="button"
-                                    class="btn-close"
-                                    data-bs-dismiss="alert"
-                                    aria-label="Close">
-                                </button>
-                                </div>
-                            {% endfor %}
-                        {% endif %}
-                        {% block content %}{% endblock %}
-                        {% block notification %}
-        <div class='floating-box text-dark'>
-            
-            {% if request.user.role == 'Chef' %}
-                <ul class='list-unstyled'>
-                    {% for notis in chef_notifications %}
-                        <li>
-                            <a href=''>{{ notis }}</a>
-                        </li>
-                    {% endfor %}
-                </ul>
-            {% elif request.user.role == 'Accountant' %}
-                <ul class='list-unstyled'>
-                    {% for notis in accountant_notifications %}
-                        <li>
-                            <a href=''>{{ notis }}</a>
-                        </li>
-                    {% endfor %}
-                </ul>
-            {% else %}
-                <ul class='list-unstyled'>
-                    {% for notis in admin_notifications %}
-                        <li>
-                            <a href=''>{{ notis }}</a>
-                        </li>
-                    {% endfor %}
-                </ul>
-            {% endif %}
-        </div>
-    {% endblock notification %}
-    
+                    <div class="row">
+                        <div class="col-2">
+                            {% include 'base/side_bar.html' %}
+                        </div>
+                        <div class="col-10">
+                            <div class="app-area overflow">
+                                {% if messages %}
+                                    {% for message in messages %}
+                                        <div class="alert alert-dismissible {% if message.tags %}alert-{{ message.tags }}{% endif %}">
+                                        {{ message }}
+                                        <button type="button"
+                                            class="btn-close"
+                                            data-bs-dismiss="alert"
+                                            aria-label="Close">
+                                        </button>
+                                        </div>
+                                    {% endfor %}
+                                {% endif %}
+                                {% block content %}{% endblock %}
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </nav>
+            </div>
         </div>
-
-        {% comment %} notifications {% endcomment %}
-        
 
         <!-- logout modal -->
         <div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="chargeModalLabel" aria-hidden="true">

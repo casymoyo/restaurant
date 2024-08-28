@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Products{% endblock title %}
+{% block content %}
+<div class="products m-2">
+    <nav class='mt-2 d-flex align-items-center justify-content-between'>
+        <div>
+            <ul class="list-unstyled d-flex align-items-center">
+                <li><a href='/' class='bx bx-home btn border fs-5 mt-1'></a></li>
+                <li class='mx-2 fs-5 text-danger fw-bold'>End Of Day List</li>
+            </ul>
+        </div>
+    </nav>
+    <div class="tables">
+        <table class="table table-hover table-responsive raw" id="eod_table" style="width: 100%;">
+            <thead class="bg-primary">
+                <th>Date</th>
+                <th>Amount Cashed</th>
+                <th>Sales</th>
+            </thead>
+            <tbody>
+                {% for eod in eods  %}
+                    <tr>
+                        
+                        <td><a href='{% url "end_of_day_detail" eod.id %}'><small>{{ eod.date }}</small></a></td>
+                        <td><a href='{% url "end_of_day_detail" eod.id %}'></href><small>{{ eod.cashed_amount }}</a></small></td>
+                        <td><a href='{% url "end_of_day_detail" eod.id %}'><small>{{ eod.sales }}</a></small></td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+        </div>
+</div>
+<script>
+    new DataTable('#eod_table')
+</script>
+{% endblock content %}

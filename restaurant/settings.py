@@ -43,6 +43,7 @@ THIRD_PARTY_APPS = [
   "crispy_forms",
   "crispy_bootstrap5",
   'corsheaders',
+  'django_extensions',
 ]
 
 LOCAL_APPS = [
@@ -108,7 +109,15 @@ DATABASES = {
     #     'PASSWORD': 'techcity',
     #     'HOST': 'urban-eats.ddns.net',
     #     'PORT': '5432'
-    # }
+    # }==============-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------=
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'postgres',
+        'USER': 'postgres.tgugrfxaribykdezopjn',
+        'PASSWORD': 'tQHxThDsWN3NDgat',
+        'HOST': 'aws-0-us-west-1.pooler.supabase.com',
+        'PORT': '6543',
+    }
     # 'default': {
     #     'ENGINE': 'django.db.backends.postgresql',
     #     'NAME':  'urban-eats',
@@ -116,11 +125,11 @@ DATABASES = {
     #     'PASSWORD': 'neverfail',
     #     # 'HOST': 'local',
     #     'PORT': '5432'
+    #  }
+    #  'default': {
+    #     'ENGINE': 'django.db.backends.sqlite3',
+    #     'NAME': BASE_DIR / 'db.sqlite3',
     # }
-     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
 }
 
 

@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 {% load static %}
-{% block title %} Finance {% endblock title %}
+{% block title %} Finance Overview {% endblock title %}
 {% block content %}
     <div class="finance">
-        <div class="container-fluid mt-4">
+        <div class="container-fluid ">
             <div class="row">
-                <section class="col-3 col-md-3 bg-light sidebar">
+                <section class="col-3 border">
                     <div class="row flex-column">
                         <div class="card mb-4">
                             <div class="card-body">
@@ -105,21 +105,43 @@
                         </div>
                     </div>
                 </section>
-                <main role="main" class="col-9 col-md-9 ml-sm-auto mt-2 px-4">
+                <main role="main" class="col-9 px-4">
                     <nav class="d-flex justify-content-between align-items-center">
-                        <h1><a href='/' class='bx bx-home btn border fs-1 mx-1'></a> Finance</h1>
+                        <h2>Finance Overview</h2>
                         <div>
-                            <a href="{% url 'finance:cogs' %}" class="btn btn-outline-dark mx-2">Cashiers</a>
+                            <a href="{% url 'finance:cogs' %}" class="btn btn-outline-dark">Cashiers</a>
                             <a href="{% url 'finance:cogs' %}" class="btn btn-outline-dark mx-2">Cogs</a>
                             <a href="{% url 'finance:cashbook' %}" class="btn btn-outline-dark">Cashbook</a>
                             <a href="{% url 'finance:cash_up' %}" class="btn btn-outline-dark mx-2">Cashups</a>
                             <a href="{% url 'finance:expenses' %}" class="btn btn-outline-dark">Expenses</a>
-                            <button type="button" class="btn btn-outline-dark" data-bs-toggle="modal" data-bs-target="#timeFrameModal">
+                            <button type="button" class="btn btn-outline-dark mx-2" data-bs-toggle="modal" data-bs-target="#timeFrameModal">
                                 Reports
                             </button>
                         </div>
                     </nav>
-                    <div class="row">
+
+                    <div class="mt-4">
+                        <table class="table border table-bordered" id="sales-table">
+                            <thead>
+                                <tr>
+                                    <th class="table-borderless" style="border:none; "></th>
+                                    <th></th>
+                                    <th class="bg-info text-light">Monday</th>
+                                    <th class="bg-info text-light">Tuesday</th>
+                                    <th class="bg-info text-light">Wednesday</th>
+                                    <th class="bg-info text-light">Thursday</th>
+                                    <th class="bg-info text-light">Friday</th>
+                                    <th class="bg-info text-light">Saturday</th>
+                                    <th class="bg-info text-light">Sunday</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-body">
+                                
+                            </tbody>
+                        </table>
+                    </div>
+                    {% comment %} <div class="row">
                         <div class="col">
                             <div class="card mb-4 box-shadow">
                                 <div class="card-body">
@@ -139,7 +161,7 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </div> {% endcomment %}
 
                     <!-- <div class="row">
                         <div class="col">
@@ -165,7 +187,7 @@
                         </div>
                     </div> -->
 
-                    <div class="row">
+                    {% comment %} <div class="row">
                         <div class="col">
                             <div class="card mb-4 box-shadow">
                                 <div class="card-body">
@@ -218,7 +240,7 @@
                             </div>
                         </div>
                     </div>
-                </main>
+                </main> {% endcomment %}
             </div>
         </div>
     </div>
@@ -256,6 +278,103 @@
     </div>
   
     <script>
+        
+        fetch('/finance/days_data')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Data received:', data);
+            populateTable(data);
+        })
+        .catch(error => {
+            console.error('There was a problem with the fetch operation:', error);
+        });
+
+        // Function to get the weekday name from a date
+function getWeekday(dateStr) {
+    const date = new Date(dateStr);
+    return date.toLocaleString('en-us', { weekday: 'long' });
+}
+
+// Function to populate the table
+    function populateTable(data) {
+        const tbody = document.getElementById('table-body');
+
+        for (const week in data) {
+            console.log(week)
+            
+            const weekData = data[week];
+
+            console.log(weekData)
+            // Initialize daily totals and COGS
+            const dailySales = { "Monday": 0, "Tuesday": 0, "Wednesday": 0, "Thursday": 0, "Friday": 0, "Saturday": 0, "Sunday": 0 };
+            const dailyCOGS = { "Monday": 0, "Tuesday": 0, "Wednesday": 0, "Thursday": 0, "Friday": 0, "Saturday": 0, "Sunday": 0 };
+
+            // Calculate daily sales
+            weekData.sales.forEach(sale => {
+                const day = getWeekday(sale.date);
+                dailySales[day] += parseFloat(sale.total_amount);
+            });
+
+            // Calculate daily COGS
+            weekData.cogs.forEach(cogs => {
+                const day = getWeekday(cogs.date);
+                dailyCOGS[day] += parseFloat(cogs.amount);
+            });
+
+            // Calculate total sales, COGS, and gross profit
+            const totalSales = Object.values(dailySales).reduce((a, b) => a + b, 0);
+            const totalCOGS = Object.values(dailyCOGS).reduce((a, b) => a + b, 0);
+            const grossProfit = totalSales - totalCOGS;
+
+            // Insert rows for sales, COGS, and gross profit
+            const salesRow = document.createElement('tr');
+            const cogsRow = document.createElement('tr');
+            const grossProfitRow = document.createElement('tr');
+            const gapRow = document.createElement('tr');
+            const daysRow = document.createElement('tr'); 
+
+            salesRow.innerHTML = `<td>${week}</td><td class='bg-info fw-bold'>Sales</td>`;
+            cogsRow.innerHTML = `<td></td><td class='bg-info fw-bold text-danger'>COS</td>`;
+            grossProfitRow.innerHTML = `<td></td><td class='bg-info fw-bold'>Gross Profit</td>`;
+            gapRow.innerHTML += `<td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>`;
+            daysRow.innerHTML += `
+                <td></td>
+                <td></td>
+                <td class="bg-info text-light">Monday</td>
+                <td class="bg-info text-light">Tuesday</td>
+                <td class="bg-info text-light">Wednesday</td>
+                <td class="bg-info text-light">Thursday</td>
+                <td class="bg-info text-light">Friday</td>
+                <td class="bg-info text-light">Sataday</td>
+                <td class="bg-info text-light">Sunday</td>
+                <td></td>
+            `;
+
+            ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].forEach(day => {
+                salesRow.innerHTML += `<td>${dailySales[day].toFixed(2)}</td>`;
+                cogsRow.innerHTML += `<td class='text-danger'>${dailyCOGS[day].toFixed(2)}</td>`;
+                grossProfitRow.innerHTML += `<td>${(dailySales[day] - dailyCOGS[day]).toFixed(2)}</td>`;
+                //gapRow.innerHTML += `<td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>`;
+            });
+
+            salesRow.innerHTML += `<td class='fw-bold bg-info'>${totalSales.toFixed(2)}</td>`;
+            cogsRow.innerHTML += `<td class='fw-bold bg-info text-danger'>${totalCOGS.toFixed(2)}</td>`;
+            grossProfitRow.innerHTML += `<td class='fw-bold bg-info' style='background#fcd298'>${grossProfit.toFixed(2)}</td>`;
+        
+            tbody.appendChild(salesRow);
+            tbody.appendChild(cogsRow);
+            tbody.appendChild(grossProfitRow);
+            tbody.appendChild(gapRow)
+            tbody.append(daysRow)
+        }
+    }
+    
+        
         document.getElementById('timeFrame').addEventListener('change', function () {
             const customTimeFrame = document.getElementById('customTimeFrame');
             if (this.value === 'custom') {

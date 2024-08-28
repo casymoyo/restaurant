@@ -17,9 +17,11 @@ urlpatterns = [
     path('add/expense/', add_expense_category, name='add_expense_category'),
     path('edit/expense/', add_or_edit_expense, name='add_or_edit_expense'),
     path('delete_expense/<int:expense_id>/', delete_expense, name='delete_expense'),
+    path('update_expense_status/', update_expense_status, name='update_expense_status'),
     
     # cashbook 
     path('cashbook/', cashbook, name='cashbook'),
+    path('update_transaction_status/<int:pk>/', update_transaction_status, name='update_transaction_status'),
     
     # cogs
     path('cogs/', cogs_list, name='cogs'),
@@ -30,5 +32,7 @@ urlpatterns = [
     # cash-ups
     path('cash_up/', cash_up, name='cash_up'),
     path('claim-cashup/<int:cashup_id>/', claim_cashup_difference, name='claim-cashup'),
-    path('charge_cashup_difference/', charge_cashup_difference, name='charge_cashup_difference')
+    path('charge_cashup_difference/', charge_cashup_difference, name='charge_cashup_difference'),
+    
+    path('days_data', days_data, name='days_data')
 ]

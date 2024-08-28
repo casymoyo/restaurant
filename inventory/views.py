@@ -1825,7 +1825,12 @@ def send_end_of_day_report(request, buffer):
     EmailThread(email).start()
 
     logger.info(f' End of day report email sent.')
- 
+    
+
+@login_required
+def end_of_day_list(request):
+    end_of_days = EndOfDay.objects.filter(statu=True)
+    return render(request, 'end_of_day_list.html', {'end_of_days':end_of_days})
  
 @login_required 
 def confirm_minor_raw(request):
