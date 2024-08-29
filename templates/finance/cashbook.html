@@ -7,12 +7,13 @@
         <div>
             <a href='{% url "finance:finance"%}' class='border btn bx bx-arrow-back fs-5'></a>
             <a href='/' class='bx bx-home btn border fs-5 mx-2'></a>
-            <span class='mt-2 fs-5'>Cashbook <span class='fw-bold'>(${{ difference }})</span></span>
+            <span class='mt-2 fs-5'>Cashbook <span class='fw-bold'></span></span>
         </div>
         <div>
             <div class="d-flex justify-content-between mt-1">
                 <div>
                     <select class="form-select" id="filterSelect" onchange="filterCashBook()">
+                        <option value="today" {% if filter_option == 'today' %}selected{% endif %}>Today</option>
                         <option value="this_week" {% if filter_option == 'this_week' %}selected{% endif %}>This Week</option>
                         <option value="yesterday" {% if filter_option == 'yesterday' %}selected{% endif %}>Yesterday</option>
                         <option value="this_month" {% if filter_option == 'this_month' %}selected{% endif %}>This Month</option>
@@ -20,108 +21,194 @@
                         <option value="this_year" {% if filter_option == 'this_year' %}selected{% endif %}>This Year</option>
                     </select>
                 </div>
+                <div id="customDateRange" class="d-flex mx-2">
+                    <input type="date" id="startDate" value="{{ start_date }}" class="form-control" placeholder="Start Date">
+                    <input type="date" id="endDate" value="{{ end_date}}" class="form-control mx-2" placeholder="End Date">
+                    <button class="btn btn-primary" onclick="applyCustomFilter()">Apply</button>
+                </div>
+                <button class="btn btn-secondary" onclick="downloadReport()">Download Report</button>
             </div>
         </div>
     </nav>
     
     <div class="row border rounded p-2">
-        <div class="col-md-6">
-            <h6>Debit Entries <span class='fw-bold'>${{ total_debit }}</span></h6>
-            <div class="table-responsive">
-                <table class="table table-striped">
+        <div class="">
+            <div class="table-responsive ">
+                <table class="table table-striped table-bordered table-hover">
                     <thead>
                         <tr>
                             <th>Date</th>
                             <th>Description</th>
-                            <th>Amount</th>
-                            <th>Status</th>
+                            <th>Expenses</th>
+                            <th>Income</th>
+                            <th>Balance</th>
+                            <th>Accountant</th>
+                            <th>Manager</th>
+                            <th>Directors</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% for entry in debit_entries %}
-                            <tr>
-                                <td>{{ entry.date }}</td>
-                                <td>{{ entry.description }}</td>
-                                <td>{{ entry.amount }}</td>
-                                <td>
-                                    <input type="checkbox" 
-                                           class="status-checkbox" 
-                                           data-id="{{ entry.id }}" 
-                                           {% if entry.status %}checked{% endif %}>
-                                </td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <h6>Credit Entries  <span class='fw-bold'>${{ total_credit }}</span></h6>
-            <div class="table-responsive">
-                <table class="table table-striped">
-                    <thead>
                         <tr>
-                            <th>Date</th>
-                            <th>Description</th>
-                            <th>Amount</th>
-                            <th>Status</th>
+                            <td colspan="4"><strong>Balance B/F</strong></td>
+                            <td>{{ balance_bf|floatformat:2 }}</td>
+                            <td colspan="3"></td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        {% for entry in credit_entries %}
-                            <tr>
-                                <td>{{ entry.date }}</td>
-                                <td>{{ entry.description }}</td>
-                                <td>{{ entry.amount }}</td>
-                                <td>
-                                    <input type="checkbox" 
-                                           class="status-checkbox" 
-                                           data-id="{{ entry.id }}" 
-                                           {% if entry.status %}checked{% endif %}>
-                                </td>
-                            </tr>
+                        {% for entry in entries %}
+                        <tr>
+                            <td>{{ entry.date }}</td>
+                            <td>
+                                <span class="hint--bottom" aria-label="
+                                    {% if entry.debit %}
+                                        {% for sale in sales %}
+                                            {% if sale.sale == entry.sale %}
+                                                {% if sale.meal %}
+                                                    {{ sale.meal }} x {{ sale.quantity }}
+                                                {% else %}
+                                                    {{ sale.product }} x {{ sale.quantity}}
+                                                {% endif %}
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% endif %}
+                                ">
+                                    {{ entry.description }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if entry.credit %}
+                                    {{ entry.amount }}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if entry.debit %}
+                                    {{ entry.amount }}
+                                {% endif %}                                                          
+                            </td>
+                            <td class='balance'></td>
+                            <td>
+                                <input type="checkbox" 
+                                       class="status-checkbox" 
+                                       data-id="{{ entry.id }}" 
+                                       data-field="accountant" 
+                                       {% if entry.accountant %}checked{% endif %}
+                                >
+                            </td>
+                            <td>
+                                <input type="checkbox" 
+                                       class="status-checkbox" 
+                                       data-id="{{ entry.id }}" 
+                                       data-field="manager" 
+                                       {% if entry.manager %}checked{% endif %}
+                                >
+                            </td>
+                            <td>
+                                <input type="checkbox" 
+                                       class="status-checkbox" 
+                                       data-id="{{ entry.id }}" 
+                                       data-field="director" 
+                                       {% if entry.director %}checked{% endif %}
+                                >
+                            </td>
+                        </tr>
                         {% endfor %}
                     </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="2"><strong>Total</strong></td>
+                            <td class='fw-bold'>{{ total_credit|floatformat:2 }}</td>
+                            <td class='fw-bold'>{{ total_debit|floatformat:2 }}</td>
+                            <td class='fw-bold'>{{ total_balance|floatformat:2 }}</td>
+                            <td colspan="3"></td>
+                        </tr>
+                    </tfoot>
                 </table>
             </div>
         </div>
     </div>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
 <script>
     function filterCashBook() {
         const filter = document.getElementById('filterSelect').value;
         window.location.href = `?filter=${filter}`;
     }
 
+
+    function applyCustomFilter() {
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
+        if (startDate && endDate) {
+            window.location.href = `?filter=custom&start_date=${startDate}&end_date=${endDate}`;
+        } else {
+            alert('Please select both start and end dates.');
+        }
+    }
+
+    function downloadReport() {
+        const filter = document.getElementById('filterSelect').value;
+        let url = `/finance/report/?filter=${filter}/`;
+
+        if (filter === 'custom') {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            url += `&start_date=${startDate}&end_date=${endDate}`;
+        }
+
+        window.location.href = url;
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         const checkboxes = document.querySelectorAll('.status-checkbox');
-
+    
         checkboxes.forEach(function(checkbox) {
             checkbox.addEventListener('change', function() {
                 const entryId = this.getAttribute('data-id');
+                const field = this.getAttribute('data-field');
                 const status = this.checked;
-                console.log(status)
-
+    
                 fetch(`/finance/update_transaction_status/${entryId}/`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'X-CSRFToken': getCookie('csrftoken')
                     },
-                    body: JSON.stringify({ status: status })
+                    body: JSON.stringify({ status: status, field: field })
                 })
                 .then(response => response.json())
                 .then(data => {
                     if (!data.success) {
                         alert('Failed to update status');
-                    }else{
-                        console.log(data.message)
+                    } else {
+                        console.log(`Updated ${field} to ${status}`);
                     }
                 });
             });
         });
     });
+    
+
+    function calculateBalances() {
+        const rows = document.querySelectorAll('tbody tr');
+        let balance = parseFloat(document.querySelector('tbody tr:first-child td:nth-child(5)').textContent.trim());
+
+        rows.forEach((row, index) => {
+            if (index === 0) return; 
+
+            const expenseCell = row.querySelector('td:nth-child(3)').textContent.trim();
+            const incomeCell = row.querySelector('td:nth-child(4)').textContent.trim();
+            const balanceCell = row.querySelector('td:nth-child(5)');
+
+            const expense = expenseCell ? parseFloat(expenseCell) : 0;
+            const income = incomeCell ? parseFloat(incomeCell) : 0;
+
+            if (income > 0) {
+                balance += income;
+            } else if (expense > 0) {
+                balance -= expense;
+            }
+
+            balanceCell.textContent = balance.toFixed(2);
+        });
+    }
 
     function getCookie(name) {
         let cookieValue = null;

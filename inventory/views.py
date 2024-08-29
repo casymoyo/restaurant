@@ -1151,7 +1151,7 @@ def declare_production_plan(request, pp_id):
         
             p_rm = ProductionRawMaterials.objects.get(product__id=raw_material_id)
             p_rm.quantity -= raw_material_used
-            p_rm.save()
+            
             
             allocated.remaining_quantity = allocated.quantity - raw_material_used
             allocated.save()
@@ -1164,6 +1164,7 @@ def declare_production_plan(request, pp_id):
                 quantity=p_rm.quantity,
                 total_quantity=p_rm.quantity,
             )
+            p_rm.save()
             
             return JsonResponse({'success': True}, status=201)
         except json.JSONDecodeError as e:

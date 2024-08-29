@@ -150,14 +150,14 @@ def process_sale(request):
                     
                     product.save()
                     
-                CashBook.objects.create(
-                    sale=sale, 
-                    amount=sale.total_amount,
-                    debit=True,
-                    description=f'Sale (Receipt number: {sale.receipt_number})'
-                )
+            CashBook.objects.create(
+                sale=sale, 
+                amount=sale.total_amount,
+                debit=True,
+                description=f'Sale (Receipt number: {sale.receipt_number})'
+            )
                 
-                # generate_receipt(request, sale)
+            # generate_receipt(request, sale)
                     
             logger.info(f'Sale: {sale.id} Processed')
             return JsonResponse({'success': True, 'sale_id': sale.id}, status=201)

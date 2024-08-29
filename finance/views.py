@@ -1,3 +1,4 @@
+import csv
 from . models import *
 import datetime, json
 from loguru import logger
@@ -282,41 +283,117 @@ def delete_expense(request, expense_id):
     return JsonResponse({'success': False, 'message': 'Invalid request method'}, status=400)
 
 
-
-@login_required # tune the filters
+@login_required
 def cashbook(request):
-    filter_option = request.GET.get('filter', 'this_week')
+    filter_option = request.GET.get('filter', 'today')
     now = datetime.datetime.now()
-
-    if filter_option == 'this_week':
-        start_date = now - timedelta(days=now.weekday()) 
+    end_date = now
+    
+    if filter_option == 'today':
+        start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    elif filter_option == 'this_week':
+        start_date = now - timedelta(days=now.weekday())
     elif filter_option == 'yesterday':
-        start_date = now - timedelta(days=1)
+        start_date = (now - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
     elif filter_option == 'this_month':
         start_date = now.replace(day=1)
     elif filter_option == 'last_month':
         start_date = (now.replace(day=1) - timedelta(days=1)).replace(day=1)
     elif filter_option == 'this_year':
         start_date = now.replace(month=1, day=1)
+    elif filter_option == 'custom':
+        start_date = request.GET.get('start_date')
+        end_date = request.GET.get('end_date')
+        start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
+        end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d')
     else:
         start_date = now - timedelta(days=now.weekday())
+        end_date = now
 
-    entries = CashBook.objects.filter(date__gte=start_date).order_by('-date')
+    entries = CashBook.objects.filter(date__gte=start_date, date__lte=end_date).order_by('date')
     
-
     total_debit = entries.filter(debit=True).aggregate(Sum('amount'))['amount__sum'] or 0
     total_credit = entries.filter(credit=True).aggregate(Sum('amount'))['amount__sum'] or 0
     
-    difference = total_debit - total_credit
+    balance_bf = 0 
+    
+    previous_entries = CashBook.objects.filter(date__lt=start_date)
+    previous_debit = previous_entries.filter(debit=True).aggregate(Sum('amount'))['amount__sum'] or 0
+    previous_credit = previous_entries.filter(credit=True).aggregate(Sum('amount'))['amount__sum'] or 0
+    balance_bf = previous_debit - previous_credit
+
+    total_balance = balance_bf + (total_debit - total_credit)
+    
+    sales = SaleItem.objects.all()
 
     return render(request, 'finance/cashbook.html', {
         'filter_option': filter_option,
-        'debit_entries': entries.filter(debit=True),
-        'credit_entries': entries.filter(credit=True),
+        'entries': entries,
+        'balance_bf': balance_bf,
         'total_debit': total_debit,
         'total_credit': total_credit,
-        'difference': difference,
+        'total_balance': total_balance,
+        'end_date':end_date,
+        'start_date':start_date,
+        'sales':sales
     })
+
+
+@login_required
+def download_cashbook_report(request):
+    filter_option = request.GET.get('filter', 'this_week')
+    now = datetime.datetime.now()
+    end_date = now
+    
+    if filter_option == 'today':
+        start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    elif filter_option == 'this_week':
+        start_date = now - timedelta(days=now.weekday())
+    elif filter_option == 'yesterday':
+        start_date = (now - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+    elif filter_option == 'this_month':
+        start_date = now.replace(day=1)
+    elif filter_option == 'last_month':
+        start_date = (now.replace(day=1) - timedelta(days=1)).replace(day=1)
+    elif filter_option == 'this_year':
+        start_date = now.replace(month=1, day=1)
+    elif filter_option == 'custom':
+        start_date = request.GET.get('start_date')
+        end_date = request.GET.get('end_date')
+        start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
+        end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d')
+    else:
+        start_date = now - timedelta(days=now.weekday())
+        end_date = now
+
+    entries = CashBook.objects.filter(date__gte=start_date, date__lte=end_date).order_by('date')
+
+    # Create a CSV response
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="cashbook_report_{filter_option}.csv"'
+
+    writer = csv.writer(response)
+    writer.writerow(['Date', 'Description', 'Expenses', 'Income', 'Balance'])
+
+    balance = 0  
+    for entry in entries:
+        if entry.debit:
+            balance += entry.amount
+        elif entry.credit:
+            balance -= entry.amount
+
+        writer.writerow([
+            entry.date,
+            entry.description,
+            entry.amount if entry.debit else '',
+            entry.amount if entry.credit else '',
+            balance,
+            entry.accountant,
+            entry.manager,
+            entry.director
+        ])
+
+    return response
 
 
 @login_required
@@ -656,20 +733,21 @@ def cashiers_list(request):
         except Exception as e:
             return JsonResponse({'success': False, 'message': f'{e}'}, status=400)
 
-@login_required      
+@login_required
 def update_transaction_status(request, pk):
     if request.method == 'POST':
         entry = get_object_or_404(CashBook, pk=pk)
         
         data = json.loads(request.body)
         
-        status =data.get('status')
+        status = data.get('status')
+        field = data.get('field')  
+
+        if field in ['manager', 'accountant', 'director']:
+            setattr(entry, field, status)
+            entry.save()
+            return JsonResponse({'success': True, 'status': getattr(entry, field)})
         
-        logger.info(status)
-        entry.status = status
-        logger.info(entry.status)
-        entry.save()
-        return JsonResponse({'success': True, 'status': entry.status})
     return JsonResponse({'success': False}, status=400)
 
 @login_required

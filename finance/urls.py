@@ -21,6 +21,7 @@ urlpatterns = [
     
     # cashbook 
     path('cashbook/', cashbook, name='cashbook'),
+    path('report/', download_cashbook_report, name='download_cashbook_report'),
     path('update_transaction_status/<int:pk>/', update_transaction_status, name='update_transaction_status'),
     
     # cogs

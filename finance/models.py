@@ -66,7 +66,9 @@ class CashBook(models.Model):
     credit = models.BooleanField(default=False, null=True)
     description = models.CharField(max_length=255, default='')
     date = models.DateField(auto_now_add=True)
-    status = models.BooleanField(default=False)
+    manager = models.BooleanField(default=False)
+    accountant = models.BooleanField(default=False, null=True)
+    director = models.BooleanField(default=False, null=True)
     
     def __str__(self) -> str:
         return f'{self.amount}'
