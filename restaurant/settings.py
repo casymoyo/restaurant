@@ -20,10 +20,12 @@ DEBUG = True
 ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
-    '0547-169-155-235-220.ngrok-free.app' 
+    '0547-169-155-235-220.ngrok-free.app',
+    'https://restaurant-2-j0yd.onrender.com'
 ]
 CSRF_TRUSTED_ORIGINS = [
-    'https://0547-169-155-235-220.ngrok-free.app'
+    'https://0547-169-155-235-220.ngrok-free.app',
+    'https://restaurant-2-j0yd.onrender.com'
 ]
 # Application definition
 
