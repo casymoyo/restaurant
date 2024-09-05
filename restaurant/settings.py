@@ -18,14 +18,13 @@ SECRET_KEY = os.environ.get('SECRET_KEY')
 DEBUG = True
 
 ALLOWED_HOSTS = [
+    'https://restaurant-2-j0yd.onrender.com',
     'localhost',
-    '127.0.0.1',
-    '0547-169-155-235-220.ngrok-free.app',
-    'https://restaurant-2-j0yd.onrender.com'
+    '127.0.0.1'
 ]
 CSRF_TRUSTED_ORIGINS = [
     'https://0547-169-155-235-220.ngrok-free.app',
-    'https://restaurant-2-j0yd.onrender.com'
+    'restaurant-2-j0yd.onrender.com'
 ]
 # Application definition
 
