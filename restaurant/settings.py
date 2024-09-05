@@ -18,7 +18,7 @@ SECRET_KEY = os.environ.get('SECRET_KEY')
 DEBUG = True
 
 ALLOWED_HOSTS = [
-    'https://restaurant-2-j0yd.onrender.com',
+    'restaurant-2-j0yd.onrender.com',
     'localhost',
     '127.0.0.1'
 ]
