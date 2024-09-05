@@ -26,12 +26,13 @@
                         <td><small>{{ reorder.product.name }}</small></td>
                         <td><small>{{ reorder.product.quantity }}</small></td>
                         <td><small>{{ reorder.approx_days}}</small></td>
-                        <td><small>{{ reorder.reorder_quantity }}</small></td>
+                        <td><small>{{ reorder.reorder_quantity | floatformat:2 }}</small></td>
                         <td>
                             {% if reorder.ordered %}
                                 <small>Ordered</small>
                             {% else %}
                                 <form method="post">
+                                    {% csrf_token %}
                                     <input value='{{ reoder.product.id }}' hidden/>
                                     <button type='submit' class='btn btn-secondary btn-sm'>order</button>
                                 </form>

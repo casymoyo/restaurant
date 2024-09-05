@@ -12,7 +12,7 @@ from decimal import Decimal
 from datetime import  timedelta
 from django.db.models import Sum
 from django.db import transaction
-from .models import Sale, Expense 
+from .models import Sale, Expense, CashierPayments
 from django.http import JsonResponse, HttpResponse
 from django.template.loader import render_to_string
 from . tasks import send_expense_creation_notification
@@ -51,92 +51,6 @@ def finance(request):
     sales = Sale.objects.filter(date__month = current_month, staff=False)
     cogs = COGS.objects.filter(date__month = current_month)
     
-    # first_day_sale = sales.first()
-    # first_day_cog = cogs.first()
-    
-    # first_limit = first_day_sale.date + timedelta(days=7)
-    # second_limit = first_limit + timedelta(days=7)
-    # third_limit = second_limit + timedelta(days=7)
-    # fourth_limit = third_limit + timedelta(days=7)
-    
-    # first_limit_cogs = first_day_cog.date + timedelta(days=7)
-    # second_limit_cogs = first_limit_cogs + timedelta(days=7)
-    # third_limit_cogs = second_limit_cogs + timedelta(days=7)
-    # fourth_limit_cogs = third_limit_cogs + timedelta(days=7)
-    
-    # # sales
-    # first_week_sales = sales.filter(date__lte = first_limit).values('total_amount', 'date')
-    # first_week_sales_total = first_week_sales.\
-    #     aggregate(total_sales=Sum('total_amount'))['total_sales'] or 0
-    
-    # second_week_sales = sales.filter(date__gte = first_limit, date__lt=second_limit).\
-    #     values('total_amount', 'date')
-    # second_week_sales_total = second_week_sales.\
-    #     aggregate(total_sales=Sum('total_amount'))['total_sales'] or 0
-    
-    # third_week_sales =  sales.filter(date__gte = second_limit, date__lt=third_limit).\
-    #     values('total_amount', 'date')
-    # third_week_sales_total = third_week_sales .\
-    #     aggregate(total_sales=Sum('total_amount'))['total_sales'] or 0
-
-    # fourth_week_sales = sales.filter(date__gte = third_limit).values('total_amount', 'date').\
-    #     values('total_amount', 'date')
-    # fourth_week_sales_total = fourth_week_sales.\
-    #     aggregate(total_sales=Sum('total_amount'))['total_sales'] or 0
-    
-    # # cogs
-    # first_week_cogs = cogs.filter(date__lte = first_limit_cogs).values('total_amount', 'date').\
-    #     values('amount', 'date')
-    # first_week_cogs_total = first_week_cogs.\
-    #     aggregate(total_amount=Sum('amount'))['total_amount'] or 0
-    
-    # second_week_cogs = cogs.filter(date__gte = first_limit_cogs, date__lt=second_limit_cogs).\
-    #     values('amount', 'date')
-    # second_week_cogs_total = second_week_cogs.\
-    #     aggregate(total_amount=Sum('amount'))['total_amount'] or 0
-    
-    # third_week_cogs = cogs.filter(date__gte = second_limit_cogs, date__lt=third_limit_cogs).\
-    #     values('amount', 'date') 
-    # third_week_cogs_total = third_week_cogs.\
-    #     aggregate(total_amount=Sum('amount'))['total_amount'] or 0
-    
-    # fourth_week_cogs = cogs.filter(date__gte = third_limit_cogs).\
-    #     values('amount', 'date')
-    # fourth_week_cogs_total = fourth_week_cogs.\
-    #     aggregate(total_amount=Sum('amount'))['total_amount'] or 0
-    
-    # logger.info(f'first week sales:{first_week_cogs_total}')
-    
-    # gross profit
-    
-    # # total_first_week_sales = first_week_sales.aggregate(total_sales=Sum('total_amount'))['total_sales'] or
-    # data = {
-    #     'week 1': {
-    #             'cogs':first_week_cogs,
-    #             'sales':first_week_sales,
-    #             'total_sales':first_week_sales_total,
-    #             'total_cogs':first_week_cogs_total
-    #     },
-    #     'week 2':  {
-    #         'cogs':second_week_cogs,
-    #         'sales':second_week_sales,
-    #         'total_sales':second_week_sales_total,
-    #         'total_cogs':second_week_cogs_total
-    #     },
-    #     'week 3':  {
-    #         'cogs':third_week_cogs,
-    #         'sales':third_week_sales,
-    #         'total_sales':third_week_sales_total,
-    #         'total_cogs':third_week_cogs_total
-    #     },
-    #     'week 4':  {
-    #         'cogs':fourth_week_cogs,
-    #         'sales':fourth_week_sales,
-    #         'total_sales':fourth_week_sales_total,
-    #         'total_cogs':fourth_week_cogs_total
-    #     },
-    # }
-    
     return render(request, 'finance/finance.html', 
         {
             'sales':sales,
@@ -163,13 +77,66 @@ def get_expense(request, expense_id):
 def expenses(request):
     form = ExpensesForm()
     cat_form = ExpenseCategoryForm()
+
     if request.method == 'GET':
-        expenses = Expense.objects.all().order_by('-date')
+        filter_option = request.GET.get('filter', 'today')
+        download = request.GET.get('download')
+        
+        now = datetime.datetime.now()
+        end_date = now
+        
+        if filter_option == 'today':
+            start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        elif filter_option == 'this_week':
+            start_date = now - timedelta(days=now.weekday())
+        elif filter_option == 'yesterday':
+            start_date = (now - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+        elif filter_option == 'this_month':
+            start_date = now.replace(day=1)
+        elif filter_option == 'last_month':
+            start_date = (now.replace(day=1) - timedelta(days=1)).replace(day=1)
+        elif filter_option == 'this_year':
+            start_date = now.replace(month=1, day=1)
+        elif filter_option == 'custom':
+            start_date = request.GET.get('start_date')
+            end_date = request.GET.get('end_date')
+            start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
+            end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d')
+        else:
+            start_date = now - - timedelta(days=now.weekday())
+            end_date = now
+            
+        expenses = Expense.objects.filter(date__gte=start_date, date__lte=end_date).order_by('date')
+        
+        if download:
+            logger.info('download')
+            response = HttpResponse(content_type='text/csv')
+            response['Content-Disposition'] = f'attachment; filename="expenses_report_{filter_option}.csv"'
+
+            writer = csv.writer(response)
+            writer.writerow(['Date', 'Description', 'Done By', 'Amount'])
+
+            total_expense = 0  
+            for expense in expenses:
+                total_expense += expense.amount
+
+                writer.writerow([
+                    expense.date,
+                    expense.description,
+                    expense.user.first_name,
+                    expense.amount,
+                ])
+
+            writer.writerow(['Total', '', '', total_expense])
+            
+            return response
+        
         return render(request, 'finance/expenses.html', 
             {
                 'form':form,
                 'cat_form':cat_form,
-                'expenses':expenses
+                'expenses':expenses,
+                'filter_option': filter_option,
             }
         )
     
@@ -338,7 +305,81 @@ def cashbook(request):
         'sales':sales
     })
 
+@login_required
+def cashbook_note(request):
+    #payload
+    """
+        entry_id:id,
+        note:str
+    """
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            entry_id = data.get('entry_id')
+            note = data.get('note')
+            
+            entry = CashBook.objects.get(id=entry_id)
+            entry.note = note
+            
+            entry.save()
+        except Exception as e:
+            return JsonResponse({'success':False, 'message':f'{e}.'}, status=400)
+        return JsonResponse({'success':False, 'message':'Note successfully saved.'}, status=201)
+    return JsonResponse({'success':False, 'message':'Invalid request.'}, status=405)
 
+@login_required
+def cashbook_note_view(request, entry_id):
+    entry = get_object_or_404(CashBook, id=entry_id)
+    
+    if request.method == 'GET':
+        notes = entry.notes.all().order_by('timestamp')
+        notes_data = [
+            {'user': note.user.username, 'note': note.note, 'timestamp': note.timestamp.strftime("%Y-%m-%d %H:%M:%S")}
+            for note in notes
+        ]
+        return JsonResponse({'success': True, 'notes': notes_data})
+    
+    elif request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            note_text = data.get('note')
+            CashBookNote.objects.create(entry=entry, user=request.user, note=note_text)
+            return JsonResponse({'success': True, 'message': 'Note successfully added.'}, status=201)
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)}, status=400)
+
+    return JsonResponse({'success': False, 'message': 'Invalid request.'}, status=405)
+    
+@login_required
+def cancel_transaction(request):
+    #payload
+    """
+        entry_id:id,
+    """
+    try:
+        data = json.loads(request.body)
+        entry_id = data.get('entry_id')
+        
+        logger.info(entry_id)
+        
+        entry = CashBook.objects.get(id=entry_id)
+        
+        logger.info(entry)
+        entry.cancelled = True
+        
+        if entry.director:
+            entry.director = False
+        elif entry.manager:
+            entry.manager = False
+        elif entry.accountant:
+            entry.accountant = False
+            
+        entry.save()
+        
+        return JsonResponse({'success': True}, status=201)
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=400)
+    
 @login_required
 def download_cashbook_report(request):
     filter_option = request.GET.get('filter', 'this_week')
@@ -445,7 +486,7 @@ def expense_json(request):
     else:
         expense_total = Expense.objects.filter(date__month=month, cancel=False).aggregate(Sum('amount'))
     
-    logger.info(f'Expenses: {expense_total}')
+    
     return JsonResponse({'expense_total': expense_total['amount__sum'] or 0})
 
 
@@ -607,10 +648,60 @@ def generate_report(request):
 def cash_up(request):
     if request.method == 'GET':
         form = CashUpForm()
-        cashups = CashUp.objects.all()
-        cashier_list = User.objects.filter(role='sales')
-        logger.info(cashier_list)
-        return render(request, 'finance/cashups.html', {'form':form, 'cashups':cashups, 'cashier_list':cashier_list})
+        
+        filter_option = request.GET.get('filter', 'today')
+        download = request.GET.get('download')
+        
+        now = datetime.datetime.now()
+        end_date = now
+        
+        if filter_option == 'today':
+            start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        elif filter_option == 'this_week':
+            start_date = now - timedelta(days=now.weekday())
+        elif filter_option == 'yesterday':
+            start_date = (now - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+        elif filter_option == 'this_month':
+            start_date = now.replace(day=1)
+        elif filter_option == 'last_month':
+            start_date = (now.replace(day=1) - timedelta(days=1)).replace(day=1)
+        elif filter_option == 'this_year':
+            start_date = now.replace(month=1, day=1)
+        elif filter_option == 'custom':
+            start_date = request.GET.get('start_date')
+            end_date = request.GET.get('end_date')
+            start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
+            end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d')
+        else:
+            start_date = now - - timedelta(days=now.weekday())
+            end_date = now
+            
+        cashups = CashUp.objects.filter(date__gte=start_date, date__lte=end_date).order_by('date')
+        
+        if download:
+            response = HttpResponse(content_type='text/csv')
+            response['Content-Disposition'] = f'attachment; filename="cashups_report_{filter_option}.csv"'
+
+            writer = csv.writer(response)
+            writer.writerow(['Date', 'Cashier', 'Done By', 'Sales' 'Cashed Amount', 'status'])
+
+            for cashup in cashups:
+                writer.writerow([
+                    cashup.date,
+                    cashup.cashier.first_name,
+                    cashup.user.first_name,
+                    cashup.sales,
+                    'Done' if cashup.status else 'Not done'
+                ])
+            
+            return response
+        return render(request, 'finance/cashups.html', 
+            {
+                'form':form, 
+                'cashups':cashups, 
+                'filter_option':filter_option
+            }
+        )
     
     if request.method == 'POST':
         # payload
@@ -679,8 +770,9 @@ def charge_cashup_difference(request):
         try:
             data = json.loads(request.body)
             cashup_id = data.get('cashup_id')
-            charge_amount = data.get('claim_amount')
+            charge_amount = data.get('charge_amount')
 
+            logger.info(charge_amount)
             cash_up = CashUp.objects.select_for_update().get(id=cashup_id)
             
             if cash_up.status:
@@ -705,7 +797,7 @@ def charge_cashup_difference(request):
 def cashiers_list(request):
     
     if request.method == 'GET':
-        cashiers = User.objects.filter(role='cashier')
+        cashiers = CashierAccount.objects.all()
         return render(request, 'finance/cashiers.html', {'cashiers':cashiers})
 
     if request.method == 'POST':
@@ -713,25 +805,39 @@ def cashiers_list(request):
             data = json.loads(request.body)
             cashier_id = data.get('cashier_id')
             amount = Decimal(data.get('amount'))
-            cashup_id = data.get('cashup_id')
+            
+            print(cashier_id, amount)
             
             cashier = CashierAccount.objects.get(id=cashier_id)
-            cashup = CashUp.objects.get(id=cashup_id)
-             
-            if (cashup.sales - cashup.cashed_amount - amount) == 0:
-                cashier.status = True
+            cashups = CashUp.objects.filter(cashier=cashier.cashier).order_by('-id')
+            
+            for cashup in cashups:
+                outstanding_balance = cashup.sales - cashup.cashed_amount
                 
-            cashier.status.save()
+                if amount >= outstanding_balance:
+                    # If the amount is enough to cover this cashup entry, reduce the amount
+                    amount -= outstanding_balance
+                    cashup.cashed_amount += outstanding_balance
+                    cashup.save()
+                    
+                    if amount == 0:
+                        break
+                else:
+                    # If the amount is not enough to cover this entry completely, deplete it and stop
+                    cashup.cashed_amount += amount
+                    amount = 0
+                    cashup.save()
+                    break
             
-            CashBook.objects.create(
-                amount=cashier.amount,
-                debit=True,
-                credit=False,
-                description=f'Cash up balance paid {cashier.user.first_name}',
-            )
+            # Check if all cashups are fully paid
+            all_paid = all((cu.sales == cu.cashed_amount) for cu in cashups)
+            if all_paid:
+                cashier.status = True
+                cashier.save()
             
+            return JsonResponse({'success': True})
         except Exception as e:
-            return JsonResponse({'success': False, 'message': f'{e}'}, status=400)
+            return JsonResponse({'success': False, 'message': str(e)})
 
 @login_required
 def update_transaction_status(request, pk):
@@ -745,6 +851,10 @@ def update_transaction_status(request, pk):
 
         if field in ['manager', 'accountant', 'director']:
             setattr(entry, field, status)
+
+            if entry.cancelled:
+                entry.cancelled = False
+                
             entry.save()
             return JsonResponse({'success': True, 'status': getattr(entry, field)})
         
@@ -797,6 +907,6 @@ def days_data(request):
             'total_sales': sales_total,
             'total_cogs': cogs_total
         }
-    logger.info(data)
+    
     return JsonResponse(data)
 

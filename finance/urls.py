@@ -21,11 +21,17 @@ urlpatterns = [
     
     # cashbook 
     path('cashbook/', cashbook, name='cashbook'),
+    path('cashbook/note/', cashbook_note, name='cashbook_note'),
     path('report/', download_cashbook_report, name='download_cashbook_report'),
+    path('cancel-entry/', cancel_transaction, name='cancel-entry'),
+    path('cashbook/note/<int:entry_id>/', cashbook_note_view, name='cashbook_note_view'),
     path('update_transaction_status/<int:pk>/', update_transaction_status, name='update_transaction_status'),
     
     # cogs
     path('cogs/', cogs_list, name='cogs'),
+    
+    # cashiers
+    path('cashiers/', cashiers_list, name='cashiers_list'),
     
     # reports
     path('generate-report/', generate_report, name='generate_report'),

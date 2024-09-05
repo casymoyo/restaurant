@@ -70,7 +70,7 @@
                                                 {% if plan.status %}
                                                     <small class="bg-success text-light p-2 rounded text-center w-100">Confirmed</small>
                                                 {%else %}
-                                                    <a href="{% url 'inventory:confirm_production_plan' plan.id %}" class="bg-danger text-light p-2 rounded text-center w-100">Waiting Confirmation</a>
+                                                    <a href="{% url 'inventory:confirm_production_plan' plan.id %}" class="bg-danger text-light p-2 rounded text-center w-100">Please Confirm</a>
                                                 {% endif %}
                                             </small>
                                         {% endif %}

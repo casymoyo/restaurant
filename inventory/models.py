@@ -336,6 +336,7 @@ class TransferItems(models.Model):
 class ProductionLogs(models.Model):
     
     ACTION_CHOICES = [
+        ('sale', 'sale'),
         ('stock in', 'stock in'),
         ('declared', 'declared'),
         ('to production', 'to production'),

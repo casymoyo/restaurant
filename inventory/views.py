@@ -360,8 +360,7 @@ def purchase_orders(request):
             'status_form':status_form 
         }
     )
-    
-    
+      
 @login_required
 def create_purchase_order(request):
     
@@ -464,7 +463,7 @@ def create_purchase_order(request):
                         category = category,
                         amount = purchase_order.total_cost,
                         user = request.user,
-                        description = f'Expense purchase order{purchase_order.order_number}',
+                        description = f'Purchase order{purchase_order.order_number}',
                         cancel = False
                     )
                     
@@ -688,6 +687,10 @@ def create_production_plan(request):
             return JsonResponse({'success': False, 'message': f'Invalid JSON data: {e}'}, status=400)
         
         items = data.get('cart')
+        
+        if Production.objects.filter(declared=False).exists():
+            return JsonResponse({'success': False, 'message': 'Please declare all the production plans you have.'}, status=400)
+        
         
         if not items or not isinstance(items, list):
             return JsonResponse({'success': False, 'message': 'Invalid data: items should be a list'}, status=400)
@@ -1722,8 +1725,6 @@ def end_of_day_detail(request, e_o_d_id):
         }
     )
     
-
-
 @login_required
 def generate_end_of_day_report(end_of_day, items, staff_sold_amount):
     buffer = io.BytesIO()
@@ -1830,8 +1831,9 @@ def send_end_of_day_report(request, buffer):
 
 @login_required
 def end_of_day_list(request):
-    end_of_days = EndOfDay.objects.filter(statu=True)
-    return render(request, 'end_of_day_list.html', {'end_of_days':end_of_days})
+    end_of_days = EndOfDay.objects.filter(done=True)
+    logger.info(end_of_days)
+    return render(request, 'end_of_day_list.html', {'eods':end_of_days})
  
 @login_required 
 def confirm_minor_raw(request):
@@ -2049,7 +2051,6 @@ def receive_transfers_detail(request, transfer_id):
     
 @login_required
 def production_sales(request):
-    # Get filter from request
     filter_by = request.GET.get('filter', 'today')
     custom_start = request.GET.get('start_date')
     custom_end = request.GET.get('end_date')
@@ -2104,6 +2105,7 @@ def production_sales(request):
         return response
 
     return render(request, 'inventory/production_sales.html', {'production_data': production_data, 'filter_by': filter_by})
-            
+
+
             
             

@@ -2,24 +2,24 @@
 {% load static %}
 {% block title %}Production Sales In Portions{% endblock title %}
 {% block content %}
-<div class="products m-2">
-    <nav class='mt-2 d-flex align-items-center justify-content-between'>
+<div>
+    <nav class='mt-2 d-flex align-items-center justify-content-between border-bottom'>
         <div>
             <ul class="list-unstyled d-flex align-items-center">
                 <li><a href='/' class='bx bx-home btn border fs-5 mt-1'></a></li>
                 <li class='mx-2 fs-5'>Sales In Portions</li>
             </ul>
         </div>
-        <div>
-            <form method="GET" class="d-flex">
-                <select name="filter" class="form-select me-2" onchange="this.form.submit()">
+        <div class='d-flex justify-content-between'>
+            <form method="GET" class="d-flex" >
+                <select name="filter" class="form-select mx-2" onchange="this.form.submit()">
                     <option value="today" {% if filter_by == 'today' %}selected{% endif %}>Today</option>
                     <option value="yesterday" {% if filter_by == 'yesterday' %}selected{% endif %}>Yesterday</option>
                     <option value="this_month" {% if filter_by == 'this_month' %}selected{% endif %}>This Month</option>
                     <option value="this_year" {% if filter_by == 'this_year' %}selected{% endif %}>This Year</option>
                 </select>
                 {% comment %}  {% endcomment %}
-                <button type="submit" name="download" value="csv" class="btn btn-success ms-2">Download CSV</button>
+                <button type="submit" name="download" value="csv" class="btn btn-secondary btn-sm">Download</button>
             </form>
         </div>
     </nav>

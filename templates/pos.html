@@ -106,7 +106,7 @@
             <div class="row">
                 <div class="col-8">
                     <div class="div" style='height:80vh;'>
-                        <div class="d-flex">
+                        <div class="d-flex mt-2">
                             <select class="form-select" id="food_search">
                                 {% for meal in meals %}
                                     <option 
@@ -131,6 +131,12 @@
                         </li>
                         <li>
                             <button class="btn btn-outline-dark w-100">F2 Seacrch</button>
+                        </li>
+                        <li class='mx-2'>
+                            <button class="btn btn-outline-dark w-100">F3 Create Change</button>
+                        </li>
+                        <li>
+                            <a href='{% url "pos:change_list" %}' class="btn btn-outline-dark w-100">View Change</a>
                         </li>
                         <li class='mx-2'>
                             <button class="btn btn-outline-dark w-100">Spacebar Charge</button>
@@ -235,7 +241,7 @@
                     </div>
                     <div class="modal-body">
                         <ul id="salesList" class="list-group">
-                            <!-- Sales items will be appended here -->
+                           
                         </ul>
                         <div class="mt-3 d-flex justify-content-between">
                             <span class="fw-bold">Total Sales:</span>
@@ -254,12 +260,48 @@
                 <div class="modal-content p-5">
                     <h5 class="fw-bold">Confirm Sale For Staff</h5>
                     <div class="d-flex justify-content-end mt-4">
-                        <button class="btn btn-outline-dark">No</button>
+                        <button class="btn btn-outline-dark mx-2" data-bs-dismiss="modal">No</button>
                         <button class="btn btn-outline-secondary" id="staff">Yes</button>
                     </div>
                 </div>
             </div>
         </div>
+
+        <!-- change modal -->
+        <div class="modal fade" id="customModal" tabindex="-1" aria-labelledby="customModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="customModalLabel">Change</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="customForm">
+                            <div class="mb-3">
+                                <label for="inputField1" class="form-label">Full name</label>
+                                <input type="text" class="form-control" id="client_name" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="inputField2" class="form-label">Phone number</label>
+                                <input type="text" class="form-control" id="phonenumber" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="inputField2" class="form-label">Change Amount</label>
+                                <input type="text" class="form-control" id="change_amount" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="inputField3" class="form-label">Receipt number</label>
+                                <textarea class="form-control" id="receipt_number" rows="1" required></textarea>
+                            </div>
+                            <div class='d-flex justify-content-end'>
+                                <button type="submit" class="btn btn-primary">Save</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
     
     <script>
@@ -274,7 +316,64 @@
         const chargeModal = new bootstrap.Modal(document.getElementById('chargeModal'));
         const staffModal = new bootstrap.Modal(document.getElementById('staffModal'))
         const staffChargeModal = new bootstrap.Modal(document.getElementById('staffChargeModal'))
-        const staff = document.getElementById('staff')     
+        const staff = document.getElementById('staff')    
+        
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'F3') {
+                event.preventDefault(); 
+                $('#customModal').modal('show');
+            }
+        });
+        
+        document.getElementById('customForm').addEventListener('submit', function(event) {
+            event.preventDefault(); 
+        
+            const formData = {
+                name: document.getElementById('client_name').value,
+                phonenumber: document.getElementById('phonenumber').value,
+                amount: document.getElementById('change_amount').value,
+                receipt_number: document.getElementById('receipt_number').value,
+            };
+        
+            fetch('/pos/create_change/', { 
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken') 
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        title: 'Success!',
+                        text: 'Your form has been submitted.',
+                        icon: 'success',
+                        confirmButtonText: 'OK'
+                    }).then(() => {
+                        $('#customModal').modal('hide'); 
+                        document.getElementById('customForm').reset(); 
+                    });
+                } else {
+                    Swal.fire({
+                        title: 'Error!',
+                        text: data.message || 'There was a problem submitting your form.',
+                        icon: 'error',
+                        confirmButtonText: 'OK'
+                    });
+                }
+            })
+            .catch(error => {
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'An error occurred while submitting the form.',
+                    icon: 'error',
+                    confirmButtonText: 'OK'
+                });
+            });
+        });
+        
 
         $(document).ready(function() {
             $('#food_search').select2(
@@ -361,6 +460,12 @@
                     totalAmountInput.focus();
                     totalAmountInput.select();
                 }, 100);
+
+                if(staff){
+                    selectedOrderType = 'sitting';
+                }else{
+                    selectedOrderType = selectedOrderType;
+                }
         
                 const totalAmount = parseFloat(totalAmountInput.value);
                 const total = parseFloat(document.getElementById('total').innerText.slice(1));
@@ -375,7 +480,7 @@
                     });
                     return;
                 }
-        
+                console.log(selectedOrderType)
                 if (!selectedOrderType) {
                     Swal.fire({
                         title: "Error",
@@ -384,11 +489,11 @@
                     });
                     return;
                 }
-        
+                
                 const saleData = {
                     received_amount: totalAmount,
                     staff: staff,
-                    order_type: selectedOrderType,
+                    order_type: {selectedOrderType},
                     items: cart.map(meal => ({
                         meal_id: meal.id,
                         quantity: meal.quantity,

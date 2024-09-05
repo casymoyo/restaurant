@@ -12,9 +12,9 @@
                                 <div class="card-body">
                                     <div class="">
                                         <div class="btn-group" role="group" aria-label="Date Filters">
-                                            <button type="button" class="btn btn-primary btn-sm" onclick="fetchData('today');">Today</button>
-                                            <button type="button" class="btn btn-secondary btn-sm" onclick="fetchData('this_month');">This Month</button>
-                                            <button type="button" class="btn btn-info btn-sm" onclick="fetchData('last_week');">Last Week</button>
+                                            <button style='background:#8d6e63;' type="button" class="btn btn-sm text-light" onclick="fetchData('today');">Today</button>
+                                            <button type="button" class="btn btn-dark btn-sm" onclick="fetchData('this_month');">This Month</button>
+                                            <button style='background:#8d6e63;' type="button" class="btn btn-sm text-light" onclick="fetchData('last_week');">Last Week</button>
                                             <button type="button" class="btn btn-dark btn-sm" onclick="fetchData('year');">This Year</button>
                                         </div>                                    
                                     </div>
@@ -114,7 +114,7 @@
                     <nav class="d-flex justify-content-between align-items-center mt-3">
                         <h2 class='fw-bold'>Finance Dashboard</h2>
                         <div>
-                            <!-- <a href="{% url 'finance:cogs' %}" class="btn btn-outline-dark">Cashiers</a> -->
+                            <a href="{% url 'finance:cashiers_list' %}" class="btn btn-outline-dark">Cashiers</a>
                             <a href="{% url 'finance:cogs' %}" class="btn btn-outline-dark mx-2">Cogs</a>
                             <a href="{% url 'finance:cashbook' %}" class="btn btn-outline-dark">Cashbook</a>
                             <a href="{% url 'finance:cash_up' %}" class="btn btn-outline-dark mx-2">Cashups</a>

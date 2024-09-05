@@ -69,9 +69,20 @@ class CashBook(models.Model):
     manager = models.BooleanField(default=False)
     accountant = models.BooleanField(default=False, null=True)
     director = models.BooleanField(default=False, null=True)
+    note = models.TextField(default='', null=True)
+    cancelled = models.BooleanField(default=False, null=True)
     
     def __str__(self) -> str:
         return f'{self.amount}'
+    
+class CashBookNote(models.Model):
+    entry = models.ForeignKey(CashBook, related_name="notes", on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    note = models.TextField()
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Note by {self.user.username} on {self.timestamp}"
     
 class transactionLog(models.Model):
     action_choice = [
@@ -102,9 +113,29 @@ class CashierAccount(models.Model):
     status = models.BooleanField(default=False)
     
     def __str__(self) -> str:
-        return f'{self.cashier.username} ({self.amount})'
+        return f'{self.cashier.first_name} ({self.amount})'
+
+class CashierPayments(models.Model):
+    date = models.DateTimeField(auto_now_add=True, null=True)
+    cashier = models.ForeignKey(User, on_delete=models.CASCADE)
+    amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     
+    def __str__(self) -> str:
+        return f'{self.cashier.cashier.first_name} ({self.amount})'
+     
 class EmailNotifications(models.Model):
     expense_notification = models.BooleanField(default=True)
     
+class Change(models.Model):
+    name = models.CharField(max_length=100)
+    phonenumber = models.CharField(max_length=20)
+    amount = models.DecimalField(max_digits=10, decimal_places=2, default=0) 
+    receipt_number = models.CharField(max_length=100)
+    collected = models.BooleanField(default=False)
+    timestamp = models.DateTimeField(auto_now_add=True)
+    cashier = models.ForeignKey(User, on_delete=models.CASCADE)
+    claimed = models.BooleanField(default=False)
+    
+    def __str__(self) -> str:
+        return f'{self.cashier.username} ({self.amount})'
      

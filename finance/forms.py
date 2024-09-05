@@ -15,3 +15,8 @@ class CashUpForm(forms.ModelForm):
     class Meta:
         model = CashUp
         fields = ['cashier', 'cashed_amount']
+        
+class ChangeForm(forms.ModelForm):
+    class Meta:
+        model : Change
+        exclude = ['cacshier', 'collected', 'claimed']
