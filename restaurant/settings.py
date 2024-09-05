@@ -24,7 +24,7 @@ ALLOWED_HOSTS = [
 ]
 CSRF_TRUSTED_ORIGINS = [
     'https://0547-169-155-235-220.ngrok-free.app',
-    'restaurant-2-j0yd.onrender.com'
+    'restaurant-2-j0yd.onrender.com',
 ]
 # Application definition
 
