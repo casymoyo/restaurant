@@ -84,6 +84,9 @@ def process_sale(request):
             items = data['items']
             staff = data['staff']
             order_type = data['order_type']
+            received_amount = data.get('received_amount')
+            
+            logger.info(data)
             
             logger.info(order_type)
             logger.info(staff)
@@ -91,10 +94,13 @@ def process_sale(request):
             sub_total = sum(item['price'] * item['quantity'] for item in items)
             logger.info(sub_total)
             
+            
             tax = sub_total * 0.15 
-            logger.info(tax)
             
             total_amount = sub_total
+            
+            if staff:
+                received_amount = total_amount
 
             with transaction.atomic():
                 try:
@@ -212,7 +218,7 @@ def process_sale(request):
                     description=f'Sale (Receipt number: {sale.receipt_number})'
                 )
                     
-                # generate_receipt(request, sale)
+                generate_receipt(request, sale, received_amount)
                 
                 logger.info(f'Sale: {sale.id} Processed')
                 return JsonResponse({'success': True, 'sale_id': sale.id}, status=201)
@@ -223,7 +229,11 @@ def process_sale(request):
 
         
 @login_required
-def generate_receipt(request, sale):
+def generate_receipt(request, sale, received_amount):
+    
+    change = received_amount - sale.total_amount
+    logger.info(f'change:  {change}')
+    
     #  page size to 8 cm by 9 cm
     PAGE_WIDTH = 8 * cm
     PAGE_HEIGHT = 29.7 * cm 
@@ -268,11 +278,11 @@ def generate_receipt(request, sale):
     p.drawString(1 * cm, y_position, "TIN No: 2001020099")
 
     # item and price details
-    for sale in SaleItem.objects.filter(sale=sale):
+    for s in SaleItem.objects.filter(sale=sale):
         y_position -= 0.7 * cm
-        p.drawString(1 * cm, y_position, f"{sale.meal}")
-        p.drawString(4.5 * cm, y_position, f"{sale.quantity} @")
-        p.drawString(6 * cm, y_position, f"${sale.price}")
+        p.drawString(1 * cm, y_position, f"{s.meal}")
+        p.drawString(4.5 * cm, y_position, f"{s.quantity} @")
+        p.drawString(6 * cm, y_position, f"${s.price}")
 
     # totals
     y_position -= 0.7 * cm
@@ -287,16 +297,16 @@ def generate_receipt(request, sale):
     y_position -= 0.5 * cm
     p.setFont("Helvetica", font_size)
     p.drawString(1 * cm, y_position, "Cash :")
-    p.drawString(6 * cm, y_position, f"{sale}")
+    p.drawString(6 * cm, y_position, f"{received_amount}")
 
     y_position -= 0.5 * cm
     p.drawString(1 * cm, y_position, "Change :")
-    p.drawString(6 * cm, y_position, "$0.00")
+    p.drawString(6 * cm, y_position, f'${change}')
 
     # cashier and transaction info
     y_position -= 0.7 * cm
     p.drawString(1 * cm, y_position, "Cashier :")
-    p.drawString(6 * cm, y_position, f"{request.user}")
+    p.drawString(6 * cm, y_position, f"{request.user.first_name}")
 
     # date and time
     y_position -= 0.5 * cm
@@ -307,16 +317,12 @@ def generate_receipt(request, sale):
     # transaction number
     y_position -= 0.5 * cm
     p.drawString(1 * cm, y_position, "Transaction :")
-    p.drawString(6 * cm, y_position, "45512425105404")
+    p.drawString(6 * cm, y_position, f'{sale.receipt_number}')
 
     y_position -= 0.5 * cm
     p.drawString(1 * cm, y_position, "Sales Channel :")
     p.drawString(6 * cm, y_position, "USD")
 
-    # y_position -= 0.7 * cm
-    # p.drawString(1 * cm, y_position, "Total Qty :")
-    # p.drawString(6 * cm, y_position, "1")
-    # y_position -= 1 * cm
     draw_centered_text("Thank You Call Again", y_position, bold=True)
 
     y_position -= 0.5 * cm
