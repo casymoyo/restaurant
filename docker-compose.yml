@@ -3,7 +3,7 @@ version: '3'
 services:
   restaurant_apps:
     build: .
-    command: gunicorn restaurantwsgi:application --bind 0.0.0.0:8000
+    command: gunicorn restaurant.wsgi:application --bind 0.0.0.0:8000
     volumes:
       - .:/app
     ports:
