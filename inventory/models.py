@@ -349,3 +349,15 @@ class ProductionLogs(models.Model):
     total_quantity = models.FloatField()
     timestamp = models.DateField(auto_now_add=True)
     description = models.CharField(max_length=255, null=True)   
+
+
+class Notification(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, null=True)
+    production = models.ForeignKey(Production, on_delete=models.CASCADE, null=True)
+    expense = models.ForeignKey('finance.Expense', on_delete=models.CASCADE, null=True)
+    message = models.TextField()
+    timestamp = models.DateTimeField()
+    is_read = models.BooleanField(default=False)
+
+
+    

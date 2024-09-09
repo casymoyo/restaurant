@@ -21,6 +21,7 @@
             <thead>
                 <tr>
                     <th>Name</th>
+                    <th>Selling Price</th>
                     <th>Portion Multiplier</th>
                     <th>Ingredients</th>
                     <th>Actions</th>
@@ -30,6 +31,7 @@
                 {% for dish in dishes %}
                     <tr>
                         <td>{{ dish.name }}</td>
+                        <td>{{ dish.selling_price_per_portion }}
                         <td>{{ dish.portion_multiplier }}</td>
                         <td>
                             {% for ingredient in ingredients %}

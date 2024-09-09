@@ -2,21 +2,18 @@
 {% load static %}
 {% block title %}Products{% endblock title %}
 {% block content %}
-<div class="products m-2">
-    <nav class='mt-2 d-flex align-items-center justify-content-between'>
+<div class="products">
+    <nav class='border-bottom d-flex align-items-center justify-content-between mt-2'>
         <div>
             <ul class="list-unstyled d-flex align-items-center">
                 <li><a href='/' class='bx bx-home btn border fs-5 mt-1'></a></li>
-                <li class='mx-2 fs-5 fw-bold'>Admin Inventory
+                <li class='mx-2 fs-5'>Admin Inventory
                     (<span class='mx-2 fw-bold'>{{ count }} items</span>)
                 </li>
             </ul>
         </div>
         <div>
-            <ul class="list-unstyled d-flex mt-3">
-                <li class="mx-2">
-                    {% comment %} <a href="{% url 'inventory:create_purchase_order' %}" class="btn btn-outline-dark">Transfer(s) to Production</a> {% endcomment %}
-                </li>
+            <ul class="list-unstyled d-flex">
                 <li>
                     <a href="{% url 'inventory:create_purchase_order' %}" class="btn btn-outline-dark mx-2">Add Inventory</a>
                 </li>
@@ -33,7 +30,7 @@
         </div>
     </nav>
     <div class="tables">
-        <table class="table table-hover table-responsive raw" id="raw_materials_table" style="width: 100%;">
+        <table class="table table-hover table-responsive table-bordered table-striped" id="raw_materials_table" style="width: 100%;">
             <thead class="bg-primary">
                 <th>Name</th>
                 <th>Cost per unit</th>

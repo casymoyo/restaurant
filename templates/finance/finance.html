@@ -7,14 +7,14 @@
             <div class="row">
                 <section class="col-3">
                     <div class="row flex-column">
-                        <div class="bg-dark">
+                        <div class="bg-primary rounded">
                             <div class="card mb-4 mt-2">
                                 <div class="card-body">
                                     <div class="">
                                         <div class="btn-group" role="group" aria-label="Date Filters">
-                                            <button style='background:#8d6e63;' type="button" class="btn btn-sm text-light" onclick="fetchData('today');">Today</button>
+                                            <button type="button" class="btn btn-sm btn-warning text-light" onclick="fetchData('today');">Today</button>
                                             <button type="button" class="btn btn-dark btn-sm" onclick="fetchData('this_month');">This Month</button>
-                                            <button style='background:#8d6e63;' type="button" class="btn btn-sm text-light" onclick="fetchData('last_week');">Last Week</button>
+                                            <button type="button" class="btn btn-sm btn-warning text-light" onclick="fetchData('last_week');">Last Week</button>
                                             <button type="button" class="btn btn-dark btn-sm" onclick="fetchData('year');">This Year</button>
                                         </div>                                    
                                     </div>
@@ -151,16 +151,16 @@
                         <table class="table border table-bordered table-responsive table-hover table-striped" id="sales-table">
                             <thead>
                                 <tr>
-                                    <th class="bg-dark text-light""></th>
-                                    <th class="bg-dark text-light"></th>
-                                    <th class="bg-dark text-light">Monday</th>
-                                    <th class="bg-dark text-light">Tuesday</th>
-                                    <th class="bg-dark text-light">Wednesday</th>
-                                    <th class="bg-dark text-light">Thursday</th>
-                                    <th class="bg-dark text-light">Friday</th>
-                                    <th class="bg-dark text-light">Saturday</th>
-                                    <th class="bg-dark text-light">Sunday</th>
-                                    <th class="bg-dark text-light"></th>
+                                    <th class="bg-primary text-light"></th>
+                                    <th class="bg-primary text-light"></th>
+                                    <th class="bg-primary text-light">Monday</th>
+                                    <th class="bg-primary text-light">Tuesday</th>
+                                    <th class="bg-primary text-light">Wednesday</th>
+                                    <th class="bg-primary text-light">Thursday</th>
+                                    <th class="bg-primary text-light">Friday</th>
+                                    <th class="bg-primary text-light">Saturday</th>
+                                    <th class="bg-primary text-light">Sunday</th>
+                                    <th class="bg-primary text-light"></th>
                                 </tr>
                             </thead>
                             <tbody id="table-body">
@@ -293,14 +293,12 @@
             return response.json();
         })
         .then(data => {
-            console.log('Data received:', data);
             populateTable(data);
         })
         .catch(error => {
             console.error('There was a problem with the fetch operation:', error);
         });
 
-        // Function to get the weekday name from a date
         function getWeekday(dateStr) {
             const date = new Date(dateStr);
             return date.toLocaleString('en-us', { weekday: 'long' });
@@ -309,33 +307,25 @@
             const tbody = document.getElementById('table-body');
 
             for (const week in data) {
-                console.log(week)
-                
                 const weekData = data[week];
-
-                console.log(weekData)
-                // Initialize daily totals and COGS
+                
                 const dailySales = { "Monday": 0, "Tuesday": 0, "Wednesday": 0, "Thursday": 0, "Friday": 0, "Saturday": 0, "Sunday": 0 };
                 const dailyCOGS = { "Monday": 0, "Tuesday": 0, "Wednesday": 0, "Thursday": 0, "Friday": 0, "Saturday": 0, "Sunday": 0 };
 
-                // Calculate daily sales
                 weekData.sales.forEach(sale => {
                     const day = getWeekday(sale.date);
                     dailySales[day] += parseFloat(sale.total_amount);
                 });
 
-                // Calculate daily COGS
                 weekData.cogs.forEach(cogs => {
                     const day = getWeekday(cogs.date);
                     dailyCOGS[day] += parseFloat(cogs.amount);
                 });
 
-                // Calculate total sales, COGS, and gross profit
                 const totalSales = Object.values(dailySales).reduce((a, b) => a + b, 0);
                 const totalCOGS = Object.values(dailyCOGS).reduce((a, b) => a + b, 0);
                 const grossProfit = totalSales - totalCOGS;
 
-                // Insert rows for sales, COGS, and gross profit
                 const salesRow = document.createElement('tr');
                 const cogsRow = document.createElement('tr');
                 const grossProfitRow = document.createElement('tr');
@@ -347,16 +337,16 @@
                 grossProfitRow.innerHTML = `<td></td><td class=''>Gross Profit</td>`;
                 gapRow.innerHTML += `<td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>`;
                 daysRow.innerHTML += `
-                    <td class="bg-dark text-light"></td>
-                    <td class="bg-dark text-light"></td>
-                    <td class="bg-dark text-light">Monday</td>
-                    <td class="bg-dark text-light">Tuesday</td>
-                    <td class="bg-dark text-light">Wednesday</td>
-                    <td class="bg-dark text-light">Thursday</td>
-                    <td class="bg-dark text-light">Friday</td>
-                    <td class="bg-dark text-light">Sataday</td>
-                    <td class="bg-dark text-light">Sunday</td>
-                    <td class="bg-dark text-light"></td>
+                    <td class="bg-primary text-light"></td>
+                    <td class="bg-primary text-light"></td>
+                    <td class="bg-primary text-light">Monday</td>
+                    <td class="bg-primary text-light">Tuesday</td>
+                    <td class="bg-primary text-light">Wednesday</td>
+                    <td class="bg-primary text-light">Thursday</td>
+                    <td class="bg-primary text-light">Friday</td>
+                    <td class="bg-primary text-light">Saturday</td>
+                    <td class="bg-primary text-light">Sunday</td>
+                    <td class="bg-primary text-light"></td>
                 `;
 
                 ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].forEach(day => {
@@ -375,13 +365,10 @@
                 tbody.appendChild(grossProfitRow);
 
                 if (['week 1', 'week 2', 'week 3'].includes(week)) {
-                    console.log(week);
-                    //tbody.appendChild(gapRow);
                     tbody.appendChild(daysRow);
                 }
             }
         }
-        
         
         document.getElementById('timeFrame').addEventListener('change', function () {
             const customTimeFrame = document.getElementById('customTimeFrame');
@@ -451,6 +438,11 @@
                         document.getElementById('id_expenses_metrix_amount').textContent = `$${data.current_expenses}`
                         document.getElementById('id_net_metrix_amount').textContent = `$${data.current_net_profit}`
                         document.getElementById('pl_overview_total').textContent = `$${data.current_net_profit}`
+
+                        if(data.current_net_profit < 0){
+                            document.getElementById('pl_overview_total').classList.add('text-danger')
+                            console.log(data.current_net_profit)
+                        }
                     });
             }
             fetchData('today');

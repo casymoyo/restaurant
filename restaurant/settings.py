@@ -18,20 +18,23 @@ SECRET_KEY = os.environ.get('SECRET_KEY')
 DEBUG = True
 
 ALLOWED_HOSTS = [
-    'restaurant-2-j0yd.onrender.com',
+    # 'restaurant-2-j0yd.onrender.com',
     'localhost',
     '127.0.0.1'
 ]
 CSRF_TRUSTED_ORIGINS = [
     'https://0547-169-155-235-220.ngrok-free.app',
-    'restaurant-2-j0yd.onrender.com',
+    # 'restaurant-2-j0yd.onrender.com',
 ]
 # Application definition
-
+RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
 # Application definition
 
 DJANGO_APPS = [
+    "daphne",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -90,11 +93,15 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                
+                # custom
+                'inventory.context_processors.notification_processor'
             ],
         },
     },
 ]
 
+ASGI_APPLICATION = 'restaurant.asgi.application'
 WSGI_APPLICATION = 'restaurant.wsgi.application'
 
 LOGIN_URL = "users:login" 
@@ -103,14 +110,22 @@ LOGIN_URL = "users:login"
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
 DATABASES = {
- 'default': {
-        'ENGINE': config('ENGINE', default='django.db.backends.postgresql'),
-        'NAME': config('NAME'),
-        'USER': config('USER'),
-        'PASSWORD': config('PASSWORD'),
-        'HOST': config('HOST', default='localhost'),
-        'PORT': config('PORT', default='5432'),
-    }
+#  'default': {
+#         'ENGINE': config('ENGINE', default='django.db.backends.postgresql'),
+#         'NAME': config('NAME'),
+#         'USER': config('USER'),
+#         'PASSWORD': config('PASSWORD'),
+#         'HOST': config('HOST', default='localhost'),
+#         'PORT': config('PORT', default='5432'),
+#     }
+'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME':  'urban-eats',
+        'USER': 'postgres',
+        'PASSWORD': 'neverfail',
+        # 'HOST': 'local',
+        'PORT': '5432'
+     }
 }
 
 

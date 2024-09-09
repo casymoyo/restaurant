@@ -6,78 +6,82 @@
 <style>
     .card{
         border:none;
+        background:#8d6e63;
     }
 </style>
 <div>
-    <h2 class="text-center mt-2 p-2 bg-dark text-light shadow rounded">End Of Day Report: {{ end_of_day.date }}</h2>
-    <div class="row justify-content-center mt-4">
-        <div class="col-4">
-            <div class="row">
-                <div class="col-4">
-                    <div class="card shadow">
-                        <div class="card-body text-center">
-                            <h6 class="fw-bold text-primary">Taken Stock Value</h6>
-                            <p class="fs-4">${{ taken_stock_value|floatformat:2 }}</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-4 ">
-                    <div class="card shadow">
-                        <div class="card-body text-center">
-                            <h6 class="fw-bold text-primary">Staff Stock Value</h6>
-                            <p class="fs-4">${{ staff_value }}</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-4">
-                    <div class="card shadow">
-                        <div class="card-body text-center">
-                            <h6 class="fw-bold text-primary">Declared Stock Value</h6>
-                            <p class="fs-4">${{ taken_stock_value|floatformat:2 }}</p>
-                        </div>
-                    </div>
+    <h2 class="text-center mt-2 p-2 border-bottom">End Of Day Report: {{ end_of_day.date }}</h2>
+    <div class="row">
+        <div class="col-3">
+            <div class="card text-light">
+                <div class="card-body text-center">
+                    <h6 class="fw-bold">Taken Stock Value</h6>
+                    <p class="fs-4">${{ taken_stock_value|floatformat:2 }}</p>
                 </div>
             </div>
         </div>
-        
-        <div class="col-4">
-            <div class="row">
-                <div class="col-4">
-                    <div class="card shadow">
-                        <div class="card-body text-center">
-                            <h6 class="fw-bold text-primary">Sold Stock Value</h6>
-                            <p class="fs-4">${{ total_amount_sold_today }}</p>
-                        </div>
-                    </div>
+
+        <div class="col-3">
+            <div class="card text-light">
+                <div class="card-body text-center">
+                    <h6 class="fw-bold">Staff Stock Value</h6>
+                    <p class="fs-4">${{ staff_value }}</p>
                 </div>
-                <div class="col-4">
-                    <div class="card shadow">
-                        <div class="card-body text-center">
-                            <h6 class="fw-bold text-primary">Portions Difference</h6>
-                            <p class="fs-4">${{ portion_cost_value }}</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-4">
-                    <div class="card shadow">
-                        <div class="card-body text-center">
-                            <h6 class="fw-bold text-primary">Cashed Amount</h6>
-                            <p class="fs-4">${{ end_of_day.cashed_amount }}</p>
-                        </div>
-                    </div>
-                </div> 
             </div>
         </div>
-        
-        <div class="col-4">
-            <div class="row align-content-center">
-                <div class="col-12">
-                    <div class="card shadow">
-                        <div class="card-body text-center">
-                            <h6 class="fw-bold text-primary">Gross Profit</h6>
-                            <p class="fs-4">${{ gross_profit }}</p>
-                        </div>
-                    </div>
+
+        <div class="col-3">
+            <div class="card text-light">
+                <div class="card-body text-center">
+                    <h6 class="fw-bold">Declared Stock Value</h6>
+                    <p class="fs-4">${{ taken_stock_value|floatformat:2 }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-3">
+            <div class="card text-light">
+                <div class="card-body text-center">
+                    <h6 class="fw-bold">Sold Stock Value</h6>
+                    <p class="fs-4">${{ total_amount_sold_today }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-3">
+            <div class="card text-light">
+                <div class="card-body text-center">
+                    <h6 class="fw-bold">Portions Difference</h6>
+                    <p class="fs-4">${{ portion_cost_value }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-3">
+            <div class="card text-light">
+                <div class="card-body text-center">
+                    <h6 class="fw-bold">Cashed Amount</h6>
+                    <p class="fs-4">${{ end_of_day.cashed_amount }}</p>
+                </div>
+            </div>
+        </div> 
+
+        <div class="col-3">
+            <div class="card text-light">
+                <div class="card-body text-center">
+                    <h6 class="fw-bold">Wastage</h6>
+                    <p class="fs-4">${{ wastage_cost_value }}</p>
+                </div>
+            </div>
+        </div> 
+
+        <div class="col-3">
+            <div class="card text-light">
+                <div class="card-body text-center">
+                    <h6 class="fw-bold">Gross Profit</h6>
+                    <p class="fs-4">${{ gross_profit }}</p>
                 </div>
             </div>
         </div>
@@ -147,7 +151,7 @@
             </table>
         </div>
     </div> -->
-    <div class="main mt-4">
+    <div class="main mt-4 border rounded p-1">
         <h3 class="mt-2 mb-2">Dishes</h3>
         <table class="table">
             <thead>
@@ -180,14 +184,14 @@
                 {% endfor %}
             </tbody>
             <tfoot>
-                <td>Totals</td>
+                <td class="fw-bold">Totals</td>
                 <td></td>
-                <td class="portions_sold_value"></td>
+                <td class="portions_sold_value fw-bold"></td>
                 <td></td>
                 <td></td>
-                <td class="wastage_value"></td>
-                <td class="leftovers_value"></td>
-                <td class="o_l_value"></td>
+                <td class="wastage_value fw-bold"></td>
+                <td class="leftovers_value fw-bold"></td>
+                <td class="o_l_value fw-bold"></td>
             </tfoot>
         </table>
     </div>

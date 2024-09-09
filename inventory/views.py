@@ -352,7 +352,7 @@ def edit_supplier(request, supplier_id):
 def purchase_orders(request):
     form = CreateOrderForm()
     status_form = PurchaseOrderStatus()
-    orders = PurchaseOrder.objects.filter()
+    orders = PurchaseOrder.objects.filter().order_by('-order_date')
     return render(request, 'inventory/purchase_orders.html', 
         {
             'form':form,
@@ -587,16 +587,10 @@ def delete_purchase_order(request, purchase_order_id):
 def receive_order(request, order_id):
     try:
         purchase_order = PurchaseOrder.objects.get(id=order_id)
+        purchase_order_items = PurchaseOrderItem.objects.filter(purchase_order=purchase_order)
     except PurchaseOrder.DoesNotExist:
         messages.warning(request, f'Purchase order with ID: {order_id} doesn\'t exists')
         return redirect('inventory:purchase_orders')
-    
-    try:
-        purchase_order_items = PurchaseOrderItem.objects.filter(purchase_order=purchase_order)
-    except PurchaseOrderItem.DoesNotExist:  
-        messages.warning(request, f'Purchase order with ID: {order_id} does not exists')
-        return redirect('inventory:purchase_orders')
-    
     return render(request, 'inventory/receive_order.html', 
         {
             'orders':purchase_order_items,
@@ -608,52 +602,51 @@ def receive_order(request, order_id):
 @login_required
 @transaction.atomic
 def process_received_order(request):
-    
     if request.method == 'POST':
         try:
+       
             data = json.loads(request.body)
-        except json.JSONDecodeError:
-            return JsonResponse({'success': False, 'message': 'Invalid JSON payload'}, status=400)
+            order_item_id = data.get('id')
+            quantity = int(data.get('quantity', 0))
 
-        order_item_id = data.get('id')
-        quantity = data.get('quantity', 0)
+            if not order_item_id or quantity <= 0:
+                return JsonResponse({'success': False, 'message': 'Invalid data'}, status=400)
 
-        if not order_item_id or not isinstance(quantity, int) or quantity <= 0:
-            return JsonResponse({'success': False, 'message': 'Invalid data'}, status=400)
+            order_item = PurchaseOrderItem.objects.select_related('purchase_order', 'product').get(id=order_item_id)
+            
+            if (quantity + order_item.received_quantity) > order_item.quantity:
+                return JsonResponse({'success': False, 'message': 'Quantity received cannot be more.'})
+             
+            purchase_order = order_item.purchase_order
+            product = order_item.product
 
-        try:
-            order_item = PurchaseOrderItem.objects.get(id=order_item_id)
-        except PurchaseOrderItem.DoesNotExist:
-            return JsonResponse({'success': False, 'message': f'Purchase Order Item with ID: {order_item_id} doesn\'t exist'}, status=404)
-
-        try:
-            purchase_order = PurchaseOrder.objects.get(order_number=order_item.purchase_order.order_number)
-        except PurchaseOrderItem.DoesNotExist:
-            return JsonResponse({'success': False, 'message': f'Purchase Order Item with Order number: {order_item.order.purchase_order.order_number} does not exist'}, status=404)
-        
-        try:
-            product = Product.objects.get(id=order_item.product.id)
-            product.quantity += int(quantity)
+            product.quantity += quantity
             product.cost = order_item.unit_cost
             product.save()
+
+            Logs.objects.create(
+                purchase_order=purchase_order,
+                user=request.user, 
+                action='stock in',
+                product=product,
+                quantity=quantity,
+                description=f'Stock in from {purchase_order.order_number}',
+                total_quantity=product.quantity
+            )
+
+            order_item.receive_items(quantity)
+            order_item.check_received()
+
+            return JsonResponse({'success': True, 'message': 'Inventory updated successfully'}, status=200)
+
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'message': 'Invalid JSON payload'}, status=400)
+        except PurchaseOrderItem.DoesNotExist:
+            return JsonResponse({'success': False, 'message': 'Purchase Order Item not found'}, status=404)
         except Product.DoesNotExist:
-            return JsonResponse({'success': False, 'message': f'Product with ID: {order_item.product.id} doesn\'t exist'}, status=404)
-            
-        
-        Logs.objects.create(
-            purchase_order = purchase_order,
-            user= request.user,  #to be removed,
-            action= 'stock in',
-            product=product,
-            quantity=quantity,
-            description=f'Stock in from {order_item.purchase_order.order_number}',
-            total_quantity=product.quantity 
-        )
-        
-        order_item.receive_items(quantity)
-        order_item.check_received()
-        
-        return JsonResponse({'success': True, 'message': 'Inventory updated successfully'}, status=200)
+            return JsonResponse({'success': False, 'message': 'Product not found'}, status=404)
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': f'An error occurred: {str(e)}'}, status=500)
 
 
 @login_required   
@@ -913,37 +906,35 @@ def production_plan_detail(request, pp_id):
             
             for item in production_plan_items:
                 for ing in Ingredient.objects.filter(dish=item.dish):
-                    
+                    # Fetch or create ProductionRawMaterials instance
                     p_r_m_bf, created = ProductionRawMaterials.objects.get_or_create(
                         product=ing.raw_material,
-                        defaults = {
-                            'quantity':0
-                        } 
+                        defaults={'quantity': 0}
                     )
+
+                    required_quantity = ing.quantity * (item.portions / item.dish.portion_multiplier)
+
+                    production_inventory = ProductionRawMaterials.objects.filter(product=ing.raw_material).first()
+                    current_quantity = production_inventory.quantity if production_inventory else 0
+
+                    expected_quantity = required_quantity - current_quantity
+
+                    raw_material_found = next((rm for rm in raw_materials if rm['id'] == ing.raw_material.id), None)
                     
-                    quantity = ing.quantity * (item.portions / item.dish.portion_multiplier)
-                    
-                    if len(raw_materials) == 0:
-                        raw_materials.append(
-                                {
-                                    'id':ing.raw_material.id,
-                                    'name':ing.raw_material.name,
-                                    'quantity_b_f': float(p_r_m_bf.quantity),
-                                    'quantity':float(quantity),
-                                    'expected_quantity': quantity - p_r_m_bf.quantity
-                                }
-                            )
-                        
-                    elif raw_materials[0]['name'] == ing.raw_material.name:
-                        raw_materials[0]['quantity'] += quantity
+                    if raw_material_found:
+                     
+                        raw_material_found['quantity'] += required_quantity
+                        raw_material_found['expected_quantity'] += expected_quantity
+                        raw_material_found['quantity_b_f'] += current_quantity
                     else:
+                        
                         raw_materials.append(
                             {
-                                'id':ing.raw_material.id,
-                                'name':ing.raw_material.name,
-                                'quantity_b_f': float(p_r_m_bf.quantity),
-                                'quantity': float(quantity),
-                                'expected_quantity': quantity - p_r_m_bf.quantity
+                                'id': ing.raw_material.id,
+                                'name': ing.raw_material.name,
+                                'quantity_b_f': float(current_quantity),
+                                'quantity': float(required_quantity),
+                                'expected_quantity': float(expected_quantity),
                             }
                         )
                         
@@ -1527,10 +1518,8 @@ def end_of_day_view(request):
             total_staff_portions=Sum('staff_portions')
         )
 
-        logger.info(productions_today)
         production_data = productions_today
-        # else:
-        #     production_data = {}
+       
 
         return render(request, 'end_of_day.html', {
             'date': today,
@@ -1671,12 +1660,13 @@ def end_of_day_detail(request, e_o_d_id):
         wastage_cost_value = Decimal(0)
         
         production_items = ProductionItems.objects.filter(production__date_created=end_of_day.date)
-
+        
         ingredients = Ingredient.objects.select_related('raw_material').all()
 
-        logger.info(production_items )
-        
         for item in production_items:
+            
+            logger.info(f'{item}:{item.wastage}')
+            
             for ing in ingredients.filter(dish=item.dish):
                 kgs_taken = Decimal(item.portions) / Decimal(item.dish.portion_multiplier)
                 taken_stock_value += Decimal(ing.quantity) * kgs_taken * ing.raw_material.cost
@@ -1684,27 +1674,27 @@ def end_of_day_detail(request, e_o_d_id):
                 if item.staff_portions > 0:
                     kgs_staff = Decimal(item.staff_portions) / Decimal(item.dish.portion_multiplier)
                     staff_portions_value += Decimal(ing.quantity) * kgs_staff * ing.raw_material.cost   
-                 
-                if item.wastage > 0:   
-                    kgs_wastage = Decimal(item.wastage) / Decimal(item.dish.portion_multiplier)
-                    wastage_portions_value += Decimal(ing.quantity) * kgs_wastage * ing.raw_material.cost   
-                  
-        for end in end_of_day_items:
-            for ing in ingredients.filter(dish__name=end.dish_name):
-                portion_cost_value += Decimal(end.expected) * ing.dish.selling_price_per_portion
-                logger.info(portion_cost_value)
         
         
         cogs_total = COGS.objects.filter(date=datetime.datetime.today()).aggregate(total_cogs=Sum('amount'))['total_cogs'] or 0
         gross_profit = total_amount_sold_today - cogs_total - wastage_cost_value
+              
+        for end in end_of_day_items:
+            dish = Dish.objects.get(name=end.dish_name)
+            portion_cost_value += Decimal(end.expected) * dish.selling_price_per_portion
+            wastage_cost_value += Decimal(end.wastage) * dish.selling_price_per_portion
+            
+            logger.info(f'{wastage_cost_value} = {end.wastage} * {dish.selling_price_per_portion}')
+            logger.info(f'{portion_cost_value} = {end.expected} * {ing.dish.selling_price_per_portion}')
         
-        logger.info(gross_profit)
         # total_staff_portions= end_of_day_items.objects.aggregate(total_staff_portions=Sum('staff_portions'))['total_staff_portions'] or 0
         
         buffer = generate_end_of_day_report(end_of_day, end_of_day_items, total_amount_staff_sold_today)
         send_end_of_day_report(request, buffer)
+        
         logger.info('email sent')
     except Exception as e:
+        logger.info(e)
         messages.warning(request, f'{e}')
 
     return render(request, 'end_of_day_detail.html', 
@@ -1721,7 +1711,8 @@ def end_of_day_detail(request, e_o_d_id):
             'taken_stock_value':taken_stock_value,
             'staff_value':staff_portions_value,
             'portion_cost_value':portion_cost_value,
-            'gross_profit':gross_profit
+            'gross_profit':gross_profit,
+            'wastage_cost_value':wastage_cost_value
         }
     )
     
@@ -1899,7 +1890,7 @@ def confirm_minor_raw(request):
         
     except Exception as e:
         return JsonResponse({'success': False, 'message': f'{e}'}, status=400)
-    
+
     return JsonResponse({'success': True}, status=200)
 
 

@@ -88,12 +88,29 @@
                 </div>
             </div>
         </div>
+
+        <!-- notifications -->
+        <div class="notifications">
+            <ul id="notification-box">
+                {% for notification in notifications %}
+                    <li>{{ notification.message }} - {{ notification.timestamp }}</li>
+                {% endfor %}
+            </ul>
+        </div>
     </div>
     <script src="{% static 'css/bootstrap/js/bootstrap.bundle.min.js'%}"></script>    
     
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
-          
+        const ws = new WebSocket('ws://' + window.location.host + '/ws/notifications/');
+
+        ws.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            const notificationBox = document.getElementById('notification-box');
+            const newNotification = document.createElement('li');
+            newNotification.textContent = data.message;
+            notificationBox.appendChild(newNotification);
+        };
     </script>
 </body>
 </html>

@@ -5,7 +5,7 @@
 {% block content %}
    <div class="inventory">
         <div class="inventory-navbar">
-            <nav class="d-flex justify-content-between align-items-center p-2">
+            <nav class="d-flex justify-content-between align-items-center border-bottom">
                 <div class='fw-bold d-flex'>
                     <a href='{% url "inventory:products"%}' class='border btn bx bx-arrow-back fs-5'></a>
                     <a href='/' class='bx bx-home btn border fs-5 mx-2'></a>
@@ -13,8 +13,8 @@
                 </div>
                 <div>
                     <ul class="list-unstyled mt-2">
-                        <li class="btn border">
-                            <a href="{% url 'inventory:create_purchase_order' %}">Create Purchase Order</a>
+                        <li>
+                            <a  class="btn btn-outline-dark" href="{% url 'inventory:create_purchase_order' %}">Create Purchase Order</a>
                         </li>
                     </ul>
                 </div>
@@ -42,7 +42,7 @@
                                     <td class="{% if order.is_partial %}bg-warning text-dark{% endif %}" data-id={{ order.id }}><small>{{ order.delivery_date }}</small></td>
                                     <td class="{% if order.is_partial %}bg-warning text-dark{% endif %}" data-id={{ order.id }}><small>{{ order.order_number }}</small></td>
                                     <td class="{% if order.is_partial %}bg-warning text-dark{% endif %}" data-id={{ order.id }}><small>{{ order.supplier.name }}</small></td>
-                                    <td class="{% if order.is_partial %}bg-warning text-dark{% endif %}" data-id={{ order.id }}><small>{{ order.total_cost }}</small></td>
+                                    <td class="{% if order.is_partial %}bg-warning text-dark{% endif %}" data-id={{ order.id }}><small class='fw-bold'>{{ order.total_cost }}</small></td>
                                     <td class="{% if order.is_partial %}bg-warning text-dark{% endif %}" data-id={{ order.id }}><small>{{ order.notes }}</small></td>
                                     <td class="{% if order.is_partial %}bg-warning text-dark{% endif %}" data-id={{ order.id }}><small>{{ order.status }}</small></td>
                                     <td class="{% if order.is_partial %}bg-warning text-dark{% endif %}">
@@ -147,6 +147,7 @@
                 });
         
         }
+        
     function getCookie(name) {
       let cookieValue = null;
       if (document.cookie && document.cookie !== "") {

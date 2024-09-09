@@ -806,8 +806,6 @@ def cashiers_list(request):
             cashier_id = data.get('cashier_id')
             amount = Decimal(data.get('amount'))
             
-            print(cashier_id, amount)
-            
             cashier = CashierAccount.objects.get(id=cashier_id)
             cashups = CashUp.objects.filter(cashier=cashier.cashier).order_by('-id')
             
@@ -854,7 +852,6 @@ def update_transaction_status(request, pk):
 
             if entry.cancelled:
                 entry.cancelled = False
-                
             entry.save()
             return JsonResponse({'success': True, 'status': getattr(entry, field)})
         
