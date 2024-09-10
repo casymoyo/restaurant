@@ -200,7 +200,6 @@ py-moneyed==3.0
 pyasn1==0.5.1
 pyasn1-modules==0.3.0
 pycairo==1.25.1
-pycocotools @ git+https://github.com/gautamchitnis/cocoapi.git@20291f19c46a8d11935862bc9e449a1b72ec25ed#subdirectory=PythonAPI
 pycodestyle==2.11.1
 pycparser==2.21
 pyflakes==3.1.0
