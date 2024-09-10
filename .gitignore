@@ -17,3 +17,6 @@ test.png
 *.cpython-312.pyc
 */__pycache__/*
 *.pyc
+docker-composer.yml
+Dockerfile
+build.sh
