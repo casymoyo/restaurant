@@ -39,7 +39,6 @@ pip-chill==1.0.3
 pre-commit==3.4.0
 psycopg==3.1.12
 psycopg-binary==3.1.12
-pycocotools==2.0
 pylint-celery==0.3
 pylint-django==2.5.3
 pyopenssl==24.0.0
