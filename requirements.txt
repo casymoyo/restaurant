@@ -42,7 +42,6 @@ psycopg-binary==3.1.12
 pylint-celery==0.3
 pylint-django==2.5.3
 pyopenssl==24.0.0
-pypiwin32==223
 pysafebrowsing==0.1.2
 pytest-django==4.5.2
 pytest-sugar==0.9.7
