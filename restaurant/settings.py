@@ -14,12 +14,12 @@ SECRET_KEY = os.environ.get('SECRET_KEY')
 DEBUG = True
 
 ALLOWED_HOSTS = [
-    # 'restaurant-2-j0yd.onrender.com',
     'localhost',
-    '127.0.0.1'
+    '127.0.0.1', 
+    'web-production-20d8.up.railway.app'
 ]
 CSRF_TRUSTED_ORIGINS = [
-    
+    'https//web-production-20d8.up.railway.app'
 ]
 # Application definition
 RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
@@ -41,7 +41,6 @@ DJANGO_APPS = [
 THIRD_PARTY_APPS = [
   "crispy_forms",
   "crispy_bootstrap5",
-  'corsheaders',
   'django_extensions',
 ]
 
@@ -198,12 +197,12 @@ CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Celery Configuration
-# CELERY_BROKER_URL = config('CELERY_BROKER_URL', default='redis://localhost:6379/0')
-# CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND', default='redis://localhost:6379/0')
-# CELERY_ACCEPT_CONTENT = config('CELERY_ACCEPT_CONTENT', default='json', cast=lambda v: v.split(','))
-# CELERY_TASK_SERIALIZER = config('CELERY_TASK_SERIALIZER', default='json')
-# CELERY_RESULT_SERIALIZER = config('CELERY_RESULT_SERIALIZER', default='json')
-# CELERY_TIMEZONE = config('CELERY_TIMEZONE', default='Africa/Johannesburg')
+CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://localhost:6379/0')
+CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
+CELERY_ACCEPT_CONTENT = os.environ.get('CELERY_ACCEPT_CONTENT', 'json').split(',')
+CELERY_TASK_SERIALIZER = os.environ.get('CELERY_TASK_SERIALIZER', 'json')
+CELERY_RESULT_SERIALIZER = os.environ.get('CELERY_RESULT_SERIALIZER', 'json')
+CELERY_TIMEZONE = os.environ.get('CELERY_TIMEZONE', 'Africa/Johannesburg')
 
 # Email Backend Configuration
 EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
