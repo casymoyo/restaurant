@@ -19,7 +19,7 @@ ALLOWED_HOSTS = [
     'web-production-20d8.up.railway.app'
 ]
 CSRF_TRUSTED_ORIGINS = [
-    'https//web-production-20d8.up.railway.app'
+    'https://web-production-20d8.up.railway.app'
 ]
 # Application definition
 RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
