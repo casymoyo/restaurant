@@ -1,12 +1,8 @@
 import os
 from pathlib import Path
 
-from decouple import config
-
-
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
@@ -23,8 +19,7 @@ ALLOWED_HOSTS = [
     '127.0.0.1'
 ]
 CSRF_TRUSTED_ORIGINS = [
-    'https://0547-169-155-235-220.ngrok-free.app',
-    # 'restaurant-2-j0yd.onrender.com',
+    
 ]
 # Application definition
 RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
@@ -110,22 +105,14 @@ LOGIN_URL = "users:login"
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
 DATABASES = {
-#  'default': {
-#         'ENGINE': config('ENGINE', default='django.db.backends.postgresql'),
-#         'NAME': config('NAME'),
-#         'USER': config('USER'),
-#         'PASSWORD': config('PASSWORD'),
-#         'HOST': config('HOST', default='localhost'),
-#         'PORT': config('PORT', default='5432'),
-#     }
-'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME':  'urban-eats',
-        'USER': 'postgres',
-        'PASSWORD': 'neverfail',
-        # 'HOST': 'local',
-        'PORT': '5432'
-     }
+    'default': {
+        'ENGINE': os.environ.get('DB_ENGINE', 'django.db.backends.postgresql'),
+        'NAME': os.environ.get('DB_NAME', 'postgres'),
+        'USER': os.environ.get('DB_USER', 'postgres.tgugrfxaribykdezopjn'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', 'tQHxThDsWN3NDgat'),
+        'HOST': os.environ.get('DB_HOST', 'aws-0-us-west-1.pooler.supabase.com'),
+        'PORT': os.environ.get('DB_PORT', '6543'),
+    }
 }
 
 
@@ -211,20 +198,21 @@ CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Celery Configuration
-CELERY_BROKER_URL = config('CELERY_BROKER_URL', default='redis://localhost:6379/0')
-CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND', default='redis://localhost:6379/0')
-CELERY_ACCEPT_CONTENT = config('CELERY_ACCEPT_CONTENT', default='json', cast=lambda v: v.split(','))
-CELERY_TASK_SERIALIZER = config('CELERY_TASK_SERIALIZER', default='json')
-CELERY_RESULT_SERIALIZER = config('CELERY_RESULT_SERIALIZER', default='json')
-CELERY_TIMEZONE = config('CELERY_TIMEZONE', default='Africa/Johannesburg')
+# CELERY_BROKER_URL = config('CELERY_BROKER_URL', default='redis://localhost:6379/0')
+# CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND', default='redis://localhost:6379/0')
+# CELERY_ACCEPT_CONTENT = config('CELERY_ACCEPT_CONTENT', default='json', cast=lambda v: v.split(','))
+# CELERY_TASK_SERIALIZER = config('CELERY_TASK_SERIALIZER', default='json')
+# CELERY_RESULT_SERIALIZER = config('CELERY_RESULT_SERIALIZER', default='json')
+# CELERY_TIMEZONE = config('CELERY_TIMEZONE', default='Africa/Johannesburg')
 
 # Email Backend Configuration
-EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.smtp.EmailBackend')
-EMAIL_HOST = config('EMAIL_HOST', default='localhost')
-EMAIL_PORT = config('EMAIL_PORT', default=25, cast=int)
-EMAIL_USE_SSL = config('EMAIL_USE_SSL', default=False, cast=bool)
-EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
-EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
+EMAIL_HOST = os.environ.get('EMAIL_HOST', 'localhost')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 25)) 
+EMAIL_USE_SSL = os.environ.get('EMAIL_USE_SSL', 'False').lower() == 'true'  
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+
 
 
 # channels
