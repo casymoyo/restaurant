@@ -356,7 +356,7 @@ class Notification(models.Model):
     production = models.ForeignKey(Production, on_delete=models.CASCADE, null=True)
     expense = models.ForeignKey('finance.Expense', on_delete=models.CASCADE, null=True)
     message = models.TextField()
-    timestamp = models.DateTimeField()
+    timestamp = models.DateTimeField(auto_now_add=True)
     is_read = models.BooleanField(default=False)
 
 

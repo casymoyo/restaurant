@@ -12,14 +12,15 @@ from loguru import logger
 @receiver(post_save, sender=Product)
 def check_stock_level(sender, instance, **kwargs):
     logger.info('here')
+    logger.info(instance)
     if instance.quantity < instance.min_stock_level:
         Notification.objects.create(
             product=instance,
-            message=f"The stock level of {instance.name} is below the minimum threshold."
+            message=f"The stock level of {instance.name} is below the minimum threshold. {instance.quantity}."
         )
 
         subject = 'Stock Alert'
-        message = render_to_string('emails/stock_alert.html', {
+        message = render_to_string('email/stock_alert.html', {
             'product': instance,
             'message': f"The stock level of {instance.name} is below the threshold."
         })
@@ -33,7 +34,7 @@ def check_stock_level(sender, instance, **kwargs):
 
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(
-            f'user_{instance.user.id}',
+            f'user_{instance.name}',
             {
                 'type': 'send_notification',
                 'message': f"The stock level of {instance.name} is below the minimum threshold."

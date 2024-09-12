@@ -33,6 +33,56 @@
     <title>
         {% block title %}{{ request.user.company.name }}{% endblock title %}
     </title>
+
+    <style>
+        #notification-icon {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        #notification-badge {
+            display: none;
+            position: absolute;
+            top: -5px; 
+            right: -10px;  
+        }
+        
+        .notifications {
+            position: absolute;
+            top: 100%; 
+            left: 50%; 
+            transform: translateX(-50%);
+            width: 300px;
+            background-color: white;
+            border: 1px solid #ddd;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            display: none; 
+            z-index: 1000; 
+        }  
+        
+        #notification-dropdown.show {
+            display: block; 
+        }
+        
+        .notifications ul {
+            padding: 0;
+            margin: 0;
+            list-style: none;
+        }
+        
+        .notifications li {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+            cursor: pointer;
+        }
+        
+        .notifications li:hover {
+            background-color: #f8f9fa; 
+        }
+    </style>
+    
 </head>
 <body>
     <div class="Urban-Eat">
@@ -45,11 +95,30 @@
                         </div>
                         <div>
                             <ul class="list-unstyled d-flex align-items-center">
+                                <!-- Notification Icon with Badge -->
+                                <li class="position-relative mx-3 d-flex align-items-center justify-content-center">
+                                    <i class="bx bx-bell fs-3 cursor-pointer" id="notification-icon"></i>
+                                    <span id="notification-badge" class="badge rounded-pill bg-danger text-danger position-absolute top-0 start-100 translate-middle" style="display: none;">
+                                        0
+                                    </span>
+                                    <div class="notifications dropdown-menu dropdown-menu-end p-2" id="notification-dropdown" style="max-height: 200px; overflow-y: auto;">
+                                        <ul id="notification-box" class="list-unstyled">
+                                            {% for notification in notifications %}
+                                                <li>
+                                                    <small class='text-muted'>{{ notification.timestamp }}</small>
+                                                    <small>- {{ notification.message }} </small>
+                                                </li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                </li>
+                                <!-- Username -->
                                 <li class="mx-2">{{ request.user }}</li>
                                 <li class='btn border btn-danger bx bx-log-out-circle mt-1 fs-3 cursor-pointer' data-bs-toggle="modal" data-bs-target="#logoutModal"></li>
                             </ul>
                         </div>
                     </div>
+                                       
                 </nav>
                     <div class="row">
                         <div class="col-2">
@@ -87,30 +156,40 @@
                     </div>
                 </div>
             </div>
-        </div>
-
-        <!-- notifications -->
-        <div class="notifications">
-            <ul id="notification-box">
-                {% for notification in notifications %}
-                    <li>{{ notification.message }} - {{ notification.timestamp }}</li>
-                {% endfor %}
-            </ul>
-        </div>
+        </div>      
     </div>
     <script src="{% static 'css/bootstrap/js/bootstrap.bundle.min.js'%}"></script>    
     
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
+
+        document.getElementById('notification-icon').addEventListener('click', function() {
+            const dropdown = document.getElementById('notification-dropdown');
+            dropdown.classList.toggle('show');
+        });
+        
         const ws = new WebSocket('ws://' + window.location.host + '/ws/notifications/');
+
+        function playNotificationSound() {
+            const audio = new Audio('{% static "sounds/ding.mp3" %}'); 
+            audio.play();
+        }
 
         ws.onmessage = function(event) {
             const data = JSON.parse(event.data);
             const notificationBox = document.getElementById('notification-box');
             const newNotification = document.createElement('li');
-            newNotification.textContent = data.message;
+            newNotification.textContent = data.message + " - " + new Date().toLocaleTimeString();
             notificationBox.appendChild(newNotification);
+
+            const badge = document.getElementById('notification-badge');
+            let currentCount = parseInt(badge.textContent) || 0;
+            badge.textContent = currentCount + 1;
+            badge.style.display = 'inline-block'; 
+
+            playNotificationSound();
         };
+
     </script>
 </body>
 </html>
