@@ -10,7 +10,13 @@
     {% endif %}
  {% endblock %}
 {% block content %}
-
+<style>
+    input.loading {
+        background: url('{% static "images/loader.gif" %}') no-repeat right center;
+        background-size: 20px;
+        padding-right: 30px; 
+    }    
+</style>
 <div class="inventory">
     <div class='add-production-plan'>
         <div class='production-plan mt-2 d-flex justify-content-between align-items-center'>
@@ -114,7 +120,7 @@
                             {% if confirm %}
                                 <td>
                                     {% csrf_token %}
-                                    <input type="number" id="quantity" min='0' class='form-control'>
+                                    <input type="number" class='checklist-input form-control' id="quantity" min='0' class='form-control'>
                                 </td>
                             {% else %}
                             <td>
@@ -151,51 +157,71 @@
     document.addEventListener('DOMContentLoaded', function () {
         new DataTable('#plan_item_table');
         new DataTable('#minor');
-        
+    
         document.querySelectorAll('#minor input[type="number"]').forEach(function (input) {
-            input.addEventListener('change', function () {
-                const quantityEntered = parseFloat(this.value);
-                const row = this.closest('tr');
-                
-
-                if (!isNaN(quantityEntered)) {
-
-                    const rawMaterialId = row.getAttribute('data-id');
-                    
-                    fetch('{% url "inventory:confirm_minor_raw"%}', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRFToken': $('input[name="csrfmiddlewaretoken"]').val(), 
-                        },
-                        body: JSON.stringify({
-                            production_id: {{ production_plan.id }},
-                            raw_material_id: rawMaterialId,
-                            quantity: quantityEntered,
-                            csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val(),
+            input.addEventListener('keydown', function (event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+    
+                    const quantityEntered = parseFloat(this.value);
+                    const row = this.closest('tr');
+    
+                    if (!isNaN(quantityEntered)) {
+                        input.classList.add('loading');
+                        input.disabled = true; 
+    
+                        const rawMaterialId = row.getAttribute('data-id');
+                        
+                        fetch('{% url "inventory:confirm_minor_raw"%}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': $('input[name="csrfmiddlewaretoken"]').val(),
+                            },
+                            body: JSON.stringify({
+                                production_id: {{ production_plan.id }},
+                                raw_material_id: rawMaterialId,
+                                quantity: quantityEntered,
+                                csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val(),
+                            })
                         })
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            input.disabled = true; 
-                            row.style.backgroundColor = '#d3d3d3';
-                            console.log('Quantity confirmed');
-                        } else {
-                            Swal.fire({
-                                title: "Error",
-                                text: data.message,
-                                icon: "error"
-                            });
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                    });
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                input.classList.remove('loading');
+                                input.disabled = true;
+                                row.style.backgroundColor = '#d3d3d3';
+                                console.log('Quantity confirmed');
+                                focusNextInput(input);
+                            } else {
+                                Swal.fire({
+                                    title: "Error",
+                                    text: data.message,
+                                    icon: "error"
+                                });
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                        })
+                        .finally(() => {
+                            input.classList.remove('loading'); 
+                            input.disabled = false; 
+                        });
+                    }
                 }
             });
         });
+
+        function focusNextInput(currentInput) {
+            const inputs = document.querySelectorAll('#minor input[type="number"]');
+            const currentIndex = Array.prototype.indexOf.call(inputs, currentInput);
+            if (currentIndex < inputs.length - 1) {
+                inputs[currentIndex + 1].focus();
+            }
+        }
     });
+    
 </script>
 
 {% endblock content %}

@@ -34,6 +34,7 @@ urlpatterns = [
     path('confirm/minor_raw_materials/', confirm_minor_raw, name='confirm_minor_raw'),
     path('production_raw_materials/', production_raw_materials, name='production_raw_materials'),
     path('production_rm/detail/<int:rm_id>/', production_rm_detail, name='production_rm_detail'),
+    
     # supplier
     path('suppliers/list', suppliers, name='suppliers'),
     path('edit/supplier/', edit_supplier, name='edit_supplier'),
@@ -89,5 +90,7 @@ urlpatterns = [
     
     # production sales
     path('production_sales/', production_sales, name='production_sales'),
-
+    
+    # check_list
+    path('check_list/', check_check_list, name='check_check_list')
 ]

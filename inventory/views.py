@@ -657,77 +657,85 @@ def production_plans(request):
     
     return render(request, 'inventory/production_plans.html', {'plans':plans, 'transfer_count':transfer_count})
 
-
 @login_required
+@transaction.atomic
 def create_production_plan(request):
-    
     if request.method == 'POST':
-        # Payload
-        """
-        {
-            "cart": [
-                {
-                    "portions": float,
-                    "total_cost": float,
-                    "dish": name (str)
-                }
-            ]
-        }
-        """
         try:
             data = json.loads(request.body)
-        except json.JSONDecodeError as e:
+        except Exception as e:
             return JsonResponse({'success': False, 'message': f'Invalid JSON data: {e}'}, status=400)
-        
-        items = data.get('cart')
-        
-        if Production.objects.filter(declared=False).exists():
-            return JsonResponse({'success': False, 'message': 'Please declare all the production plans you have.'}, status=400)
-        
-        
+
+        items = data.get('cart', [])
         if not items or not isinstance(items, list):
             return JsonResponse({'success': False, 'message': 'Invalid data: items should be a list'}, status=400)
-        
-        # Create and save the production plan
-        production_plan = Production(status=False, declared=False)
-        production_plan.save()
-            
+
+        if Production.objects.filter(declared=False).exists():
+            return JsonResponse({'success': False, 'message': 'Please declare all the production plans you have.'}, status=400)
+
+        # Create a new production plan
+        production_plan = Production.objects.create(status=False, declared=False)
+
+        dish_names = [item.get('dish') for item in items if item.get('dish')]
+        dishes = Dish.objects.filter(name__in=dish_names)
+        dish_map = {dish.name: dish for dish in dishes}
+
+        if len(dish_map) != len(dish_names):
+            return JsonResponse({'success': False, 'message': 'Some dishes do not exist'}, status=404)
+
+        production_items = []
+        raw_materials_to_checklist = set()
+
         for item in items:
             portions = item.get('portions')
             dish_name = item.get('dish')
             total_cost = item.get('total_cost')
-            
+
             if not portions or not dish_name:
-                return JsonResponse({'success': False, 'message': 'Missing data: raw material, quantity, or dish'}, status=400)
-            try:
-                dish = Dish.objects.get(name=dish_name)
-            except Dish.DoesNotExist:
-                return JsonResponse({'success': False, 'message': f'Dish with ID: {dish_name} doesn\'t exist'}, status=404)
-                  
-            
-            production_item = ProductionItems.objects.create(
+                return JsonResponse({'success': False, 'message': 'Missing data: portions or dish'}, status=400)
+
+            dish = dish_map.get(dish_name)
+
+            if dish is None:
+                return JsonResponse({'success': False, 'message': f'Dish {dish_name} does not exist'}, status=404)
+
+            ingredients = Ingredient.objects.filter(dish=dish).select_related('raw_material')
+
+            # Add production item to the list for bulk creation
+            production_items.append(ProductionItems(
                 production=production_plan,
                 portions=portions,
                 dish=dish,
-                total_cost = total_cost,
-            )
-            
-            
+                total_cost=total_cost,
+                allocated=False
+            ))
+
+            # Collect raw materials for checklist creation
+            for ingredient in ingredients:
+                raw_materials_to_checklist.add(ingredient.raw_material)
+
+        # Bulk create production items to reduce the number of queries
+        ProductionItems.objects.bulk_create(production_items)
+
+        today = datetime.datetime.today()
+        existing_checklists = set(CheckList.objects.filter(date=today, product__in=raw_materials_to_checklist)
+                                  .values_list('product_id', flat=True))
+
+        new_checklists = [
+            CheckList(product=raw_material, status=False)
+            for raw_material in raw_materials_to_checklist
+            if raw_material.id not in existing_checklists
+        ]
+        CheckList.objects.bulk_create(new_checklists)
+
         send_production_creation_notification(production_plan.id)
-        
-        return JsonResponse(
-            {
-                'success': True, 
-                'message': 'Production plan created successfully', 
-            }, status=201)
-    
-    if request.method == 'GET':
+
+        return JsonResponse({'success': True, 'message': 'Production plan created successfully'}, status=201)
+
+    elif request.method == 'GET':
         form = ProductionPlanInlineForm()
-        return render (request, 'inventory/create_production_plan.html', 
-                {
-                    'form':form
-                }
-            )
+        return render(request, 'inventory/create_production_plan.html', {'form': form})
+
     return JsonResponse({'success': False, 'message': 'Invalid HTTP method'}, status=405)
 
 
@@ -865,7 +873,7 @@ def confirm_minor_raw_materials(request, pp_id):
                 'name':{
                     quantity:flaot
                     cost_per_unit:float
-                    production_quanity:float
+                    production_quantity:float
                 }
             }
         ]
@@ -874,11 +882,12 @@ def confirm_minor_raw_materials(request, pp_id):
         data = json.loads(request.body)
         data =data.get('items')
         raw_material_id = data.get('raw_material_id')
+        
     except Exception as e:
         return JsonResponse({'success':False, 'message':f'{e}'}, status=400)
     try:
         production_plan = Production.objects.get(id=pp_id)
-           
+        # production_item = ProductionItem.objects.get(production=production_plan, )
         AllocatedRawMaterials.objects.create(
             production = production_plan,
             raw_material = get_object_or_404(Product, id=raw_material_id )
@@ -1868,8 +1877,6 @@ def confirm_minor_raw(request):
             raw_material.quantity -= quantity
             raw_material.save()
             
-            logger.info(raw_material.quantity)
-            
             Logs.objects.create(
                 user=request.user, 
                 action='Transfer',
@@ -1887,13 +1894,10 @@ def confirm_minor_raw(request):
                 quantity=quantity,
                 total_quantity=p_raw_materials.quantity,
             )
-        
+
     except Exception as e:
         return JsonResponse({'success': False, 'message': f'{e}'}, status=400)
-
     return JsonResponse({'success': True}, status=200)
-
-
 
 @login_required
 def calculate_reorder_point(product):
@@ -2097,6 +2101,33 @@ def production_sales(request):
 
     return render(request, 'inventory/production_sales.html', {'production_data': production_data, 'filter_by': filter_by})
 
-
+@login_required
+def check_check_list(request):
+    # Payload 
+    """
+    {
+        "check_list_id": id
+    }
+    """
+    try:
+        data = json.loads(request.body)
+        check_list_id = data.get('check_list_id')
+        
+        if not check_list_id:
+            return JsonResponse({'success': False, 'message': 'Missing check_list_id'}, status=400)
+        
+        check_list_item = get_object_or_404(CheckList, id=check_list_id)
+        
+        check_list_item.status = not check_list_item.status
+        
+        check_list_item.save(update_fields=['status'])
+        
+        return JsonResponse({'success': True, 'message': 'Checklist status updated'}, status=200)
+    
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'message': 'Invalid JSON data'}, status=400)
+    
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=400)
             
             

@@ -95,6 +95,7 @@ class ProductionItems(models.Model):
     staff_portions = models.FloatField(default=0, null=True)  
     declared_quantity = models.FloatField(default=0, null=True)
     portions_sold = models.FloatField(default=0, null=True)
+    allocated = models.BooleanField(default=False)
 
 class MinorProductionItems(models.Model):
     production = models.ForeignKey(Production, on_delete=models.CASCADE)
@@ -359,5 +360,13 @@ class Notification(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
     is_read = models.BooleanField(default=False)
 
+class CheckList(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    status = models.BooleanField(default=False)
+    date = models.DateField(auto_now_add=True)
+    
+    def __str__(self):
+        return self.product.name
+    
 
     

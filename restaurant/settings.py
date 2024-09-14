@@ -71,6 +71,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     
+    # custom
     'users.middleware.CompanySetupMiddleware'
 ]
 
@@ -89,7 +90,8 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 
                 # custom
-                'inventory.context_processors.notification_processor'
+                'inventory.context_processors.notification_processor', 
+                'inventory.context_processors.check_list_processor'
             ],
         },
     },
@@ -119,9 +121,8 @@ DATABASES = {
     #     'PASSWORD': 'neverfail',
     #     # 'HOST': 'local',
     #     'PORT': '5432'
-    #  }
+    # }
 }
-
 
 AUTH_USER_MODEL = 'users.User'
 

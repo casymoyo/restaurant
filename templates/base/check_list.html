@@ -1,0 +1,122 @@
+{% load static %}
+{% block content %}
+<style>
+    .checklist{
+        background:#f2f2f2;
+    }
+    .in, .out{
+        height:50vh;
+        overflow-y:auto;
+    }
+</style>
+
+<div class="checklist p-2 border-right border-left border-bottom">
+    <div class='mt-2'>
+        <h5 class="fw-bold">Check List</h5>
+    </div>
+
+    <div class="mb-2">
+        <input type="text" id="search-bar" class="form-control" placeholder="Search products...">
+    </div>
+
+    <h6 class="border-top border-bottom p-1 bg-secondary rounded text-light">In Stock</h6>
+    <div class="in mt-2">
+        <table class="table" id="in-stock-table">
+            <thead>
+                <th><small>Product</small></th>
+                <th><small>W-H Qnty</small></th>
+                <th><small>Status</small></th>
+            </thead>
+            <tbody>
+                {% for product in products %}
+                    {% if product.product.quantity > 0 %}
+                        <tr data-product-id="{{ product.id }}">
+                            <td>{{ product }}</td>
+                            <td></td>
+                            <td>
+                                <input 
+                                    type="checkbox" 
+                                    class="checklist-checkbox "
+                                    {% if product.status %} checked {% endif %}
+                                    data-product-id="{{ product.id }}"
+                                >
+                            </td>
+                        </tr>
+                    {% endif %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <h6 class="border-top border-bottom p-1 bg-secondary rounded text-light">Out Of Stock</h6>
+    <div class="out mt-2">
+        <table class="table table-striped" id="out-stock-table">
+            <thead>
+                <th><small>Product</small></th>
+            </thead>
+            <tbody>
+                {% for product in products %}
+                    {% if product.product.quantity < 1 %}
+                        <tr data-product-id="{{ product.id }}">
+                            <td>{{ product }}</td>
+                        </tr>
+                    {% endif %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    document.getElementById('search-bar').addEventListener('keyup', function() {
+        let searchValue = this.value.toLowerCase();
+        let rows = document.querySelectorAll('#in-stock-table tbody tr, #out-stock-table tbody tr');
+        
+        rows.forEach(function(row) {
+            let productName = row.querySelector('td').textContent.toLowerCase();
+            if (productName.includes(searchValue)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    });
+
+    document.querySelectorAll('.checklist-checkbox').forEach(function(checkbox) {
+        checkbox.addEventListener('change', function() {
+            let productId = this.dataset.productId;
+            let isChecked = this.checked;
+
+            fetch("{% url 'inventory:check_check_list' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    'check_list_id': productId,
+                    'status': isChecked
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Oops...',
+                        text: data.message || 'Something went wrong!'
+                    });
+                }
+            })
+            .catch(error => {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Oops...',
+                    text: 'An error occurred while processing your request!'
+                });
+            });
+        });
+    });
+</script>
+
+{% endblock content %}

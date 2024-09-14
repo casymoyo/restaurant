@@ -3,7 +3,7 @@
 {% load crispy_forms_tags %}
 {% block title%} Production Plan {% endblock%}
 {% block content %}
-   <div class="inventory">
+   <div class="Production">
         <div class="inventory-navbar">
             <nav class="d-flex justify-content-between align-items-center mt-2 mb-2">
                 <div class='fw-bold d-flex'>
@@ -142,6 +142,8 @@
         </div>
    </div> 
    <script>
-        new DataTable('#production_table');
+        new DataTable('#production_table',{
+            pageLength: 100  
+        });
    </script>
 {% endblock content %}

@@ -26,7 +26,6 @@
     <script src="{% static 'js/jquery.js'%}"></script>
     <script src="{% static 'css/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
     <script src="{% static 'assets/DataTables/datatables.min.js' %}"></script>
-    {% comment %} <script type="text/javascript" src="{% static 'js/Chart.min.js' %}"></script> {% endcomment %}
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
@@ -98,8 +97,8 @@
                                 <!-- Notification Icon with Badge -->
                                 <li class="position-relative mx-3 d-flex align-items-center justify-content-center">
                                     <i class="bx bx-bell fs-3 cursor-pointer" id="notification-icon"></i>
-                                    <span id="notification-badge" class="badge rounded-pill bg-danger text-danger position-absolute top-0 start-100 translate-middle" style="display: none;">
-                                        0
+                                    <span id="notification-badge" class="badge rounded-pill bg-danger text-dark position-absolute top-0 start-100 translate-middle">
+                                        2
                                     </span>
                                     <div class="notifications dropdown-menu dropdown-menu-end p-2" id="notification-dropdown" style="max-height: 200px; overflow-y: auto;">
                                         <ul id="notification-box" class="list-unstyled">
@@ -121,9 +120,11 @@
                                        
                 </nav>
                     <div class="row">
-                        <div class="col-2">
-                            {% include 'base/side_bar.html' %}
-                        </div>
+                        {% if request.resolver_match.url_name != 'production_plans' and request.resolver_match.url_name != '' %}
+                            <div class="col-2">
+                                {% include 'base/side_bar.html' %}
+                            </div>
+                        {% endif %}
                         <div class="col-10">
                             <div class="app-area overflow">
                                 {% if messages %}
@@ -141,10 +142,14 @@
                                 {% block content %}{% endblock %}
                             </div>
                         </div>
+                        {% if request.resolver_match.url_name == 'production_plans' or request.resolver_match.url_name != '' %}
+                            <div class="col-2">
+                                {% include 'base/check_list.html' %}
+                            </div>
+                        {% endif %}
                     </div>
             </div>
         </div>
-
         <!-- logout modal -->
         <div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="chargeModalLabel" aria-hidden="true">
             <div class="modal-dialog bg modal-dialog-centered">
@@ -159,10 +164,8 @@
         </div>      
     </div>
     <script src="{% static 'css/bootstrap/js/bootstrap.bundle.min.js'%}"></script>    
-    
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
-
         document.getElementById('notification-icon').addEventListener('click', function() {
             const dropdown = document.getElementById('notification-dropdown');
             dropdown.classList.toggle('show');
@@ -179,17 +182,18 @@
             const data = JSON.parse(event.data);
             const notificationBox = document.getElementById('notification-box');
             const newNotification = document.createElement('li');
+
             newNotification.textContent = data.message + " - " + new Date().toLocaleTimeString();
             notificationBox.appendChild(newNotification);
 
             const badge = document.getElementById('notification-badge');
             let currentCount = parseInt(badge.textContent) || 0;
+
             badge.textContent = currentCount + 1;
             badge.style.display = 'inline-block'; 
 
             playNotificationSound();
-        };
-
+        }
     </script>
 </body>
 </html>
