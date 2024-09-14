@@ -6,7 +6,6 @@ cvlib==0.2.7
 cython==3.0.9
 daphne==4.0.0
 django-celery-beat==2.5.0
-django-channels==0.7.0
 django-cors-headers==4.3.1
 django-coverage-plugin==3.1.0
 django-debug-toolbar==4.2.0
@@ -54,3 +53,4 @@ websockets==12.0
 whitenoise
 xhtml2pdf==0.2.15
 zope.interface==6.1
+# twisted[http2,tls]
