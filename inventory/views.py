@@ -2046,50 +2046,61 @@ def receive_transfers_detail(request, transfer_id):
     
 @login_required
 def production_sales(request):
-    filter_by = request.GET.get('filter', 'today')
-    custom_start = request.GET.get('start_date')
-    custom_end = request.GET.get('end_date')
-
-    today = datetime.date.today()
-
-    if filter_by == 'today':
-        date_filter = today
-    elif filter_by == 'this_week':
-        date_filter = today - datetime.timedelta(days=today.weekday())
-    elif filter_by == 'this_month':
-        date_filter = today.replace(day=1)
-    elif filter_by == 'this_year':
-        date_filter = today.replace(month=1, day=1)
-    elif filter_by == 'custom' and custom_start and custom_end:
-        date_filter_start = datetime.datetime.strptime(custom_start, '%Y-%m-%d').date()
-        date_filter_end = datetime.datetime.strptime(custom_end, '%Y-%m-%d').date()
+    filter_option = request.GET.get('filter', 'today')
+    now = datetime.datetime.now()
+    end_date = now
+    
+    if filter_option == 'today':
+        start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    elif filter_option == 'this_week':
+        start_date = now - timedelta(days=now.weekday())
+    elif filter_option == 'yesterday':
+        start_date = (now - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+    elif filter_option == 'this_month':
+        start_date = now.replace(day=1)
+    elif filter_option == 'last_month':
+        start_date = (now.replace(day=1) - timedelta(days=1)).replace(day=1)
+    elif filter_option == 'this_year':
+        start_date = now.replace(month=1, day=1)
+    elif filter_option == 'custom':
+        start_date = request.GET.get('start_date')
+        end_date = request.GET.get('end_date')
+        start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
+        end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d')
     else:
-        date_filter = today
+        start_date = now - timedelta(days=now.weekday())
+        end_date = now
 
-    if filter_by == 'custom':
+    if filter_option == 'custom':
         production_data = ProductionItems.objects.filter(
-            production__date_created__range=[date_filter_start, date_filter_end]
+            production__date_created__range=[start_date, end_date]
         ).values(
             'dish__name'
         ).annotate(
+            total_wastage = Sum('wastage'),
+            total_cost = Sum('total_cost'),
             total_portions=Sum('portions'),
-            total_sold=Sum('portions_sold')
+            total_sold=Sum('portions_sold'),
+            total_left_overs = Sum('left_overs')
         ).order_by('dish__name')
     else:
         production_data = ProductionItems.objects.filter(
-            production__date_created__gte=date_filter
+            production__date_created__gte=start_date
         ).values(
             'dish__name'
         ).annotate(
+            total_wastage = Sum('wastage'),
+            total_cost = Sum('total_cost'),
             total_portions=Sum('portions'),
-            total_sold=Sum('portions_sold')
+            total_sold=Sum('portions_sold'),
+            total_left_overs = Sum('left_overs')
         ).order_by('dish__name')
         
 
     if request.GET.get('download') == 'csv':
         # Generate CSV
         response = HttpResponse(content_type='text/csv')
-        response['Content-Disposition'] = f'attachment; filename="production_sales_{filter_by}.csv"'
+        response['Content-Disposition'] = f'attachment; filename="production_sales_{filter_option}.csv"'
 
         writer = csv.writer(response)
         writer.writerow(['Dish Name', 'Total Portions', 'Total Sold Portions'])
@@ -2099,7 +2110,7 @@ def production_sales(request):
 
         return response
 
-    return render(request, 'inventory/production_sales.html', {'production_data': production_data, 'filter_by': filter_by})
+    return render(request, 'inventory/production_sales.html', {'production_data': production_data, 'filter_by': filter_option})
 
 @login_required
 def check_check_list(request):

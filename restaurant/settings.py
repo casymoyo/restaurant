@@ -106,22 +106,22 @@ LOGIN_URL = "users:login"
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': os.environ.get('DB_ENGINE', 'django.db.backends.postgresql'),
-        'NAME': os.environ.get('DB_NAME', 'postgres'),
-        'USER': os.environ.get('DB_USER', 'postgres.tgugrfxaribykdezopjn'),
-        'PASSWORD': os.environ.get('DB_PASSWORD', 'tQHxThDsWN3NDgat'),
-        'HOST': os.environ.get('DB_HOST', 'aws-0-us-west-1.pooler.supabase.com'),
-        'PORT': os.environ.get('DB_PORT', '6543'),
-    }
     # 'default': {
-    #     'ENGINE': 'django.db.backends.postgresql',
-    #     'NAME':  'urban-eats',
-    #     'USER': 'postgres',
-    #     'PASSWORD': 'neverfail',
-    #     # 'HOST': 'local',
-    #     'PORT': '5432'
+    #     'ENGINE': os.environ.get('DB_ENGINE', 'django.db.backends.postgresql'),
+    #     'NAME': os.environ.get('DB_NAME', 'postgres'),
+    #     'USER': os.environ.get('DB_USER', 'postgres.tgugrfxaribykdezopjn'),
+    #     'PASSWORD': os.environ.get('DB_PASSWORD', 'tQHxThDsWN3NDgat'),
+    #     'HOST': os.environ.get('DB_HOST', 'aws-0-us-west-1.pooler.supabase.com'),
+    #     'PORT': os.environ.get('DB_PORT', '6543'),
     # }
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME':  'urban-eats',
+        'USER': 'postgres',
+        'PASSWORD': 'neverfail',
+        # 'HOST': 'local',
+        'PORT': '5432'
+    }
 }
 
 AUTH_USER_MODEL = 'users.User'
