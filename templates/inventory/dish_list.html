@@ -21,8 +21,9 @@
             <thead>
                 <tr>
                     <th>Name</th>
-                    <th>Selling Price</th>
                     <th>Portion Multiplier</th>
+                    <th>Cost</th>
+                    <th>Selling Price</th>
                     <th>Ingredients</th>
                     <th>Actions</th>
                 </tr>
@@ -31,8 +32,9 @@
                 {% for dish in dishes %}
                     <tr>
                         <td>{{ dish.name }}</td>
-                        <td>{{ dish.selling_price_per_portion }}
                         <td>{{ dish.portion_multiplier }}</td>
+                        <td>{{ dish.cost }}</td>
+                        <td>{{ dish.selling_price_per_portion }}
                         <td>
                             {% for ingredient in ingredients %}
                                 {% if dish == ingredient.dish %}
@@ -42,7 +44,7 @@
                         </td>
                         <td>
                             {% comment %} <a href="{% url 'inventory:dish_update' dish.id %}" class="btn btn-warning btn-sm bx bx-edit"></a> {% endcomment %}
-                            <a href="{% url 'inventory:dish_delete' dish.id %}" class="btn btn-danger btn-sm bx bx-trash"></a>
+                            <a href="{% url 'inventory:dish_delete' dish.id %}" class="btn bx bx-trash"></a>
                             {% comment %} <a href="{% url 'inventory:ingredient_create' dish.id %}" class="btn btn-light btn-sm">Add Ingridients</a> {% endcomment %}
                             <!-- <a href="" class="btn btn-danger btn-sm">Update Ingridients</a> -->
                         </td>
@@ -53,6 +55,8 @@
     </div>
 </div>
 <script>
-    new DataTable('#dishes_table')
+    new DataTable('#dishes_table',{
+        pageLength: 100
+    })
 </script>
 {% endblock %}

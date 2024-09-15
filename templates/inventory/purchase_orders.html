@@ -42,7 +42,7 @@
                                     <td class="{% if order.is_partial %}bg-warning text-dark{% endif %}" data-id={{ order.id }}><small>{{ order.delivery_date }}</small></td>
                                     <td class="{% if order.is_partial %}bg-warning text-dark{% endif %}" data-id={{ order.id }}><small>{{ order.order_number }}</small></td>
                                     <td class="{% if order.is_partial %}bg-warning text-dark{% endif %}" data-id={{ order.id }}><small>{{ order.supplier.name }}</small></td>
-                                    <td class="{% if order.is_partial %}bg-warning text-dark{% endif %}" data-id={{ order.id }}><small class='fw-bold'>{{ order.total_cost }}</small></td>
+                                    <td class="{% if order.is_partial %}bg-warning text-dark{% endif %}" data-id={{ order.id }}><small>{{ order.total_cost }}</small></td>
                                     <td class="{% if order.is_partial %}bg-warning text-dark{% endif %}" data-id={{ order.id }}><small>{{ order.notes }}</small></td>
                                     <td class="{% if order.is_partial %}bg-warning text-dark{% endif %}" data-id={{ order.id }}><small>{{ order.status }}</small></td>
                                     <td class="{% if order.is_partial %}bg-warning text-dark{% endif %}">

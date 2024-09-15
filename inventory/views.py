@@ -1239,9 +1239,12 @@ def raw_material_json(request):
         data = json.loads(request.body)
         raw_material_id = data.get('raw_material_id')
         
-        r_m = Product.objects.filter(id=raw_material_id).values('unit__unit_name')
+        r_m = Product.objects.filter(id=raw_material_id).values(
+            'cost',
+            'unit__unit_name'
+        )
         r_m = list(r_m)
-        logger.info(r_m)
+    
         return JsonResponse({'success':True, 'data':r_m})
     except Exception as e:
         return JsonResponse({'success': False, 'message':f'{e}'})
@@ -1357,6 +1360,7 @@ def add_dish(request): # didn't change the name of the template, it caters for b
         {
             name:str
             portion_multiplier:float
+            cost:float
             
             "cart": [
                 {
@@ -1372,15 +1376,21 @@ def add_dish(request): # didn't change the name of the template, it caters for b
             
             data = json.loads(request.body)
             cart = data.get('cart')
-            logger.info(cart)
+        
             dish_name = data.get('name')
             portion_multiplier = data.get('portion_multiplier')
+            cost = data.get('dish_cost')
+            selling_price = data.get('selling_price')
+
+            if not dish_name or not portion_multiplier or not cost or not selling_price:
+                return JsonResponse({'success': False, 'message': f'Please fill all the missing data'}, status=400)
             
         except json.JSONDecodeError as e:
             return JsonResponse({'success': False, 'message': f'Invalid JSON data: {e}'}, status=400)
         
         try:
             dish = Dish.objects.create(
+                cost = cost,
                 name = dish_name,
                 portion_multiplier = portion_multiplier
             )

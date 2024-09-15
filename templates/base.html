@@ -120,8 +120,8 @@
                                        
                 </nav>
                     <div class="row">
-                        {% if request.resolver_match.url_name != 'production_plans' and request.resolver_match.url_name != '' %}
-                            <div class="col-2">
+                        {% if request.resolver_match.url_name != 'production_plans'%}
+                            <div class="col-2" style='background:#f8f9fa;'>
                                 {% include 'base/side_bar.html' %}
                             </div>
                         {% endif %}
@@ -142,7 +142,7 @@
                                 {% block content %}{% endblock %}
                             </div>
                         </div>
-                        {% if request.resolver_match.url_name == 'production_plans' or request.resolver_match.url_name != '' %}
+                        {% if request.resolver_match.url_name == 'production_plans' %}
                             <div class="col-2">
                                 {% include 'base/check_list.html' %}
                             </div>

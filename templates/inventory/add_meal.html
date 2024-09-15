@@ -52,7 +52,7 @@
             </label>
             <select name="dish" class="form-control selectmultiple form-select" required id="id_dish" multiple>
                 {% for dish in dishes %}
-                    <option value="{{ dish.id }}">{{dish.name }}</option>
+                    <option value="{{ dish.id }}">{{ dish.name }} ({{ dish.cost}})</option>
                 {% endfor %}
             </select>
         </div>

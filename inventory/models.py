@@ -131,6 +131,7 @@ class Dish(models.Model):
     name = models.CharField(max_length=100)
     portion_multiplier = models.FloatField()
     selling_price_per_portion = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    cost = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
     def __str__(self) -> str:
         return self.name

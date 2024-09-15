@@ -8,7 +8,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('SECRET_KEY')
+SECRET_KEY = 'django-insecure-3m$$5om_jd5=rk*1x9(@=-=o8(j!^y(@!)iz^38q6*^w#6v+4n'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -18,13 +18,10 @@ ALLOWED_HOSTS = [
     '127.0.0.1', 
     'web-production-20d8.up.railway.app'
 ]
+
 CSRF_TRUSTED_ORIGINS = [
     'https://web-production-20d8.up.railway.app'
 ]
-# Application definition
-RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
-if RENDER_EXTERNAL_HOSTNAME:
-    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
 # Application definition
 
@@ -56,7 +53,6 @@ LOCAL_APPS = [
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
-# CSRF_TRUSTED_ORIGINS = ['https://94c6-91-102-181-72.ngrok-free.app', 'https://90ce-91-102-181-72.ngrok-free.app/']
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 CORS_ORIGIN_ALLOW_ALL = True
@@ -106,22 +102,22 @@ LOGIN_URL = "users:login"
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': os.environ.get('DB_ENGINE', 'django.db.backends.postgresql'),
-        'NAME': os.environ.get('DB_NAME', 'postgres'),
-        'USER': os.environ.get('DB_USER', 'postgres.tgugrfxaribykdezopjn'),
-        'PASSWORD': os.environ.get('DB_PASSWORD', 'tQHxThDsWN3NDgat'),
-        'HOST': os.environ.get('DB_HOST', 'aws-0-us-west-1.pooler.supabase.com'),
-        'PORT': os.environ.get('DB_PORT', '6543'),
-    }
     # 'default': {
-    #     'ENGINE': 'django.db.backends.postgresql',
-    #     'NAME':  'urban-eats',
-    #     'USER': 'postgres',
-    #     'PASSWORD': 'neverfail',
-    #     # 'HOST': 'local',
-    #     'PORT': '5432'
+    #     'ENGINE': os.environ.get('DB_ENGINE', 'django.db.backends.postgresql'),
+    #     'NAME': os.environ.get('DB_NAME', 'postgres'),
+    #     'USER': os.environ.get('DB_USER', 'postgres.tgugrfxaribykdezopjn'),
+    #     'PASSWORD': os.environ.get('DB_PASSWORD', 'tQHxThDsWN3NDgat'),
+    #     'HOST': os.environ.get('DB_HOST', 'aws-0-us-west-1.pooler.supabase.com'),
+    #     'PORT': os.environ.get('DB_PORT', '6543'),
     # }
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME':  'urban_eats',
+        'USER': 'postgres',
+        'PASSWORD': 'neverfail',
+        # 'HOST': 'local',
+        'PORT': '5432'
+    }
 }
 
 AUTH_USER_MODEL = 'users.User'
