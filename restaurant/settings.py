@@ -118,7 +118,7 @@ DATABASES = {
 #         # 'HOST': 'local',
 #         'PORT': '5432'
 #     }
-# }
+}
 
 AUTH_USER_MODEL = 'users.User'
 
