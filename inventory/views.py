@@ -975,7 +975,7 @@ def confirm_production_plan(request, pp_id):
             
             for item in production_plan_items:
                 for ing in Ingredient.objects.filter(dish=item.dish):
-                    # Fetch or create ProductionRawMaterials instance
+                   
                     p_r_m_bf, created = ProductionRawMaterials.objects.get_or_create(
                         product=ing.raw_material,
                         defaults={'quantity': 0}
@@ -991,12 +991,10 @@ def confirm_production_plan(request, pp_id):
                     raw_material_found = next((rm for rm in raw_materials if rm['id'] == ing.raw_material.id), None)
                     
                     if raw_material_found:
-                     
                         raw_material_found['quantity'] += required_quantity
                         raw_material_found['expected_quantity'] += expected_quantity
                         raw_material_found['quantity_b_f'] += current_quantity
                     else:
-                        
                         raw_materials.append(
                             {
                                 'id': ing.raw_material.id,
