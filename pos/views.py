@@ -200,6 +200,8 @@ def process_sale(request):
                             quantity=item['quantity'],
                             price=product.price
                         )
+
+                        cog.amount += product.cost * item['quantity']
                         
                         Logs.objects.create(
                             user=request.user, 
