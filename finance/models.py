@@ -135,6 +135,7 @@ class Change(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
     cashier = models.ForeignKey(User, on_delete=models.CASCADE)
     claimed = models.BooleanField(default=False)
+    # ca
     
     def __str__(self) -> str:
         return f'{self.cashier.username} ({self.amount})'

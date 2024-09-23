@@ -44,7 +44,7 @@ class Product(models.Model):
     cost = models.DecimalField(max_digits=10, decimal_places=2)
     price = models.DecimalField(max_digits=10, decimal_places=2, default=1) 
     unit = models.ForeignKey(UnitOfMeasurement, on_delete=models.CASCADE, null=True)
-    category = models.ForeignKey(Category, on_delete=models.CASCADE)
+    category = models.ForeignKey(Category, on_delete=models.CASCADE, null=True)
     tax_type = models.CharField(max_length=50, choices=tax_choices)
     min_stock_level = models.FloatField(default=0, null=True)
     raw_material = models.BooleanField(default=False)
