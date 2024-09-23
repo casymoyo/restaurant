@@ -8,7 +8,7 @@ def send_end_of_day_report(buffer):
         f"End of Day Report:",
         "Please find the attached End of Day report. The expected amount is to be calculated on cost price, since they are no stipulated prices per dishes, but if they to be put the expected table will be relavant.",
         'admin@techcity.co.zw',
-        ['cassymyo@gmail.com'],
+        ['mirackletec@gmail.com'],
     )
     email.attach(f'EndOfDayReport.pdf', buffer.getvalue(), 'application/pdf')
     
@@ -26,7 +26,7 @@ def send_production_creation_notification(production_id):
         The email is to notify you on the creation of a Production Plan {production.production_plan_number}, and it requires your cornifimation.
         """,
         from_email='admin@techcity.co.zw',
-        to=['cassymyo@gmail.com'],
+        to=['mirackletec@gmail.com'],
     )
     
     EmailThread(email).start()
@@ -44,7 +44,7 @@ def transfer_notification(transfer_id):
         Please confirm receipt of this transfer.
         """,
         from_email='admin@techcity.co.zw',
-        to=['cassymyo@gmail.com'],
+        to=['mirackletec@gmail.com'],
     )
     
     EmailThread(email).start()

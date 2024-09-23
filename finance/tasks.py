@@ -13,7 +13,7 @@ def send_expense_creation_notification(expense_id):
         For an amount of ${expense.amount}.
         """,
         from_email='admin@techcity.co.zw',
-        to=['cassymyo@gmail.com'],
+        to=['mirackletec@gmail.com'],
     )
     
     EmailThread(email).start()
