@@ -20,7 +20,7 @@ ALLOWED_HOSTS = [
 ]
 
 CSRF_TRUSTED_ORIGINS = [
-    'https://web-production-20d8.up.railway.app/'
+    'https://web-production-20d8.up.railway.app'
 ]
 
 # Application definition
