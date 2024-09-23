@@ -24,7 +24,6 @@ from permisions.permisions import (
 )
 
 @login_required
-@sales_required
 def pos(request):
     meals = Meal.objects.filter(deactivate=False)
     
