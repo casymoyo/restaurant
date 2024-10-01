@@ -110,14 +110,14 @@ DATABASES = {
         'HOST': os.environ.get('DB_HOST', 'aws-0-us-west-1.pooler.supabase.com'),
         'PORT': os.environ.get('DB_PORT', '6543'),
     }
-#     'default': {
-#         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME':  'urban_eats',
-#         'USER': 'postgres',
-#         'PASSWORD': 'neverfail',
-#         # 'HOST': 'local',
-#         'PORT': '5432'
-#     }
+    # 'default': {
+    #     'ENGINE': 'django.db.backends.postgresql',
+    #     'NAME':  'urban_eats',
+    #     'USER': 'postgres',
+    #     'PASSWORD': 'neverfail',
+    #     # 'HOST': 'local',
+    #     'PORT': '5432'
+    # }
 }
 
 AUTH_USER_MODEL = 'users.User'
@@ -216,6 +216,7 @@ EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 25))
 EMAIL_USE_SSL = os.environ.get('EMAIL_USE_SSL', 'False').lower() == 'true'  
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+
 
 
 # channels

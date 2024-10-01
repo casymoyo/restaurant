@@ -36,7 +36,8 @@ from finance.models import (
 )
 from .tasks import (
     send_production_creation_notification,
-    transfer_notification
+    transfer_notification,
+    supplier_email
 )
 from . forms import (
     MealForm,
@@ -52,6 +53,8 @@ from . forms import (
     IngredientForm,
     TransferForm
 )
+
+from utils.supplier_best_price import best_price
 
 @login_required
 def unit_of_measurement(request):
@@ -443,7 +446,7 @@ def create_purchase_order(request):
                         transaction.set_rollback(True)
                         return JsonResponse({'success': False, 'message': f'Product with Name {product_name} not found'}, status=404)
 
-                    PurchaseOrderItem.objects.create(
+                    purchase_order_item = PurchaseOrderItem.objects.create(
                         purchase_order=purchase_order,
                         product=product,
                         quantity=quantity,
@@ -453,8 +456,10 @@ def create_purchase_order(request):
                         note=note
                     )
 
-                    # consider to put expenses
-                if purchase_order.status == 'received':
+                    supplier_email(purchase_order.supplier.id, purchase_order_item)
+
+                # consider to put expenses
+                if purchase_order.status == 'received': 
                     category, _ = ExpenseCategory.objects.get_or_create(
                         name = 'Inventory'
                     )
@@ -473,11 +478,12 @@ def create_purchase_order(request):
                         credit = True,
                         description = f'Expense purchase order{purchase_order.order_number}',
                     )
+
         except Exception as e:
             return JsonResponse({'success': False, 'message': str(e)}, status=500)
 
         return JsonResponse({'success': True, 'message': 'Purchase order created successfully'})
-    
+
     
 @login_required
 @transaction.atomic
@@ -1634,24 +1640,9 @@ def supplier_prices(request, raw_material_name):
     }
     """
     try:
-
-        purchase_orders = PurchaseOrderItem.objects.filter(product__name=raw_material_name)
-
-        supplier_prices = []
-        for item in purchase_orders:
-            supplier_prices.append(
-                {
-                    'id':item.purchase_order.supplier.id,
-                    'supplier': item.purchase_order.supplier.name, 
-                    'price': item.unit_cost
-                }
-            )
-
-        supplier_prices_sorted = sorted(supplier_prices, key=lambda x: x['price'])
-        best_three_prices = supplier_prices_sorted[:3]
-
+        
+        best_three_prices = best_price(raw_material_name)
         logger.info(best_three_prices)
-
         return JsonResponse({'success': True, 'suppliers': best_three_prices})
 
     except Exception as e:

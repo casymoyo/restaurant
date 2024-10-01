@@ -9,11 +9,17 @@ class Printer(models.Model):
     def __str__(self):
         return self.name 
     
+class Modules(models.Model):
+    name = models.CharField(max_length=255)
+
+    def __str__(self) -> str:
+        return self.name
+    
 class NotificationEmails(models.Model):
-    name = models.ForeignKey(User, on_delete=models.CASCADE)
     email = models.EmailField()
+    module = models.ForeignKey(Modules, on_delete=models.CASCADE)
     
     def __str__(self):
-        return f'{self.name}: ({self.email})'
+        return f'{self.module}: ({self.email})'
 
 

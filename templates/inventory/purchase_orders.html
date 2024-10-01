@@ -47,7 +47,26 @@
                                     <td class="{% if order.is_partial %}bg-warning text-dark{% endif %}" data-id={{ order.id }}><small>{{ order.status }}</small></td>
                                     <td class="{% if order.is_partial %}bg-warning text-dark{% endif %}">
                                         <a href="{% url 'inventory:purchase_order_detail' order.id %}" class="btn bx bx-show"></a>
-                                        <a href="{% url 'inventory:print_purchase_order' order.id %}" class="btn bx bx-printer mx-1"></a>
+                                        <!-- Share button with dropdown -->
+                                        <div class="dropdown d-inline-block">
+                                            <a href="javascript:void(0)" class="mx-1" id="shareDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                                <i class='bx bx-share-alt'></i>
+                                            </a>
+                                            <ul class="dropdown-menu" aria-labelledby="shareDropdown">
+                                                <li>
+                                                    <a class="dropdown-item" href="https://api.whatsapp.com/send?text={{ order.url }}" target="_blank">
+                                                        <i class='bx bxl-whatsapp fs-5 text-success'></i> WhatsApp
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <a class="dropdown-item" href="mailto:?subject=Order%20Details&body=Check%20this%20order: {{ order.url }}">
+                                                        <i class='bx bx-envelope fs-5'></i> Email
+                                                    </a>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                        <a href="{% url 'inventory:print_purchase_order' order.id %}" class="btn bx bx-printer"></a>
+
                                         {% if order.status != 'received' %}
                                             <button class="btn btn-sm btn-light" data-id={{ order.id }} onclick="status(this)">Change Status</button>
                                         {% else %}

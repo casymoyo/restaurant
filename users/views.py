@@ -12,6 +12,8 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.hashers import make_password
 from .models import Company, User
 from .forms import CompanyForm, CustomUserCreationForm
+from settings.models import Modules
+from django.db import transaction
 
 def create_company(request):
     if Company.objects.exists():
@@ -22,17 +24,28 @@ def create_company(request):
         user_form = CustomUserCreationForm(request.POST)
         
         if company_form.is_valid() and user_form.is_valid():
-            # Save the company
-            company = company_form.save()
-            
-            # Create the user with the company
-            user = user_form.save(commit=False)
-            user.company = company
-            user.role = 'owner'  
-            user.save()
-            
-            login(request, user)  
+
+            with transaction.atomic():
+                # Save the company
+                company = company_form.save()
+                
+                # Create the user with the company
+                user = user_form.save(commit=False)
+                user.company = company
+                user.role = 'owner'  
+                user.save()
+                
+                # create modules
+                modules = ['Sales', 'Finance', 'Inventory', 'Production']
+                bulk_modules = []
+
+                for m in modules:
+                    bulk_modules.append(Modules(name=m))
+
+                Modules.objects.bulk_create(bulk_modules)
             return redirect('users:login')
+        else:
+            messages.warning(request, f'Company registration form not valid.')
     else:
         company_form = CompanyForm()
         user_form = CustomUserCreationForm()

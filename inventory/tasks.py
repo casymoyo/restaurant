@@ -1,7 +1,15 @@
 from utils.email import EmailThread
-from . models import Production, Transfer
+from . models import (
+    Production, 
+    Transfer,
+    Supplier,
+    PurchaseOrderItem
+)
 from django.core.mail import EmailMessage
+from utils.supplier_best_price import best_price
 from loguru import logger
+from settings.models import NotificationEmails
+from utils.email_notification import modules_list
 
 def send_end_of_day_report(buffer):
     email = EmailMessage(
@@ -50,5 +58,42 @@ def transfer_notification(transfer_id):
     EmailThread(email).start()
     
     logger.info(f'Notification for transfer {transfer.transfer_number} sent.')
+
+def supplier_email(supplier_id, purchase_order_item):
+    purchase_order_items = PurchaseOrderItem.objects.filter(purchase_order=purchase_order_item.purchase_order)
+    supplier = Supplier.objects.get(id=supplier_id)
+
+    price_list = [ sup['price'] for sup in best_price(purchase_order_item.product.name)]
+
+    min_price = min(price_list)
+
+    def send_email(purchase_order_item):
+        logger.info(modules_list('Inventory'))
+        email = EmailMessage(
+            subject="Purchase Order Supplier notification",
+            body=f"""
+            This email is to notify you of a Supplier: {supplier.name} with a unit price of {po_item.unit_cost},
+            Has been used for purchasing: {purchase_order_item.product.name}(s). 
+            """,
+            from_email='admin@techcity.co.zw',
+            to=modules_list('Inventory'),
+        )
+        
+        EmailThread(email).start()
+
+        logger.info(f'Purchase order supplier notification email sent.')
+    
+    for po_item in purchase_order_items:  
+        logger.info(po_item)
+        if po_item.unit_cost > min_price and po_item.unit_cost not in price_list:
+            logger.info('here')
+            send_email(purchase_order_item)
+
+    
+
+
+
+        
+
     
     

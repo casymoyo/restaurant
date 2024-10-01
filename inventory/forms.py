@@ -12,6 +12,7 @@ from . models import (
     TransferItems
 )
 from django import forms
+from datetime import date
 
 class AddProductForm(forms.ModelForm):
     class Meta:
@@ -36,6 +37,13 @@ class noteStatusForm(forms.ModelForm):
         widgets = {
             'delivery_date': forms.DateInput(attrs={'type': 'date'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super(noteStatusForm, self).__init__(*args, **kwargs)
+        
+        if not self.initial.get('delivery_date'):
+            self.initial['delivery_date'] = date.today()
+
         
 class PurchaseOrderStatus(forms.ModelForm):
     class Meta:
