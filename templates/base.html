@@ -87,26 +87,30 @@
 <body>
     <div class="Urban-Eat">
         <div class="row">
-            <div class=" top-bar">
+            <div class="top-bar">
                 <nav class="p-2 border">
                     <div class="d-flex justify-content-between align-items-center w-100">
                         <div>
                             <h4 class="fw-bold">{{ request.user.company.name }}</h4>
                         </div>
                         <div>
+                            <!-- <button id="play-sound-button">play</button> -->
                             <ul class="list-unstyled d-flex align-items-center">
                                 <!-- Notification Icon with Badge -->
                                 <li class="position-relative mx-3 d-flex align-items-center justify-content-center">
                                     <i class="bx bx-bell fs-3 cursor-pointer" id="notification-icon"></i>
-                                    <span id="notification-badge" class="badge rounded-pill bg-danger text-dark position-absolute top-0 start-100 translate-middle">
-                                        2
+                                    <span id="notification-badg" class="badge rounded-pill bg-danger text-light position-absolute top-0 start-100 translate-middle">
+                                        {{ notifications_count }}
                                     </span>
                                     <div class="notifications dropdown-menu dropdown-menu-end p-2" id="notification-dropdown" style="max-height: 200px; overflow-y: auto;">
                                         <ul id="notification-box" class="list-unstyled">
                                             {% for notification in notifications %}
                                                 <li>
-                                                    <small class='text-muted'>{{ notification.timestamp }}</small>
-                                                    <small>- {{ notification.message }} </small>
+                                                    <small class='text-muted'>
+                                                        <i class="bx bx-envelope fs-4"></i>
+                                                        {{ notification.timestamp }}
+                                                    </small>
+                                                    <small>- {{ notification.description }} </small>
                                                 </li>
                                             {% endfor %}
                                         </ul>
@@ -166,35 +170,45 @@
     </div>
     <script src="{% static 'css/bootstrap/js/bootstrap.bundle.min.js'%}"></script>    
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    <script>
+    <script> 
         document.getElementById('notification-icon').addEventListener('click', function() {
             const dropdown = document.getElementById('notification-dropdown');
             dropdown.classList.toggle('show');
         });
-        
-        const ws = new WebSocket('ws://' + window.location.host + '/ws/notifications/');
+
+        const socket = new WebSocket('ws://' + window.location.host + '/ws/notifications/');
 
         function playNotificationSound() {
             const audio = new Audio('{% static "sounds/ding.mp3" %}'); 
+            console.log('played')
             audio.play();
         }
 
-        ws.onmessage = function(event) {
-            const data = JSON.parse(event.data);
+        socket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            console.log(data)
             const notificationBox = document.getElementById('notification-box');
             const newNotification = document.createElement('li');
 
             newNotification.textContent = data.message + " - " + new Date().toLocaleTimeString();
             notificationBox.appendChild(newNotification);
 
-            const badge = document.getElementById('notification-badge');
+            const badge = document.getElementById('notification-badg');
             let currentCount = parseInt(badge.textContent) || 0;
 
             badge.textContent = currentCount + 1;
             badge.style.display = 'inline-block'; 
+            
+            setTimeout(playNotificationSound, 100)
+        };
 
-            playNotificationSound();
-        }
+        socket.onopen = function() {
+            console.log('WebSocket connection established');
+        };
+
+        socket.onclose = function() {
+            console.log('WebSocket connection closed');
+        };
     </script>
 </body>
 </html>

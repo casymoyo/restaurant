@@ -145,7 +145,7 @@
 
                 </div>
                 <div class="col-4">
-                    <div class="bg-dark text-light sidebar rounded p-4" style='width:380px;'>
+                    <div class="bg-dark text-light rounded p-4" >
                         <h5 class="fw-bold">Order Details</h5>
                         <div id="orderDetails" style="height:300px"></div>
                         <hr>
@@ -613,7 +613,7 @@
                 itemCard.className = 'col-md-3';
                 itemCard.innerHTML = `
                     <div class="card mb-4 box-shadow">
-                        <div class="card-body rounded p-3 d-flex align-items-center bg-warning" style='height:50px;' onclick="addToCart(${item.id}, '${item.name}', ${item.price}, ${item.finished_product})">
+                        <div class="card-body rounded p-3 d-flex align-items-center justify-content-center" style='height:50px;' onclick="addToCart(${item.id}, '${item.name}', ${item.price}, ${item.finished_product})">
                             <p class="card-text text">${item.name}</p>
                         </div>
                     </div>

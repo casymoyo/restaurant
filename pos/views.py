@@ -84,15 +84,8 @@ def process_sale(request):
             staff = data['staff']
             order_type = data['order_type']
             received_amount = data.get('received_amount')
-            
-            logger.info(data)
-            
-            logger.info(order_type)
-            logger.info(staff)
 
             sub_total = sum(item['price'] * item['quantity'] for item in items)
-            logger.info(sub_total)
-            
             
             tax = sub_total * 0.15 
             
@@ -102,15 +95,6 @@ def process_sale(request):
                 received_amount = total_amount
 
             with transaction.atomic():
-                try:
-                    kaolite = ProductionRawMaterials.objects.get(product__name='Kaolite')
-                except ProductionRawMaterials.DoesNotExist:
-                    return JsonResponse({'success': False, 'message': 'Please refill the stocks for kaolites'})
-                
-                try:
-                    salts = ProductionRawMaterials.objects.get(product__name='salt sachets')
-                except ProductionRawMaterials.DoesNotExist:
-                    return JsonResponse({'success': False, 'message': 'Please refill the stocks for salt sachets'})
                 
                 sale = Sale.objects.create(
                     total_amount=total_amount,
@@ -121,11 +105,22 @@ def process_sale(request):
                 )
 
                 today = localdate()
-                cog = COGS.objects.filter(date=today).first()
+                cog, _ = COGS.objects.get_or_create(date=today)
                 daily_productions = Production.objects.filter(date_created=today).order_by('time_created')
                 
                 for item in items:
                     if not item['type']:
+                        logger.info('product')
+                        try:
+                            kaolite = ProductionRawMaterials.objects.get(product__name='kaolite')
+                        except ProductionRawMaterials.DoesNotExist:
+                            return JsonResponse({'success': False, 'message': 'Please refill the stocks for kaolites'})
+                        
+                        try:
+                            salts = ProductionRawMaterials.objects.get(product__name='salt sachets')
+                        except ProductionRawMaterials.DoesNotExist:
+                            return JsonResponse({'success': False, 'message': 'Please refill the stocks for salt sachets'})
+                        
                         meal = get_object_or_404(Meal, id=item['meal_id'])
                         
                         sale_item = SaleItem.objects.create(
@@ -190,8 +185,11 @@ def process_sale(request):
                                 continue  # Move to the next production plan if not found
                             
                     else:
+                        logger.info('other')
                         product = get_object_or_404(Product, id=item['meal_id'])
                         product.quantity -= item['quantity']
+
+                        logger.info(product)
                         
                         sale_item = SaleItem.objects.create(
                             sale=sale,
@@ -200,7 +198,11 @@ def process_sale(request):
                             price=product.price
                         )
 
+                        logger.info(sale_item)
+
                         cog.amount += product.cost * item['quantity']
+                        cog.details = f'Sale: {sale.receipt_number}'
+                        cog.save()
                         
                         Logs.objects.create(
                             user=request.user, 
@@ -352,7 +354,7 @@ def generate_receipt(request, sale, received_amount):
 @login_required
 def change_list(request):
     filter_option = request.GET.get('filter', 'today')
-    now = datetime.now()
+    now = datetime.datetime.today()
     end_date = now
     
     if filter_option == 'today':
@@ -380,8 +382,7 @@ def change_list(request):
     total_change_amount = changes.filter(collected=False).aggregate(total=Sum('amount'))['total'] or 0
     
     return render(request, 'finance/change_list.html', 
-        {
-            'filter_option': filter_option,
+        {'filter_option': filter_option,
             'changes':changes,
             'end_date':end_date,
             'start_date':start_date,

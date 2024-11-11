@@ -98,7 +98,7 @@
         .then(data => {
             const categorySelect = document.getElementById('id_category');
             categorySelect.innerHTML = '<option value="">---------</option>';
-            console.log(data)
+            
             data.forEach(category => {
                 const option = document.createElement('option');
                 option.value = category.id;

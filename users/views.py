@@ -12,7 +12,7 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.hashers import make_password
 from .models import Company, User
 from .forms import CompanyForm, CustomUserCreationForm
-from settings.models import Modules
+from settings.models import Modules, StockEvaluation
 from django.db import transaction
 
 def create_company(request):
@@ -34,7 +34,12 @@ def create_company(request):
                 user.company = company
                 user.role = 'owner'  
                 user.save()
-                
+
+                # create stock valuation methods
+                valuation_methods = ['First In First Out', 'Weighted Average Stock']
+                bulk_valuation = [StockEvaluation(name=method) for method in valuation_methods]
+                StockEvaluation.objects.bulk_create(bulk_valuation)
+            
                 # create modules
                 modules = ['Sales', 'Finance', 'Inventory', 'Production']
                 bulk_modules = []

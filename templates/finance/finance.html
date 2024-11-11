@@ -7,7 +7,7 @@
             <div class="row">
                 <section class="col-3">
                     <div class="row flex-column">
-                        <div class="bg-primary rounded">
+                        <div class="bg-dark text-light rounded">
                             <div class="card mb-4 mt-2">
                                 <div class="card-body">
                                     <div class="">
@@ -151,16 +151,16 @@
                         <table class="table border table-bordered table-responsive table-hover table-striped" id="sales-table">
                             <thead>
                                 <tr>
-                                    <th class="bg-primary text-light"></th>
-                                    <th class="bg-primary text-light"></th>
-                                    <th class="bg-primary text-light">Monday</th>
-                                    <th class="bg-primary text-light">Tuesday</th>
-                                    <th class="bg-primary text-light">Wednesday</th>
-                                    <th class="bg-primary text-light">Thursday</th>
-                                    <th class="bg-primary text-light">Friday</th>
-                                    <th class="bg-primary text-light">Saturday</th>
-                                    <th class="bg-primary text-light">Sunday</th>
-                                    <th class="bg-primary text-light"></th>
+                                    <th class="bg-dark text-light"></th>
+                                    <th class="bg-dark text-light"></th>
+                                    <th class="bg-dark text-light">Monday</th>
+                                    <th class="bg-dark text-light">Tuesday</th>
+                                    <th class="bg-dark text-light">Wednesday</th>
+                                    <th class="bg-dark text-light">Thursday</th>
+                                    <th class="bg-dark text-light">Friday</th>
+                                    <th class="bg-dark text-light">Saturday</th>
+                                    <th class="bg-dark text-light">Sunday</th>
+                                    <th class="bg-dark text-light"></th>
                                 </tr>
                             </thead>
                             <tbody id="table-body">
@@ -276,7 +276,7 @@
                 <label for="endDate" class="form-label">End Date</label>
                 <input type="date" class="form-control" id="endDate" name="endDate">
                 </div>
-                <button type="submit" class="btn btn-primary w-100">Generate Report</button>
+                <button type="submit" class="btn btn-dark w-100">Generate Report</button>
             </form>
             </div>
         </div>
@@ -337,16 +337,16 @@
                 grossProfitRow.innerHTML = `<td></td><td class=''>Gross Profit</td>`;
                 gapRow.innerHTML += `<td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>`;
                 daysRow.innerHTML += `
-                    <td class="bg-primary text-light"></td>
-                    <td class="bg-primary text-light"></td>
-                    <td class="bg-primary text-light">Monday</td>
-                    <td class="bg-primary text-light">Tuesday</td>
-                    <td class="bg-primary text-light">Wednesday</td>
-                    <td class="bg-primary text-light">Thursday</td>
-                    <td class="bg-primary text-light">Friday</td>
-                    <td class="bg-primary text-light">Saturday</td>
-                    <td class="bg-primary text-light">Sunday</td>
-                    <td class="bg-primary text-light"></td>
+                    <td class="bg-dark text-light"></td>
+                    <td class="bg-dark text-light"></td>
+                    <td class="bg-dark text-light">Monday</td>
+                    <td class="bg-dark text-light">Tuesday</td>
+                    <td class="bg-dark text-light">Wednesday</td>
+                    <td class="bg-dark text-light">Thursday</td>
+                    <td class="bg-dark text-light">Friday</td>
+                    <td class="bg-dark text-light">Saturday</td>
+                    <td class="bg-dark text-light">Sunday</td>
+                    <td class="bg-dark text-light"></td>
                 `;
 
                 ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].forEach(day => {

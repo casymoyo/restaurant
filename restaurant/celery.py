@@ -6,10 +6,16 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'restaurant.settings')
 
 app = Celery('myproject')
 
-app.config_from_object('django.conf:settings', namespace='CELERY')
+# app.config_from_object('django.conf:settings', namespace='CELERY')
+app.config_from_object("django.conf:settings")
 
 app.autodiscover_tasks()
 
 @app.task(bind=True)
 def debug_task(self):
     print(f'Request: {self.request!r}')
+
+
+
+
+    

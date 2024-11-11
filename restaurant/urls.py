@@ -15,6 +15,7 @@ urlpatterns = [
     path('analytics/', include('analytics.urls')),
     path('finance/', include('finance.urls', namespace='finance')),
     path('inventory/', include('inventory.urls', namespace='inventory')),
+    path('notifications/', include('notifications.urls')),
 ]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 if settings.DEBUG:

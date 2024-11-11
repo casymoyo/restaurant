@@ -17,7 +17,7 @@ from datetime import date
 class AddProductForm(forms.ModelForm):
     class Meta:
         model = Product
-        exclude = ['deactivate']
+        exclude = ['deactivate', 'stock_evaluation_method']
 
 class AddSupplierForm(forms.ModelForm):   
     class Meta :

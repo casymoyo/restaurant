@@ -3,448 +3,495 @@
 {% load crispy_forms_tags %}
 {% block title%} Create Purchase Order {% endblock%}
 {% block content %}
-   <div class="inventory">
-        <div class='add-purchase-order'>
-            <div class='border-bottom d-flex justify-content-between align-items-center'>
-                <div>
-                    <a href='{% url "inventory:purchase_orders"%}' class='border btn bx bx-arrow-back fs-5'></a>
-                    <a href='/' class='bx bx-home btn border fs-5 mx-2'></a>
-                    <span class='fs-5'>Create Purchase order</span>
-                </div>
-                <div>
-                    <ul class="list-unstyled mt-3">
-                        <li>
-                            <a href="{% url 'inventory:purchase_orders' %}" class="btn border">Purchase Orders</a>
-                        </li>
-                    </ul>
+<style>
+  .po-input{
+    border: none !important;
+  }
+</style>
+<div class="inventory">
+    <div class='add-purchase-order'>
+        <div class='purchase-order-nav shadow p-2 text-light d-flex justify-content-between align-items-center rounded' style="background:#373f4c !important;">
+            <div>
+                <h5 class='fw-bold px-2 mt-2'>Create Purchase order</h5>
+            </div>
+        </div>
+        <div class="row mt-2 main" id="main-section">
+            <div class="col-9">
+                <div class="d-flex flex-column">
+                    <p id="cart-title">Purchase order Items</p>
+                    <table class="table border rounder p-2" id="cart-table">
+                      <thead>
+                        <th>Product</th>
+                        <th>Unit Price</th>
+                        <th>Quantity</th>
+                        <th class="text-center">Total</th>
+                      </thead>
+                      <tbody id="cart-items"></tbody>
+                      <tfoot>
+                        <tr>
+                          <td></td>
+                          <td></td>
+                          <td class="fw-bold">Subtotal</td>
+                          <td class="text-center fw-bold" id="subtotal"></td>
+                        </tr>
+                        <tr>
+                          <td></td>
+                          <td></td>
+                          <td class="fw-bold">Discount</td>
+                          <td>
+                            <input id="id_discount" class="form-control text-center fw-bold" oninput="calculateTotals()">
+                          </td>
+                        </tr>
+                        <tr>
+                          <td></td>
+                          <td></td>
+                          <td class="fw-bold">Tax Total <span class="mx-4">15%</span></td>
+                          <td id="tax" class="fw-bold text-center"></td>
+                        </tr>
+                        <tr id="other-expense-row">
+                          <td></td>
+                          <td></td>
+                          <td class="fw-bold">Expenses</td>
+                          <td>
+                            <input id="id_other" class="form-control text-center fw-bold" oninput="calculateTotals()" readonly>
+                          </td>
+                        </tr>
+                        <!-- Add dynamic rows for other expenses here -->
+                        <tr>
+                          <td colspan="3"></td>
+                          <td>
+                            <button class="btn btn-outline-dark btn-sm w-100" id="add-expense-btn" onclick="addExpense()">Add Expense</button>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td></td>
+                          <td></td>
+                          <td class="fw-bold">Total</td>
+                          <td class="fw-bold text-center" id="id_total"></td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                    <div class="d-flex justify-content-end">
+                      <button class="btn btn-outline-dark btn-sm flex mx-2" onclick="reload();">Cancel</button>
+                      <button class="btn btn-dark btn-sm flex" id="next_button">Next</button>
+                    </div>                        
                 </div>
             </div>
-            <div class="row mt-3 p-2">
-                <div class="col-9">
-                    <div class="d-flex flex-column">
-                        <p id="cart-title">Purchase order Items</p>
-                        <table class="table border rounder p-2" id="cart-table">
-                            <thead>
-                              <th>Product</th>
-                              <th>Unit Price</th>
-                              <th>Quantity</th>
-                              <th class="text-center">Total</th>
-                            </thead>
-                            <tbody id="cart-items"></tbody>
-                            <tfoot>
-                              <tr>
-                                  <td></td>
-                                  <td></td>
-                                  <td class="fw-bold">Subtotal</td>
-                                  <td class="text-center fw-bold" id="subtotal"></td>
-                              </tr>
-                              <tr>
-                                  <td></td>
-                                  <td></td>
-                                  <td class="fw-bold">Discount</td>
-                                  <td>
-                                      <input id="id_discount" class="form-control text-center fw-bold" oninput="calculateTotals()">
-                                  </td>
-                              </tr>
-                              <tr>
-                                  <td></td>
-                                  <td></td>
-                                  <td class="fw-bold">Tax Rate</td>
-                                  <td id="tax_rate" class="fw-bold text-center">15%</td>
-                              </tr>
-                              <tr>
-                                  <td></td>
-                                  <td></td>
-                                  <td class="fw-bold">Tax Total</td>
-                                  <td id="tax" class="fw-bold text-center"></td>
-                              </tr>
-                              <tr>
-                                  <td></td>
-                                  <td></td>
-                                  <td class="fw-bold">Handling Fee</td>
-                                  <td>
-                                      <input id="id_handling" class="form-control text-center fw-bold" oninput="calculateTotals()">
-                                  </td>
-                              </tr>
-                              <tr>
-                                  <td></td>
-                                  <td></td>
-                                  <td class="fw-bold">Other</td>
-                                  <td>
-                                      <input id="id_other" class="form-control text-center fw-bold" oninput="calculateTotals()">
-                                  </td>
-                              </tr>
-                              <tr>
-                                  <td></td>
-                                  <td></td>
-                                  <td class="fw-bold">Total</td>
-                                  <td class="fw-bold text-center" id="id_total"></td>
-                              </tr>
-                            </tfoot>
-                        </table>
-                        <button class="btn btn-outline-dark btn-sm flex" onclick="reload();">Cancel</button>
-                        <button class="btn btn-primary btn-sm flex  mt-1" id="confirm_btn">Confirm</button>
-                    </div>
-                </div>
-                <div class="col-3">
-                    <div class='mt-2'>
-                        <form class='d-flex flex-column mt-2 w-100 mt-2 w-100 px-2' method='post'>
-                            {% csrf_token %}
-                            <div class="mb-1">
-                                <label for="id_product" class="form-label requiredField">
-                                    Product
-                                </label> 
-                                <div class="input-group">
-                                    <select class="select form-select" id='id_product'>
-                                        <option value="">-----</option>
-                                        {% for product in inventory %}
-                                            <option value={{product.product.name}}>{{product.product.name}} [{{ product.quantity }}]</option>
-                                        {% endfor %}
-                                    </select>
-                                    <button type="button" class="btn mx-1 bx bx-plus border" id="id_add_supplier"></button>
-                                </div>
+            <div class="col-3">
+                <div class=''>
+                  <p id="cart-title">Add Product</p>
+                    <form class='d-flex flex-column mt-2 w-100 mt-2 w-100 px-2' method='post'>
+                        {% csrf_token %}
+                        <div class="mb-1">
+                            <label for="id_product" class="form-label requiredField">
+                                Product
+                            </label> 
+                            <div class="d-flex form-group">
+                                <select class="select form-select" id='id_product'>
+                                    <option value="">-----</option>
+                                    {% for product in inventory %}
+                                        <option value={{product.product.name}}>{{product.product.name}} [{{ product.quantity }}]</option>
+                                    {% endfor %}
+                                </select>
+                                <button type="button" class="btn bx bx-plus border" id="id_add_supplier"></button>
                             </div>
-                            <div class="mb-1">
-                                <label for="id_product" class="form-label requiredField">
-                                    Supplier
-                                </label>
-                                <div class="input-group">
-                                    <select class="select form-select" id='id_supplier'>
-                                        <option value="">-----</option>
-                                        {% for supplier in suppliers %}
-                                            <option value={{supplier.id}}>{{supplier.name}}</option>
-                                        {% endfor %}
-                                    </select>
-                                    <button type="button" class="btn mx-1 border bx bx-plus" id="id_add_product"></button>
-                                </div>
+                        </div>
+                        <div class="mb-1">
+                            <label for="id_product" class="form-label requiredField">
+                                Supplier
+                            </label>
+                            <div class="d-flex form-group">
+                                <select class="select form-select" id='id_supplier'>
+                                    <option value="">-----</option>
+                                    {% for supplier in suppliers %}
+                                        <option value={{supplier.id}}>{{supplier.name}}</option>
+                                    {% endfor %}
+                                </select>
+                                <button type="button" class="btn border bx bx-plus" id="id_add_product"></button>
                             </div>
-                            <div id="div_id_price" class="mb-1">
-                                <label for="id_price" class="form-label requiredField">
-                                    Unit price
-                                </label> 
-                                <input  
-                                    type="number" 
-                                    name="price" step="0.01" 
-                                    class="numberinput form-control" 
-                                    required 
-                                    id="id_p_price"
-                                >
-                                <p id="price_error" class="fs-6 text-danger"></p>
-                            </div> 
-                            <div id="supplier_prices" class="mb-2">
+                        </div>
+                        <div id="div_id_price" class="mb-1">
+                            <label for="unit_price" class="form-label requiredField">
+                                Unit price
+                            </label> 
+                            <input  
+                                type="number" 
+                                name="price" step="0.01" 
+                                class="numberinput form-control" 
+                                required 
+                                id="id_p_price"
+                            >
+                            <p id="price_error" class="fs-6 text-danger"></p>
+                        </div>
 
-                            </div>
-                            <div id="div_id_quantity" class="mb-1"> 
-                                <label for="id_p_quantity" class="form-label requiredField">
-                                    Quantity
-                                </label> 
-                                <input 
-                                    type="number" 
-                                    name="quantity"
-                                    value="" 
-                                    min="0" 
-                                    class="numberinput form-control" 
-                                    required id="id_p_quantity"
-                                > 
-                            </div> 
-                            <div id="div_id_note" class="mb-1"> 
-                                <label for="id_p_quantity" class="form-label requiredField">
-                                    Note
-                                </label> 
-                                <input 
-                                    type="text" 
-                                    name="note"
-                                    value="" 
-                                    class="numberinput form-control bg-secondary text-light" 
-                                    required id="id_note"
-                                    placeholder = 'i.e number of pieces in one unit.'
-                                > 
-                                <p id="quantity_error" class="fs-6 text-danger"></p>
-                                <p id="cart_error" class="text-danger"></p>
-                            </div> 
-                            <div class='d-flex justify-content-end mb-2'>
-                                <button type='button' class='btn btn-secondary btn-sm w-100' id="id_add_to_cart" onclick="addItem();">
-                                  <i class='bx bx-save' ></i>
-                                    save
+                        <div id="supplier_prices" class="mb-2"></div>
+
+                        <div id="div_id_quantity" class="mb-1"> 
+                            <label for="id_p_quantity" class="form-label requiredField">
+                                Quantity
+                            </label> 
+                            <input 
+                                type="number" 
+                                name="quantity"
+                                value="" 
+                                min="0" 
+                                class="numberinput form-control" 
+                                required id="id_p_quantity"
+                            > 
+                            <p id="quantity_error" class="fs-6 text-danger"></p>
+                            <p id="cart_error" class="text-danger"></p>
+                        </div>
+                        <div id="div_id_tax" class="mb-3"> 
+                          <label for="id_tax_type" class="form-label requiredField">
+                          Tax type
+                          <span class="asteriskField">*</span> 
+                          </label> 
+                          <select name="tax_type" class="select form-select" required id="id_tax"> 
+                              <option value="" selected>---------</option>
+                              <option value="inclusive">Inclusive</option> 
+                              <option value="exclusive">Exclusive</option> 
+                          </select> 
+                      </div> 
+                        <div id="div_id_note" class="mb-1"> 
+                            <label for="id_p_quantity" class="form-label requiredField">
+                                Note
+                            </label> 
+                            <input 
+                                type="text" 
+                                name="note"
+                                value="" 
+                                class="numberinput form-control bg-secondary text-light" 
+                                required id="id_note"
+                                placeholder = 'i.e number of pieces in one unit.'
+                            > 
+                            <p id="quantity_error" class="fs-6 text-danger"></p>
+                            <p id="cart_error" class="text-danger"></p>
+                        </div>
+                        <div class='d-flex justify-content-end mb-2'>
+                            <button type='button' class='btn btn-dark btn-sm w-100' id="id_add_to_cart" onclick="addItem();">
+                              <i class='bx bx-save' ></i>
+                                save
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="addSupplierModal" tabindex="-1" aria-labelledby="loaderModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-body">
+                    <h5 class="fw-bold">Add Supplier</h5>
+                    <form method="post">
+                        {% csrf_token %}
+                        <div id="div_id_name" class="mb-3"> <label for="id_name" class="form-label requiredField">
+                        Name<span class="asteriskField">*</span> </label> <input type="text" name="name" maxlength="255" class="textinput form-control" required="" id="id_sup_name"> </div> <div id="div_id_contact" class="mb-3"> <label for="id_contact" class="form-label requiredField">
+                        Contact Name<span class="asteriskField">*</span> </label> <input type="text" name="contact" maxlength="255" class="textinput form-control" required="" id="id_contact_name"> </div> <div id="div_id_email" class="mb-3"> <label for="id_email" class="form-label requiredField">
+                        Email<span class="asteriskField">*</span> </label> <input type="email" name="email" maxlength="254" class="emailinput form-control" required="" id="id_email"> </div> <div id="div_id_phone" class="mb-3"> <label for="id_phone" class="form-label requiredField">
+                        Phone<span class="asteriskField">*</span> </label> <input type="text" name="phone" maxlength="20" class="textinput form-control" required="" id="id_phone"> </div> <div id="div_id_address" class="mb-3"> <label for="id_address" class="form-label requiredField">
+                        Address<span class="asteriskField">*</span> </label> <textarea name="address" cols="40" rows="10" class="textarea form-control" required="" id="id_address"></textarea> </div>
+                        
+                        <p class="text-danger" id="sup_error"></p>
+                        <div class="d-flex justify-content-end">
+                            <div class="">
+                                <button type="reset" class="btn btn-danger btn-sm w-100">
+                                    <i class="bx bx-reset"></i>
+                                    Reset
                                 </button>
                             </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="modal fade" id="addSupplierModal" tabindex="-1" aria-labelledby="loaderModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                    <div class="modal-body">
-                        <h5 class="fw-bold">Add Supplier</h5>
-                        <form method="post">
-                            {% csrf_token %}
-                            <div id="div_id_name" class="mb-3"> <label for="id_name" class="form-label requiredField">
-                            Name<span class="asteriskField">*</span> </label> <input type="text" name="name" maxlength="255" class="textinput form-control" required="" id="id_sup_name"> </div> <div id="div_id_contact" class="mb-3"> <label for="id_contact" class="form-label requiredField">
-                            Contact Name<span class="asteriskField">*</span> </label> <input type="text" name="contact" maxlength="255" class="textinput form-control" required="" id="id_contact_name"> </div> <div id="div_id_email" class="mb-3"> <label for="id_email" class="form-label requiredField">
-                            Email<span class="asteriskField">*</span> </label> <input type="email" name="email" maxlength="254" class="emailinput form-control" required="" id="id_email"> </div> <div id="div_id_phone" class="mb-3"> <label for="id_phone" class="form-label requiredField">
-                            Phone<span class="asteriskField">*</span> </label> <input type="text" name="phone" maxlength="20" class="textinput form-control" required="" id="id_phone"> </div> <div id="div_id_address" class="mb-3"> <label for="id_address" class="form-label requiredField">
-                            Address<span class="asteriskField">*</span> </label> <textarea name="address" cols="40" rows="10" class="textarea form-control" required="" id="id_address"></textarea> </div>
-                            
-                            <p class="text-danger" id="sup_error"></p>
-                            <div class="d-flex justify-content-end">
-                                <div class="">
-                                    <button type="reset" class="btn btn-danger btn-sm w-100">
-                                        <i class="bx bx-reset"></i>
-                                        Reset
-                                    </button>
-                                </div>
-                                <span class="px-1"></span>
-                                <div class="">
-                                    <button type="button" id="id_submit_supplier" class="btn btn-secondary btn-sm w-100">
-                                        <i class="bx bx-save"></i>
-                                        Save
-                                    </button>
-                                </div>
+                            <span class="px-1"></span>
+                            <div class="">
+                                <button type="button" id="id_submit_supplier" class="btn btn-secondary btn-sm w-100">
+                                    <i class="bx bx-save"></i>
+                                    Save
+                                </button>
                             </div>
-                        </form>
-                    </div>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
+    </div>
 
-        <div class="modal fade" id="categoryModal" tabindex="-1" aria-labelledby="loaderModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
-          <div class="modal-dialog modal-dialog-centered">
-              <div class="modal-content">
-                  <div class="modal-body">
-                      {% include 'inventory/components/category_modal.html'%}
-                  </div>
+    <div class="modal fade" id="categoryModal" tabindex="-1" aria-labelledby="loaderModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+      <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+              <div class="modal-body">
+                  {% include 'inventory/components/category_modal.html'%}
               </div>
           </div>
       </div>
+  </div>
 
-        <div class="modal fade" id="addProductModal" tabindex="-1" aria-labelledby="loaderModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                    <div class="modal-body">
-                        <h5 class="fw-bold">Add Product</h5>
-                        <form method="post" class='mt-2 p-2'>
-                          {% csrf_token %} 
-                          <div id="div_id_name" class="mb-3">
-                               <label for="id_name" class="form-label requiredField">
-                                  Name
-                                  <span class="asteriskField">*</span> 
-                              </label> 
-                              <input 
-                                  type="text" 
-                                  name="name" 
-                                  maxlength="255" 
-                                  class="textinput form-control" 
-                                  required id="id_name"
-                              > 
-                          </div>
-                          
-                          <div id="div_id_price" class="mb-3">
-                              <label for="id_price" class="form-label requiredField">
-                                  Price
-                                  <span class="asteriskField">*</span> 
-                              </label> 
-                              <input 
-                                  type="number" 
-                                  name="price" step="0.01" 
-                                  class="numberinput form-control" 
-                                  required 
-                                  id="id_price"
-                              >
-                              <p id="price_error" class="fs-6 text-danger"></p>
-                          </div> 
-                          
-                          <div id="div_id_unit" class="mb-3"> 
-                            <label for="id_unit" class="form-label requiredField">Unit<span class="asteriskField">*</span></label>
-                                <div class="d-flex">
-                                    <select name="unit" class="select form-select" required="" id="id_unit"> 
-                                        <option value="" selected="">---------</option>
-                                    </select>
-                                    <button class='btn small' type="button" id='id_add_unit'>
-                                        <i class='bx bx-plus'></i>
-                                    </button>
-                                </div>
-                          </div>
-                          <div id="div_id_category" class="mb-3"> 
-                              <label for="id_category" class="form-label requiredField">
-                                  Category<span class="asteriskField">*</span> 
-                              </label> 
-                              <div class='d-flex align-items-center'>
-                                  <select name="category" class="select form-select" required id="id_category"> 
-                                      <option value="">---------</option> 
-                                  </select> 
-                                  <button class='btn small' type="button" id='id_add_category'>
-                                      <i class='bx bx-plus'></i>
-                                  </button>
-                              </div>
-                          </div> 
-                          <div id="div_id_tax_type" class="mb-3"> 
-                              <label for="id_tax_type" class="form-label requiredField">
-                              Tax type
-                              <span class="asteriskField">*</span> 
-                              </label> 
-                              <select name="tax_type" class="select form-select" required id="id_tax_type"> 
-                                  <option value="" selected>---------</option>
-                                  <option value="exempted">Exempted</option> 
-                                  <option value="standard">Standard</option> 
-                                  <option value="zero rated">Zero Rated</option>
-                              </select> 
-                          </div>
-                          <div id="div_id_min_stock_level" class="mb-3"> 
-                              <label for="id_min_stock_level" class="form-label requiredField">
-                                  Min stock level
-                                  <span class="asteriskField">*</span> 
-                              </label> 
-                              <input 
-                                  type="number" 
-                                  name="min_stock_level" 
-                                  value="0" 
-                                  class="numberinput form-control" 
-                                  required id="id_min_stock_level"
-                              > 
-                          </div>
-                          <div id="div_id_description" class="mb-3"> 
-                              <label for="id_description" class="form-label requiredField">
-                                  Description<span class="asteriskField">*</span> 
-                              </label> 
-                              <textarea 
-                                  name="description" 
-                                  cols="20" 
-                                  rows="2" 
-                                  class="textarea form-control" 
-                                  required id="id_description"
-                              ></textarea> 
-                          </div>
-                          <div class="mb-3"> 
-                              <div id="div_id_raw_material" class="form-check"> 
-                                  <input type="checkbox" name="end_of_day" class="checkboxinput form-check-input" id="id_raw_material"> 
-                                  <label for="id_raw_material" class="form-check-label">
-                                      Raw Material
-                                  </label> 
-                              </div> 
-                          </div>
-                          <div class="mb-3"> 
-                            <div id="div_id_finished_product" class="form-check"> 
-                              <input type="checkbox" name="service" class="checkboxinput form-check-input" id="id_finished_product"> 
-                              <label for="id_service" class="form-check-label">
-                                Finished Product
-                            </label> 
-                          </div> 
-                        </div>
-                        <p class='text-danger' id='error'></p>
-                          <div class="d-flex justify-content-end">
-                              <div class="">
-                                  <button type="reset" class="btn btn-danger btn-sm w-100">
-                                      <i class='bx bx-reset'></i>
-                                      Reset
-                                  </button>
-                              </div>
-                              <span class="px-1"></span>
-                              <div class="">
-                                  <button type="button" id="id_submit_product" class="btn btn-secondary btn-sm w-100">
-                                      <i class='bx bx-save'></i>
-                                      Save
-                                  </button>
-                              </div>
-                          </div>
-                      </form>
-                    </div>
-                </div>
-            </div>
-        </div>
 
-        <div class="modal fade" id="noteStatusModal" tabindex="-1" aria-labelledby="loaderModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
-          <div class="modal-dialog modal-dialog-centered">
-              <div class="modal-content">
-                  <div class="modal-body">
-                    <h5 class="fw-bold">Proceed by filling the Purchase Order form below</h5>
-                    <form class="mt-2">
-                        {{ note_form | crispy}}
-                      <p id="cartError" class="text-danger"></p>
-                      <div class="d-flex justify-content-end">
-                        <div class="">
-                            <button type="reset" class="btn btn-danger btn-sm w-100">
-                                <i class='bx bx-reset'></i>
-                                Reset
-                            </button>
-                        </div>
-                        <span class="px-1"></span>
-                        <div class="">
-                            <button type="button" onclick="processCart();" class="btn btn-secondary btn-sm w-100">
-                                <i class='bx bx-save'></i>
-                                Save
-                            </button>
-                        </div>
-                    </div>
-                    </form>
+  <div class="apportionment" id="apportionment-section" style="display: none;">
+    <table class="table table-bordered">
+      <thead>
+        <th class="fs-6 text-dark" style="color:black;">Product</th>
+        <th class="fs-6 text-dark" style="color:black;">Quantity</th>
+        <th class="fs-6 text-dark" style="color:black;">Supplier Price</th>
+        <th class="fs-6 text-dark" style="color:black;">Total Supplier Price</th>
+        <th class="fs-6 text-dark" style="color:black;">Total Product Expenses</th>
+        <th class="fs-6 text-dark" style="color:black;">Unit Product Expense</th>
+        <th class="fs-6 text-dark" style="color:black;">Total Purchase Price + Expense</th>
+        <th class="fs-6 text-dark" style="color:black;">Total Purchase Price</th>                                                                   
+      </thead>
+      <tbody class="" id="apportionment-table"></tbody>
+      <tfoot id="expense-footer"></tfoot>
+    </table>
+    <div class="d-flex justify-content-between align-items-center">
+      <button class="btn btn-outline-dark btn-sm" id="back_button" onclick="showMain()">Back</button>
+      <button class="btn btn-dark btn-sm mt-1" id="confirm_btn">Confirm</button>
+  </div>
+  </div>
+</div>
+
+<div class="modal fade" id="addProductModal" tabindex="-1" aria-labelledby="loaderModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body">
+                <h5 class="fw-bold">Add Product</h5>
+                <form method="post" class='mt-2 p-2'>
+                  {% csrf_token %} 
+                  <div id="div_id_name" class="mb-3">
+                       <label for="id_name" class="form-label requiredField">
+                          Name
+                          <span class="asteriskField">*</span> 
+                      </label> 
+                      <input 
+                          type="text" 
+                          name="name" 
+                          maxlength="255" 
+                          class="textinput form-control" 
+                          required id="id_name"
+                      > 
                   </div>
-              </div>
-          </div>
-        </div>
 
-        <div class="modal fade" id="unitModal" tabindex="-1" aria-labelledby="loaderModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                    <div class="modal-body">
-                      <h5 class="fw-bold">Add unit Of Measurement</h5>
-                      <form class="mt-2">
-                          {{ unit_form | crispy}}
-                        <p id="id_error_unit" class="text-danger"></p>
-                        <div class="d-flex justify-content-end">
-                          <div class="">
-                              <button type="reset" class="btn btn-danger btn-sm w-100">
-                                  <i class='bx bx-reset'></i>
-                                  Reset
-                              </button>
-                          </div>
-                          <span class="px-1"></span>
-                          <div class="">
-                              <button type="button" onclick="unitSubmit();" class="btn btn-secondary btn-sm w-100">
-                                  <i class='bx bx-save'></i>
-                                  Save
-                              </button>
-                          </div>
+                  <div class="d-flex justify-content-between align-items-center">
+                    <div class="mb-3"> 
+                      <div id="div_id_raw_material" class="form-check"> 
+                          <input type="checkbox" name="end_of_day" class="checkboxinput form-check-input" id="id_raw_material"> 
+                          <label for="id_raw_material" class="form-check-label">
+                              Raw Material
+                          </label> 
+                      </div> 
+                    </div>
+                    <div class="mb-3"> 
+                      <div id="div_id_finished_product" class="form-check"> 
+                          <input type="checkbox" name="service" class="checkboxinput form-check-input" id="id_finished_product"> 
+                          <label for="id_service" class="form-check-label">
+                            Finished Product
+                        </label> 
                       </div>
-                      </form>
+                  </div>
+                  </div> 
+                  
+                  <div id="div_id_price_pro" class="mb-3" style="display: none;">
+                      <label for="id_price" class="form-label requiredField">
+                          Price
+                          <span class="asteriskField">*</span> 
+                      </label> 
+                      <input 
+                          type="number" 
+                          name="price" step="0.01" 
+                          class="numberinput form-control" 
+                          required 
+                          id="id_price"
+                      >
+                      <p id="price_error" class="fs-6 text-danger"></p>
+                  </div> 
+                  
+                  <div id="div_id_unit" class="mb-3 form-group"> 
+                    <label for="id_unit" class="form-label requiredField">Unit<span class="asteriskField">*</span></label>
+                        <div class="d-flex">
+                            <select name="unit" class="select form-select" required="" id="id_unit"> 
+                                <option value="" selected="">---------</option>
+                            </select>
+                            <button class='btn small' type="button" id='id_add_unit'>
+                                <i class='bx bx-plus'></i>
+                            </button>
+                        </div>
+                  </div>
+                  <div id="div_id_category" class="mb-3 form-group"> 
+                      <label for="id_category" class="form-label requiredField">
+                          Category<span class="asteriskField">*</span> 
+                      </label> 
+                      <div class='d-flex align-items-center'>
+                          <select name="category" class="select form-select" required id="id_category"> 
+                              <option value="">---------</option> 
+                          </select> 
+                          <button class='btn small' type="button" id='id_add_category'>
+                              <i class='bx bx-plus'></i>
+                          </button>
+                      </div>
+                  </div> 
+                  <div id="div_id_tax_type" class="mb-3"> 
+                      <label for="id_tax_type" class="form-label requiredField">
+                      Tax type
+                      <span class="asteriskField">*</span> 
+                      </label> 
+                      <select name="tax_type" class="select form-select" required id="id_tax_type"> 
+                          <option value="" selected>---------</option>
+                          <option value="exempted">Inclusive</option> 
+                          <option value="standard">Exclusive</option> 
+                          <option value="zero rated">Zero Rated</option>
+                      </select> 
+                  </div>
+                  <div id="div_id_min_stock_level" class="mb-3"> 
+                      <label for="id_min_stock_level" class="form-label requiredField">
+                          Min stock level
+                          <span class="asteriskField">*</span> 
+                      </label> 
+                      <input 
+                          type="number" 
+                          name="min_stock_level" 
+                          value="0" 
+                          class="numberinput form-control" 
+                          required id="id_min_stock_level"
+                      > 
+                  </div>
+                  <div id="div_id_expiry_date" class="mb-3"> 
+                    <label for="id_min_stock_level" class="form-label requiredField">
+                        Expiry Date
+                        <span class="asteriskField">*</span> 
+                    </label> 
+                    <input 
+                        type="date" 
+                        name="min_stock_level" 
+                        value="0" 
+                        class="numberinput form-control" 
+                        required id="id_expiry_date"
+                    > 
+                </div>
+                  <div id="div_id_description" class="mb-3"> 
+                      <label for="id_description" class="form-label requiredField">
+                          Description<span class="asteriskField">*</span> 
+                      </label> 
+                      <textarea 
+                          name="description" 
+                          cols="20" 
+                          rows="2" 
+                          class="textarea form-control" 
+                          required id="id_description"
+                      ></textarea> 
+                  </div>
+                </div>
+                <p class='text-danger' id='error'></p>
+                  <div class="d-flex justify-content-end">
+                      <div class="">
+                          <button type="reset" class="btn btn-danger btn-sm w-100">
+                              <i class='bx bx-reset'></i>
+                              Reset
+                          </button>
+                      </div>
+                      <span class="px-1"></span>
+                      <div class="">
+                          <button type="button" id="id_submit_product" class="btn btn-secondary btn-sm w-100">
+                              <i class='bx bx-save'></i>
+                              Save
+                          </button>
+                      </div>
+                  </div>
+              </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <div class="modal fade" id="noteStatusModal" tabindex="-1" aria-labelledby="loaderModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+      <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+              <div class="modal-body">
+                <h5 class="fw-bold">Proceed by filling the Purchase Order form below</h5>
+                <form class="mt-2">
+                  {{ note_form | crispy}}
+                  <p id="cartError" class="text-danger"></p>
+                  <div class="d-flex justify-content-end">
+                    <div class="">
+                        <button type="reset" class="btn btn-outline-dark btn-sm w-100">
+                            <i class='bx bx-reset'></i>
+                            Reset
+                        </button>
                     </div>
+                    <span class="px-1"></span>
+                    <div class="">
+                        <button type="button" onclick="processCart();" class="btn btn-dark btn-sm w-100">
+                            <i class='bx bx-save'></i>
+                            Save
+                        </button>
+                    </div>
+                </div>
+                </form>
+              </div>
+          </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="loaderModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+      <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+              <div class="modal-body text-center" id='payment_content'>
+                <i class='bx bx-check-circle h1'></i>
+                <h5>Product Successfully Created</h5>
+              </div>
+          </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="supplierSuccessModal" tabindex="-1" aria-labelledby="loaderModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+      <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+              <div class="modal-body text-center" id='payment_content'>
+                <i class='bx bx-check-circle h1'></i>
+                <h5>Supplier Successfully Created</h5>
+              </div>
+          </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="poSuccessModal" tabindex="-1" aria-labelledby="loaderModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+      <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+              <div class="modal-body text-center" id='payment_content'>
+                <i class='bx bx-check-circle h1'></i>
+                <h5>Purchase Order Successfully Created</h5>
+              </div>
+          </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="unitModal" tabindex="-1" aria-labelledby="loaderModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-body">
+                  <h5 class="fw-bold">Add unit Of Measurement</h5>
+                  <form class="mt-2">
+                      {{ unit_form | crispy}}
+                    <p id="id_error_unit" class="text-danger"></p>
+                    <div class="d-flex justify-content-end">
+                      <div class="">
+                          <button type="reset" class="btn btn-danger btn-sm w-100">
+                              <i class='bx bx-reset'></i>
+                              Reset
+                          </button>
+                      </div>
+                      <span class="px-1"></span>
+                      <div class="">
+                          <button type="button" onclick="unitSubmit();" class="btn btn-secondary btn-sm w-100">
+                              <i class='bx bx-save'></i>
+                              Save
+                          </button>
+                      </div>
+                  </div>
+                  </form>
                 </div>
             </div>
         </div>
-      
-        <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="loaderModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
-          <div class="modal-dialog modal-dialog-centered">
-              <div class="modal-content">
-                  <div class="modal-body text-center" id='payment_content'>
-                    <i class='bx bx-check-circle h1'></i>
-                    <h5>Product Successfully Created</h5>
-                  </div>
-              </div>
-          </div>
-        </div>
-
-        <div class="modal fade" id="supplierSuccessModal" tabindex="-1" aria-labelledby="loaderModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
-          <div class="modal-dialog modal-dialog-centered">
-              <div class="modal-content">
-                  <div class="modal-body text-center" id='payment_content'>
-                    <i class='bx bx-check-circle h1'></i>
-                    <h5>Supplier Successfully Created</h5>
-                  </div>
-              </div>
-          </div>
-        </div>
-
-        <div class="modal fade" id="poSuccessModal" tabindex="-1" aria-labelledby="loaderModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
-          <div class="modal-dialog modal-dialog-centered">
-              <div class="modal-content">
-                  <div class="modal-body text-center" id='payment_content'>
-                    <i class='bx bx-check-circle h1'></i>
-                    <h5>Purchase Order Successfully Created</h5>
-                  </div>
-              </div>
-          </div>
-        </div>
-   </div>   
+    </div>
+    
+</div>
+   
 <script>
     let cart = [];
     let prodData = [];
@@ -453,6 +500,12 @@
     let prodPrice = 0;
     let prodCost  = 0;
     let finalTotal = 0;
+    let expenseCount = 0;
+    let otherExpenses = 0;
+    let expensesData = [];
+    let products = [];
+    let purchaseData = [];
+    let supPrices= [];
    
     const errorEl = document.getElementById('error');
     const addToCartError = document.getElementById('cart_error');
@@ -460,6 +513,8 @@
     const productBtn = document.getElementById('id_add_product');
     const supplierBtn = document.getElementById('id_add_supplier');
 
+    const unitModal = new bootstrap.Modal(document.getElementById('unitModal'));
+    
     const noteModal = new bootstrap.Modal(document.getElementById('noteStatusModal'));
     const productFormModal = new bootstrap.Modal(document.getElementById('addSupplierModal'));
     const supplierFormModal = new bootstrap.Modal(document.getElementById('addProductModal'));
@@ -467,7 +522,6 @@
     const poSuccessModal = new bootstrap.Modal(document.querySelector('#poSuccessModal'));
     const successModal = new bootstrap.Modal(document.querySelector('#successModal'));
     const categoryModal = new bootstrap.Modal(document.querySelector('#categoryModal'));
-    const unitModal = new bootstrap.Modal(document.getElementById('unitModal'));
     const supplierSuccessModal = new bootstrap.Modal(document.getElementById('supplierSuccessModal'));
 
     const productSubmitBtn = document.getElementById('id_submit_product');
@@ -477,12 +531,137 @@
 
     const cartError = document.getElementById('cartError');
 
-    const unitbtn = document.getElementById('id_add_unit')
+    const unitbtn = document.getElementById('id_add_unit');
+
+    const priceValue = document.getElementById('id_p_price');
+    const rawMaterial = document.getElementById('id_raw_material');
+    const finishedProduct = document.getElementById('id_finished_product');
+    const priceElement = document.getElementById('div_id_price_pro');
+
+
+    finishedProduct.addEventListener('click', ()=>{
+      priceElement.style.display='block';
+      rawMaterial.checked = false;
+    })
+
+    rawMaterial.addEventListener('click', ()=>{
+      priceElement.style.display='none';
+      finishedProduct.checked = false;
+    })
+
+    priceValue.addEventListener('input', ()=>{
+      let value = parseFloat(priceValue.value);
+      let priceList =[];
+     
+      supPrices[0]?.forEach((price)=>{
+       priceList.push(parseFloat(price.price));
+      })
+
+      if (value > priceList[2]){
+        Swal.fire({
+          icon:'warning',
+          text:'This is an expensive supplier do you want to proceed.',
+          title:'Warning',
+          showCancelButton: true,
+          confirmButtonColor: '#3085d6',
+          cancelButtonColor: '#d33',
+          confirmButtonText: 'Yes, I want to proceed.'
+        }).then(()=>{
+       
+        })
+      }
+    })
+
+    // event listener for save to cart
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Enter') {
+            event.preventDefault(); 
+            addItem()
+        }
+    });
+
+    function removeExpense(rowId) {
+        const row = document.getElementById(rowId);
+        if (row) {
+            row.remove();
+        }
+    }
+
+    function addExpense() {
+      expenseCount++;
+      
+      // Create new elements for the expense name and amount
+      const row = document.createElement('tr');
+      row.id = `expense-row-${expenseCount}`;
+
+      // Name column
+      const cell = document.createElement('td');
+      cell.colSpan='2';
+
+      const nameCell = document.createElement('td');
+      const nameInput = document.createElement('input');
+      nameInput.type = 'text';
+      nameInput.placeholder = 'Expense Name';
+      nameInput.className = 'form-control';
+      nameInput.id = `expense-name-${expenseCount}`;
+      // nameCell.id = `expense-name-${expenseCount}`;
+
+      nameCell.appendChild(nameInput);
+
+      // Amount column
+      // Amount column (with the remove button)
+      const amountCell = document.createElement('td');
+      amountCell.className = 'd-flex align-items-center';
+
+      const amountInput = document.createElement('input');
+      amountInput.type = 'number';
+      amountInput.placeholder = 'Amount';
+      amountInput.className = 'form-control text-center';
+      amountInput.id = `expense-amount-${expenseCount}`;
+      amountInput.oninput = () => calculateExpense();
+
+      // Add remove button inside the same cell as the amount input
+      const removeButton = document.createElement('button');
+      removeButton.className = 'btn btn-outline-danger ms-1'; 
+      removeButton.innerHTML = 'Remove';
+      removeButton.onclick = () => removeExpense(row.id); 
+
+      // Append the input and remove button to the same amountCell
+      amountCell.appendChild(amountInput);
+      amountCell.appendChild(removeButton);
+
+      // Insert the new row into the table
+      row.appendChild(cell);
+      row.appendChild(nameCell);
+      row.appendChild(amountCell);
+      
+      const otherRow = document.getElementById('other-expense-row');
+      otherRow.insertAdjacentElement('afterend', row);
+    }
 
     unitbtn.addEventListener('click', ()=>{
         supplierFormModal.hide()
         unitModal.show()
     })
+
+    // Function to calculate total expenses in 'Other' field
+    function calculateExpense() {
+      let totalExpense = 0;
+      for (let i = 1; i <= expenseCount; i++) {
+        const amount = parseFloat(document.getElementById(`expense-amount-${i}`).value) || 0;
+        totalExpense += amount;
+      }
+
+      // Set the total in the 'Other' field
+      document.getElementById('id_other').value = totalExpense.toFixed(2);
+      calculateTotals();
+    }
+
+    function showMain() {
+        document.getElementById('main-section').style.display = 'flex';
+        document.getElementById('apportionment-section').style.display = 'none';
+    }
+
 
     productSubmitBtn.addEventListener('click', ()=>{
       addProduct()
@@ -505,7 +684,7 @@
             categoryModal.show()
             supplierFormModal.hide()
         }
-    ) 
+    )
 
     function isCartEmpty(){
         if (cart.length === 0){
@@ -517,11 +696,9 @@
 
     isCartEmpty()
 
-    // cancell button 
     function reload(){
       window.location.reload()
     }
-  
 
     function unitSubmit(){
         
@@ -590,89 +767,125 @@
           },
           body: JSON.stringify(data),
         })
-          .then((response) => {
-          
-            if (response.error) {
-              document.querySelector('#id_error').textContent=response.error
+        .then(response => response.json())
+        .then((data) => {
+            if (data.success) {
+                Swal.fire({
+                title: 'success',
+                text: 'Category successfully saved.',
+                icon:'success',
+                timer: 2000,
+                showConfirmButton: false
+              })
+                fetchCategories()
+                categoryModal.hide()
+                supplierFormModal.show()
+
+                const categorySelect = document.getElementById('id_category');
+                const option = document.createElement('option');
+                option.value = data.id;
+                option.text = data.name;
+                option.selected = true;
+                categorySelect.add(option);
+
             } else {
-              fetchCategories()
-              categoryModal.hide()
-              supplierFormModal.show()
-            }
-          })
-          .catch((error) => {
-            console.error("Error:", error);
-          });
-      }
-
-    async function fetchCategories(){
-        try {
-            const response = await fetch('{% url "inventory:add_product_category" %}');
-
-            if (!response.ok) {
-                throw new Error('Network response was not ok.');
-            }
-            const data = await response.json();
-            updateCategory(data);
-        } catch (error) {
-            console.error('Error fetching categories:', error);
-        } 
-    }
-
-    fetchCategories()
-
-    function updateCategory(data){
-        const catElement = document.querySelector('#id_category')
-    
-        while(catElement.options.length > 1){
-            catElement.remove(1)
-        }
-        data.forEach((category)=>{
-            catElement.innerHTML += `<option value=${category.id}>${category.name}</option>`
-        })
-    }
-
-    function addProduct() {
-        const data = {
-            name: document.getElementById('id_name').value,
-            price: parseFloat(document.getElementById('id_price').value), 
-            cost: 0, 
-            quantity: 0, 
-            category: document.getElementById('id_category').value, 
-            tax_type: document.getElementById('id_tax_type').value, 
-            unit: document.getElementById('id_unit').value, 
-            min_stock_level: parseInt(document.getElementById('id_min_stock_level').value),
-            description: document.getElementById('id_description').value,
-            raw_material:document.getElementById('id_raw_material').checked,
-            finished_product:document.getElementById('id_finished_product').checked
-        };
-        console.log(data)
-        fetch("{% url 'inventory:product' %}", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-CSRFToken": getCookie("csrftoken"), 
-            },
-            body: JSON.stringify(data),
-          })
-          .then(response => response.json())
-          .then(data=>{
-              if (data.success) {
-                successModal.show() 
-                supplierFormModal.hide()
-                fetchProducts()
-                setTimeout(()=>{
-                    successModal.hide()
-                }, 2000)
-              } else {
-                errorEl.textContent=data.message;
-              } 
+                Swal.fire({
+                    title:'error',
+                    text:data.message,
+                    icon:'error',
+                    })
+                }
             })
             .catch((error) => {
-              errorEl.textContent=data.error;
-            });
-    } 
+                Swal.fire({
+                    title:'warning',
+                    text:data.message,
+                    icon:'warning',
+                    })
+                });
+            }
 
+      async function fetchCategories(){
+          try {
+              const response = await fetch('{% url "inventory:add_product_category" %}');
+  
+              if (!response.ok) {
+                  throw new Error('Network response was not ok.');
+              }
+              const data = await response.json();
+              console.log('here', data)
+              updateCategory(data);
+          } catch (error) {
+              console.error('Error fetching categories:', error);
+          } 
+      }
+
+      fetchCategories()
+
+      function updateCategory(data){
+          const catElement = document.querySelector('#id_category')
+      
+          while(catElement.options.length > 1){
+              catElement.remove(1)
+          }
+          data.forEach((category)=>{
+              catElement.innerHTML += `<option value=${category.id}>${category.name}</option>`
+          })
+      }
+    
+        function addProduct() {
+            const data = {
+                name: document.getElementById('id_name').value,
+                price: parseFloat(document.getElementById('id_price').value), 
+                cost: 0, 
+                quantity: 0, 
+                category: document.getElementById('id_category').value, 
+                tax_type: document.getElementById('id_tax_type').value, 
+                unit: document.getElementById('id_unit').value, 
+                min_stock_level: parseInt(document.getElementById('id_min_stock_level').value),
+                description: document.getElementById('id_description').value,
+                raw_material:document.getElementById('id_raw_material').checked,
+                finished_product:document.getElementById('id_finished_product').checked,
+                expiry_date:document.getElementById('id_expiry_date').value
+            };
+            
+            fetch("{% url 'inventory:product' %}", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": getCookie("csrftoken"),
+              },
+              body: JSON.stringify(data),
+            })
+            .then(response => response.json())
+            .then(data => {
+              if (data.success) {
+                supplierFormModal.hide();
+                fetchProducts();
+                Swal.fire({
+                  icon: 'success',
+                  title: 'Product Added',
+                  text: 'The product has been successfully added!',
+                  timer: 2000,
+                  showConfirmButton: false
+                });
+              } else {
+                Swal.fire({
+                  icon: 'error',
+                  title: 'Error',
+                  text: data.message,
+                });
+              }
+            })
+            .catch((error) => {
+              Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Something went wrong while adding the product.',
+              });
+            });
+          }
+          
     async function fetchProducts(){
         try {
             const response = await fetch("{% url 'inventory:product' %}");
@@ -694,7 +907,7 @@
         
         while(prodElement.options.length > 1){
           prodElement.remove(1)
-      }
+        }
         data.forEach((data)=>{
             prodElement.innerHTML += `<option value=${data.id}>${data.name}</option>`
         })
@@ -708,6 +921,637 @@
     })
 
   
+    $(document).ready(function() {
+      $('#id_product').select2(
+          {placeholder: 'Select Product'}
+      )
+      .on('change', function (e){
+           const pElement = document.getElementById('id_product')
+           const pSelectedOption = pElement.options[pElement.selectedIndex] 
+            let product = pSelectedOption.textContent;
+            product = product.split(' [')[0]
+            console.log(product)
+           fetch(`/inventory/inventory/?name=${product}`)
+          .then(response => response.json())
+          .then(data=>{
+            console.log(prodData)
+            prodData.push(data)
+            console.log(prodData)
+          })
+          .catch(error => console.error('Error:', error))
+      })
+     
+    })
+
+    $(document).ready(function() {
+        $('#id_supplier').select2(
+            {placeholder: 'Select Supplier'}
+        )
+        .on('change', function (e){
+            const pElement = document.getElementById('id_supplier')
+            const pSelectedOption = pElement.options[pElement.selectedIndex] 
+            supplier = pSelectedOption.textContent;
+            console.log(supplier)
+        })
+       
+      })
+
+      function addSupplier() {
+        const data = {
+          name: document.getElementById('id_sup_name').value,
+          contact: document.getElementById('id_contact_name').value,
+          email: document.getElementById('id_email').value,
+          phone: document.getElementById('id_phone').value,
+          address: document.getElementById('id_address').value,
+        };
+      
+        fetch("{% url 'inventory:create_supplier' %}", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": getCookie("csrftoken"),
+          },
+          body: JSON.stringify(data),
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            supplierFormModal.hide();
+            fetchSuppliers();
+            Swal.fire({
+              icon: 'success',
+              title: 'Supplier Added',
+              text: 'The supplier was successfully added!',
+              timer: 2000,
+              showConfirmButton: false
+            });
+          } else {
+            Swal.fire({
+              icon: 'error',
+              title: 'Error',
+              text: data.message,
+            });
+          }
+        })
+        .catch((error) => {
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Something went wrong while adding the supplier.',
+          });
+        });
+    }      
+
+    async function fetchSuppliers(){
+        try {
+            const response = await fetch("{% url 'inventory:supplier_list_json' %}");
+
+            if (!response.ok) {
+                throw new Error('Network response was not ok.');
+            }
+            const data = await response.json();
+            
+            updateSuppliers(data);
+        } catch (error) {
+            console.error('Error fetching categories:', error);
+        } 
+    }
+
+    function updateSuppliers(data){
+        const supElement = document.querySelector('#id_supplier')
+        supElement.innerHTML = '<option value="">Select Supplier</option>';
+        
+        while(supElement.options.length > 1){
+          supElement.remove(1)
+      }
+        data.forEach((data)=>{
+            supElement.innerHTML += `<option value=${data.id}>${data.name}</option>`
+        })
+
+    }
+
+    function generateUniqueId() {
+        return Math.floor(Math.random() * 1000000000).toString(36);
+      }
+    
+    function updateCartDisplay() {
+        const cartItemsList = document.getElementById("cart-items");
+        cartItemsList.innerHTML = ""; 
+      
+        let total = 0;
+      
+        cart.forEach((item) => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>
+              <button class="btn" data-id=${item.id} onclick="removeItem(this);">
+                  <i class='bx bx-trash-alt'></i>
+              </button>
+              ${item.product}
+            </td>
+            <td>${item.price}</td>
+            <td>${item.quantity}</td>
+            <td class='text-center'>${item.quantity * item.price}</td>
+          `;
+          cartItemsList.appendChild(row);
+        });
+    }
+    
+
+    function addItem() {
+        const pElement = document.getElementById('id_product');
+        const pSelectedOption = pElement.options[pElement.selectedIndex];
+        let product = pSelectedOption.textContent.split(' [')[0];
+        const supplier = document.getElementById('id_supplier').value;
+        const price = parseFloat(document.getElementById('id_p_price').value);
+        const quantity = Number(document.getElementById('id_p_quantity').value);
+        const note = document.getElementById('id_note').value;
+        const taxType = document.getElementById('id_tax').value;
+        
+        console.log(product, 'product')
+
+        if(product == 'Select Product'){
+          Swal.fire({
+            icon: 'error',
+            title: 'Missing Information',
+            text: 'Please select a product.',
+          });
+          return;
+        }
+
+        if (!product || !quantity || !price || !supplier || !taxType) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Missing Information',
+            text: 'Please fill in all the fields: Product, Quantity, Price, and Supplier.',
+          });
+          return;
+        }
+      
+        const existingItem = cart.find((item) => item.product === product);
+        if (existingItem) {
+          Swal.fire({
+            icon:'error',
+            text:'Product Exists',
+            title:'error'
+          })
+          return;
+        } else {
+          const newTransfer = { 
+            id: generateUniqueId(),
+            product: product,
+            quantity: quantity,
+            price: price,
+            supplier: supplier,
+            note:note,
+            taxType:taxType
+          };
+          cart.push(newTransfer);
+        }
+        
+        updateCartDisplay();
+        calculateTotals();
+        isCartEmpty();
+      
+        Swal.fire({
+          icon: 'success',
+          title: 'Item Added',
+          text: 'The item was successfully added to your cart!',
+          timer: 1500,
+          showConfirmButton: false
+        });
+      }
+      
+    
+    const removeItem = (el) => {
+        const id = el.dataset.id
+        cart = cart.filter((item) => item.id !== id);
+        calculateTotals()
+        updateCartDisplay();
+        console.log(cart)
+    }
+    
+    function processCart() {
+
+      const data= {
+        'po_items':cart,
+        'expenses':expensesData,
+        // 'purchaseData':purchaseData,
+        'purchase_order':{
+          'supplier':document.getElementById('id_supplier').value,
+          'delivery_date':document.getElementById('id_delivery_date').value,
+          'total_cost': finalTotal,
+          'status':document.getElementById('id_status').value,
+          'notes':document.getElementById('id_notes').value,
+          'discount':parseFloat(document.getElementById('id_discount').value) || 0,
+          'tax_amount':parseFloat(document.getElementById('tax').textContent) || 0,
+          'other_amount':parseFloat(document.getElementById('id_other').value) || 0
+        }
+      }
+
+      console.log(data)
+      
+      fetch("{% url 'inventory:create_purchase_order' %}", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": getCookie("csrftoken"), 
+        },
+        body: JSON.stringify(data),
+      })
+      .then(response => response.json())
+      .then(data=>{
+          if (data.success) {
+            Swal.fire({
+              icon: 'success',
+              title: 'success',
+              text: 'Purchase Order Successfully Created',
+            }).then(()=>{
+              window.location.reload() 
+            })
+          } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: data.message,
+              });
+          } 
+        })
+        .catch((error) => {
+          console.error("Error:", error);
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: error,
+          });
+        });
+    }
+
+
+    function calculateTotals() {
+      var total = 0
+      var subtotal = 0;
+      var finalTotal = 0
+
+      cart.forEach(item => { 
+          console.log('tax type', item.taxType)
+          if(item.taxType == 'inclusive'){
+            total += item.price * item.quantity;
+            subtotal += total / 1.15 
+
+
+            let discount = parseFloat(document.getElementById('id_discount').value) || 0;
+            let discountedTotal = total - discount;
+
+            let taxRate = 0.15;
+            console.log('total :', total, 'subtotal :', subtotal)
+
+            let tax = total - subtotal;
+            console.log('tax :', tax)
+
+            let other = parseFloat(document.getElementById('id_other').value) || 0;
+
+            finalTotal += total + other;
+
+            // Update the table
+            document.getElementById('subtotal').innerText = subtotal.toFixed(2);
+            document.getElementById('tax').innerText = tax.toFixed(2);
+            document.getElementById('id_total').innerText = finalTotal.toFixed(2);
+
+            console.log('Final Inc total', + subtotal, ':', + finalTotal)
+
+          }else if(item.taxRate == 'exclusive'){
+            subtotal += item.price * item.quantity;
+            let discount = parseFloat(document.getElementById('id_discount').value) || 0;
+            let discountedTotal = subtotal - discount;
+
+            let taxRate = 0.15;
+            let tax = subtotal * taxRate;
+
+            let other = parseFloat(document.getElementById('id_other').value) || 0;
+
+            finalTotal += subtotal + tax + other;
+
+            // Update the table
+            document.getElementById('subtotal').innerText = subtotal.toFixed(2);
+            document.getElementById('tax').innerText = tax.toFixed(2);
+            document.getElementById('id_total').innerText = finalTotal.toFixed(2);
+
+            console.log('Final Inc total', + subtotal, ':', + finalTotal)
+          }
+          console.log('total final', + finalTotal)
+      });
+    }
+
+    calculateTotals();
+
+    // cost apportionment
+    document.getElementById('next_button').addEventListener('click', ()=>{
+      if (cart.length != 0){
+
+        document.getElementById('main-section').style.display = 'none';
+        document.getElementById('apportionment-section').style.display = 'block';
+        const expenseFooter = document.getElementById('expense-footer');
+
+        let totalExpenses = 0;
+        let rate = 0;
+      
+        const apportionmentTable = document.getElementById('apportionment-table');
+        let other_amount = parseFloat(document.getElementById('id_other').value) || 0;
+
+        totalExpenses = other_amount;
+  
+        cost = totalProductCost(cart, totalExpenses);
+        console.log(cost)
+
+        apportionmentTable.innerHTML = '';
+
+        // populate the table 
+        cart.forEach((item) => {
+          const row = document.createElement("tr");
+          let id = 1;
+          let actualCostPrice = 0;
+          let result = allocateCost(cost, item.price, item.quantity, totalExpenses)
+
+          console.log(result)
+          // add actual cost price 
+          actualCostPrice = result.expCost;
+
+          // add to cart
+          item.actualPrice = actualCostPrice;
+
+          let total = parseFloat(item.price * item.quantity) + parseFloat(result.allocated);
+          let totalBuying = item.price * item.quantity;
+          let product = item.product.toString();
+
+          row.innerHTML = `
+            <td id='${item.id}'><small>${item.product}</small></td>
+            <td id='${item.id}'><small>${item.quantity}</small></td>
+            <td id='${item.id}'><small>${item.price.toFixed(2)}</small></td>
+            <td id='${item.id}'><small>${totalBuying.toFixed(2)}</small></td>
+            <td id='${item.id}'><small>${result.allocated}</small></td>
+            <td id='${item.id}'>
+                <small>
+                <input 
+                  value='${result.allocationRate.toFixed(2)}' 
+                  class='po-input form-control' 
+                  type='number'
+                  data-id='${item.id}'
+                  oninput='priceOverride(
+                    this, 
+                    {
+                      tB:${result.allocated},
+                      exp:${totalExpenses},
+                      product:"${product}",
+                      acp:${actualCostPrice}
+                    }
+                  )'
+                />
+              </small>
+            </td>
+            <td id='${item.id}'><small>${actualCostPrice}</small></td> 
+            <td id='${item.id}'><small>${total.toFixed(2)}</small></td>
+          `;
+        
+          apportionmentTable.appendChild(row);
+
+          expenseFooter.innerHTML = '';  
+
+          expenseFooter.innerHTML += `
+            <tr>
+                <td class='fw-bold'><small>Total Expenses</small></td>
+                <td colspan="3"></td>
+                <td><small id="total_expenses" class='fw-bold'></small></td>
+                <td colspan="3"></td>
+            </tr>
+          `;
+
+          for (let i = 1; i <= expenseCount; i++) {
+            const expenseName = document.getElementById(`expense-name-${i}`).value;
+            const expenseAmount = parseFloat(document.getElementById(`expense-amount-${i}`).value) || 0;
+
+            // Push each expense as an object to the expensesData array
+            expensesData.push({
+                name: expenseName,
+                amount: expenseAmount
+            });
+    
+            // Create and append the expense row to the footer
+            const expenseRow = document.createElement('tr');
+            expenseRow.innerHTML += `
+              <td>${expenseName}</td>
+              <td colspan='3'></td>
+              <td>${expenseAmount.toFixed(2)}</td>
+              <td colspan='3'></td>
+            `;
+
+            expenseFooter.appendChild(expenseRow);
+          }
+          document.getElementById('total_expenses').innerHTML = totalExpenses.toFixed(2);
+      });
+      }else{
+        Swal.fire({
+          icon: 'warning',   
+          text: 'Please add purchase order items!',
+          title: 'Warning', 
+        });
+        return;
+      }
+    })
+
+    // cost price overide
+    function priceOverride(input, data) {
+      let expense = 0;
+      let totalCost = 0;
+      const newCart = JSON.parse(JSON.stringify(cart));
+      let exp = parseFloat(document.getElementById('total_expenses').textContent);
+      const newCost = parseFloat(input.value);
+      const expFooter = document.getElementById('expense-footer');  
+      const tdEls = document.querySelectorAll(`[id^='${input.dataset.id}']`);
+
+      expense = exp;
+
+      if (data.acp !== newCost) {
+        const productId = `product_${data.product.replace(/\s+/g, '_')}`;
+
+        let existingProduct = document.getElementById(productId);
+
+        existItem = cart.find((item) => item.product === data.product)
+        existItem.actualPrice = parseFloat(input.value)
+        
+        // push product 
+        products.push(data.product)
+
+        if (!existingProduct) {
+          
+          addProductToFooter(expFooter, data, productId);
+          products.push(data.product);  
+          console.log('Added new product:', data.product);
+
+          recalculateTotalExpenses(exp, data.tB);
+          updateValues(newCart, expense, data.product)
+          tdEls.forEach((td)=>{
+            td.classList.add('bg-danger');
+            td.classList.add('text-light');
+          })
+        } else {
+          // If product exists, update the amount
+          // updateProductAmount(existingProduct, data);
+          // console.log('Updated product:', data.product);
+        }
+
+      } else {
+
+        const productId = `product_${data.product.replace(/\s+/g, '_')}`;
+        let existingProduct = document.getElementById(productId);
+
+        if (existingProduct) {
+          existingProduct.remove();
+          revertTotalExpenses(data.exp, data.tB);
+        }
+        updateValues(newCart, expense, data.product)
+        tdEls.forEach((td)=>{
+          td.classList.remove('bg-danger');
+          td.classList.remove('text-light');
+        })
+      }
+
+    }
+
+    function revertTotalExpenses(exp, tB) {
+      // Add the original cost back to total expenses
+      document.getElementById('total_expenses').innerHTML = (parseFloat(exp)).toFixed(2);
+    }
+
+    // New helper method to add a product to the footer
+    function addProductToFooter(expFooter, data, productId) {
+      expFooter.innerHTML += `
+        <tr id='${productId}'>
+          <td class='text-danger'>${data.product}</td>
+          <td colspan='3'></td>
+          <td class='text-danger' id='value_${productId}'>(${data.tB.toFixed(2)})</td>
+          <td colspan='3'></td>
+        </tr>
+      `;
+    }
+
+    // update an existing product's amount
+    function updateProductAmount(existingProduct, data) {
+      let amountCell = existingProduct.querySelector(`#value_${existingProduct.id}`);
+      let currentAmount = parseFloat(amountCell.textContent.replace(/[()]/g, ''));
+      let newAmount = currentAmount + data.tB; 
+      amountCell.textContent = `(${newAmount.toFixed(2)})`; 
+    }
+
+    // recalculate total expenses
+    function recalculateTotalExpenses(exp, tB) {
+      expense = (exp - tB).toFixed(2)
+      document.getElementById('total_expenses').innerHTML = expense;
+    }
+
+    // Update values and UI after product removal
+    function updateValues(newCart, expenses, product) {
+        // Find the index of the product to be removed
+        let totalCost = totalProductCost(newCart);
+
+        for(prod in products){
+          let existingItemIndex = newCart.findIndex((item) => item.product === products[prod]);
+
+          if (existingItemIndex !== -1) {
+              newCart.splice(existingItemIndex, 1);  
+          }
+
+        
+        }
+        const rows = document.querySelectorAll('#apportionment-table tr');
+
+        newCart.forEach((item) => {
+            rows.forEach((row) => {
+                const firstCell = row.querySelector('td:first-child small');
+
+                if (firstCell && firstCell.textContent.trim() === item.product) {
+                    
+                    let result = allocateCost(
+                        totalCost, 
+                        item.price, 
+                        item.quantity, 
+                        expenses
+                    );
+
+                    let totalBuying = item.price * item.quantity;
+                    let total = totalBuying + parseFloat(result.allocated);
+
+                    // Update the row content with new values
+                    row.innerHTML = `
+                        <td id='${item.id}'><small>${item.product}</small></td>
+                        <td id='${item.id}'><small>${item.quantity}</small></td>
+                        <td id='${item.id}'><small>${item.price.toFixed(2)}</small></td>
+                        <td id='${item.id}'><small>${totalBuying.toFixed(2)}</small></td>
+                        <td id='${item.id}'><small>${result.allocated}</small></td>
+                        <td id='${item.id}'><small>${result.allocationRate.toFixed(2)}</small></td>
+                        <td id='${item.id}'>
+                            <small>
+                                <input 
+                                    value='${result.expCost}' 
+                                    class='po-input form-control' 
+                                    type='number'
+                                    data-id='input_${item.id}'
+                                    oninput='priceOverride(
+                                        this, 
+                                        {
+                                            tB:${result.allocated},
+                                            exp:${expenses},
+                                            product:"${item.product}",
+                                            acp:${result.expCost}
+                                        }
+                                    )'
+                                />
+                            </small>
+                        </td>
+                        <td id='${item.id}'><small>${total.toFixed(2)}</small></td>
+                    `;
+                }
+            });
+        });
+    }
+
+    // update UI
+    function updateUi(params) {
+      
+    }
+
+    // calculate total product costs
+    function totalProductCost(cart) {
+      let totalCost = 0;
+
+      cart.forEach((item) => {
+        totalCost += item.price * item.quantity;
+      })
+      
+      return parseFloat(totalCost) || 0;
+    }
+
+
+    // Allocate expenses costs -> Cost Based Allocation
+    function allocateCost(totalCost, price, quantity, expenses) {
+      let productCost = 0;
+      let productCostAllocationRate = 0;
+
+      productCost = price * quantity;
+      productCostAllocationRate = productCost / totalCost;
+
+      console.log(productCostAllocationRate)
+
+      let expCost = (productCost + (productCostAllocationRate * expenses)) / quantity
+      let allocated = productCostAllocationRate * expenses;
+
+      return {
+        expCost:expCost.toFixed(2),
+        allocated:allocated.toFixed(2),
+        allocationRate:expCost - price 
+      }
+    }
+
     $(document).ready(function() {
       $('#id_product').select2(
           {placeholder: 'Select Product'}
@@ -737,10 +1581,14 @@
           .then(response => response.json())
           .then(data=>{
               if (data.success) {
-                console.log(data)
+                
+                supPrices.push(data.suppliers) 
+
                 const supplierPrices = document.getElementById('supplier_prices')
-                supplierPrices.innerHTML = ''
-                supplierPrices.innerHTML = `<p class="text-danger">Last best prices for this product</p>`
+                if(!data){
+                    supplierPrices.innerHTML = ''
+                    supplierPrices.innerHTML = `<p class="text-danger">Last best prices for this product</p>`
+                } 
                 data.suppliers.forEach((sup)=>{
                     console.log(sup)
                     supplierPrices.innerHTML += `
@@ -771,257 +1619,8 @@
         const event = new Event('change');
         supplierSelect.dispatchEvent(event);
     }
-    
-
-    $(document).ready(function() {
-        $('#id_supplier').select2(
-            {placeholder: 'Select Supplier'}
-        )
-        .on('change', function (e){
-            const pElement = document.getElementById('id_supplier')
-            const pSelectedOption = pElement.options[pElement.selectedIndex] 
-            supplier = pSelectedOption.textContent;
-            console.log(supplier)
-        })
-       
-      })
-      function addSupplier() {
-        const data = {
-            name: document.getElementById('id_sup_name').value,
-            contact: document.getElementById('id_contact_name').value, 
-            email: document.getElementById('id_email').value ,
-            phone: document.getElementById('id_phone').value,
-            address: document.getElementById('id_address').value,
-        };
-
-        fetch("{% url 'inventory:create_supplier' %}", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-CSRFToken": getCookie("csrftoken"), 
-            },
-            body: JSON.stringify(data),
-          })
-          .then(response => response.json())
-          .then(data=>{
-              if (data.success) {
-                supplierSuccessModal.show() 
-                productFormModal.hide()
-                fetchSuppliers()
-                setTimeout(()=>{
-                  supplierSuccessModal.hide()
-                }, 2000)
-              } else {
-                supError.textContent=data.message;
-              } 
-            })
-            .catch((error) => {
-              supError.textContent=data.error;
-            });
-    } 
-
-    async function fetchSuppliers(){
-        try {
-            const response = await fetch("{% url 'inventory:supplier_list_json' %}");
-
-            if (!response.ok) {
-                throw new Error('Network response was not ok.');
-            }
-            const data = await response.json();
-            
-            updateSuppliers(data);
-        } catch (error) {
-            console.error('Error fetching categories:', error);
-        } 
-    }
-
-    function updateSuppliers(data){
-        const supElement = document.querySelector('#id_supplier')
-        supElement.innerHTML = '<option value="">Select Supplier</option>';
-        
-        while(supElement.options.length > 1){
-          supElement.remove(1)
-      }
-        data.forEach((data)=>{
-            supElement.innerHTML += `<option value=${data.id}>${data.name}</option>`
-        })
-
-    }
-
-    document.querySelector('#id_price').addEventListener(
-      'input', ()=>{
-        const price = $('#id_price').val()
-     
-        if (price < prodCost){
-          document.querySelector('#quantity_error').innerHTML=`Selling price cannot be less than cost price ${prodCost}`
-        }else{
-          document.querySelector('#quantity_error').innerHTML=''
-        }
-      }
-    )
-
-    function generateUniqueId() {
-        return Math.floor(Math.random() * 1000000000).toString(36);
-      }
-    
-    function updateCartDisplay() {
-        const cartItemsList = document.getElementById("cart-items");
-        cartItemsList.innerHTML = ""; 
-      
-        let total = 0;
-      
-        cart.forEach((item) => {
-          const row = document.createElement("tr");
-          row.innerHTML = `
-            <td>
-              <button class="btn" data-id=${item.id} onclick="removeItem(this);">
-                  <i class='bx bx-trash-alt fs-5'></i>
-              </button>
-              <span class='fs-6'>${item.product}</span>
-            </td>
-            <td>${item.price}</td>
-            <td>${item.quantity} ${item.unit} </td>
-            <td class='text-center'>${item.quantity * item.price}</td>
-          `;
-          cartItemsList.appendChild(row);
-        });
-    }
-    
-
-    function addItem() {
-      const pElement = document.getElementById('id_product')
-      const pSelectedOption = pElement.options[pElement.selectedIndex] 
-      let product = pSelectedOption.textContent;
-      product = product.split(' [')[0]
-
-      const supplier = document.getElementById('id_supplier').value;
-      const price = parseFloat(document.getElementById('id_p_price').value);
-      const quantity =  Number(document.getElementById('id_p_quantity').value);
-      const note = document.getElementById('id_note').value;
-
-      console.log(product, supplier, price, quantity)
-      // Validation checks
-      if (!product || !quantity || !price  || !supplier) {
-        Swal.fire({
-            title: "Error",
-            text: 'Please fill in all the fields: Product, Quantity, Price and Supplier.',
-            icon: "error"
-        });
-          return;
-      }
-      const existingItem = cart.find((item) => item.product === product)
-     
-      if (existingItem) {
-        existingItem.quantity += quantity;
-      } else {
-        const newTransfer = {
-          id:generateUniqueId(),
-          product:product, 
-          unit:prodData[0][0]['unit__unit_name'],
-          quantity: quantity,
-          price:price,
-          supplier:supplier, 
-          note: note
-        };
-        cart.push(newTransfer);
-      }
-      updateCartDisplay(); 
-      calculateTotals(); 
-      isCartEmpty()
-    }
-    
-    const removeItem = (el) => {
-        const id = el.dataset.id
-        cart = cart.filter((item) => item.id !== id);
-        updateCartDisplay();
-    }
-    
-    function processCart() {
-
-      const data= {
-        'po_items':cart,
-        'purchase_order':{
-          'supplier':document.getElementById('id_supplier').value,
-          'delivery_date':document.getElementById('id_delivery_date').value,
-          'total_cost': finalTotal,
-          'status':document.getElementById('id_status').value,
-          'notes':document.getElementById('id_notes').value,
-          'discount':parseFloat(document.getElementById('id_discount').value) || 0,
-          'tax_amount':parseFloat(document.getElementById('tax').textContent) || 0,
-          'handling_amount':parseFloat(document.getElementById('id_handling').value) || 0,
-          'other_amount':parseFloat(document.getElementById('id_other').value) || 0
-        }
-      }
-
-      console.log(data, parseFloat(document.getElementById('id_handling').value) || 0,)
-      
-      fetch("{% url 'inventory:create_purchase_order' %}", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRFToken": getCookie("csrftoken"), 
-        },
-        body: JSON.stringify(data),
-      })
-      .then(response => response.json())
-      .then(data=>{
-          if (data.success) {
-            noteModal.hide()
-            Swal.fire({
-                title: "Success",
-                text: data.message,
-                icon: "success"
-            }).then(()=>{
-                cart = []; 
-                updateCartDisplay();
-                setTimeout(()=>{
-                window.location.reload()
-                }, 1000)
-            });
-          } else {
-            Swal.fire({
-                title: "Error",
-                text: data.message,
-                icon: "error"
-            })
-          } 
-        })
-        .catch((error) => {
-          Swal.fire({
-            title: "Success",
-            text: error,
-            icon: "success"
-        })
-        });
-    }
 
 
-    function calculateTotals() {
-      let subtotal = 0;
-      cart.forEach(item => {
-          subtotal += item.price * item.quantity;
-      });
-
-      let discount = parseFloat(document.getElementById('id_discount').value) || 0;
-      let discountedTotal = subtotal - discount;
-
-      let taxRate = 0.15;
-      let tax = discountedTotal * taxRate;
-
-      let handlingFee = parseFloat(document.getElementById('id_handling').value) || 0;
-      let other = parseFloat(document.getElementById('id_other').value) || 0;
-
-      finalTotal = discountedTotal + tax + handlingFee + other;
-
-      // Update the table
-      document.getElementById('subtotal').innerText = subtotal.toFixed(2);
-      document.getElementById('tax').innerText = tax.toFixed(2);
-      document.getElementById('id_total').innerText = finalTotal.toFixed(2);
-    }
-
-    calculateTotals();
-
-    
     function getCookie(name) {
       let cookieValue = null;
       if (document.cookie && document.cookie !== "") {

@@ -1,5 +1,8 @@
 import os
 from pathlib import Path
+from datetime import timedelta
+from celery.schedules import crontab
+import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -47,7 +50,8 @@ LOCAL_APPS = [
     'inventory',
     'finance',
     'analytics',
-    'settings'
+    'settings',
+    'notifications'
 ]
 
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
@@ -102,13 +106,13 @@ LOGIN_URL = "users:login"
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': os.environ.get('DB_ENGINE', 'django.db.backends.postgresql'),
-        'NAME': os.environ.get('DB_NAME', 'postgres'),
-        'USER': os.environ.get('DB_USER', 'postgres.tgugrfxaribykdezopjn'),
-        'PASSWORD': os.environ.get('DB_PASSWORD', 'tQHxThDsWN3NDgat'),
-        'HOST': os.environ.get('DB_HOST', 'aws-0-us-west-1.pooler.supabase.com'),
-        'PORT': os.environ.get('DB_PORT', '6543'),
+   'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'railway',
+        'USER': 'postgres',
+        'PASSWORD': 'kfgmqgDQkSvGrXsbbFaVpkGuczwetiLf',
+        'HOST': 'autorack.proxy.rlwy.net',
+        'PORT': '5432',
     }
     # 'default': {
     #     'ENGINE': 'django.db.backends.postgresql',
@@ -202,32 +206,42 @@ CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Celery Configuration
-CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://localhost:6379/0')
+CELERY_BROKER_URL = 'redis://:neverfail@localhost:6379/0'
 CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
 CELERY_ACCEPT_CONTENT = os.environ.get('CELERY_ACCEPT_CONTENT', 'json').split(',')
 CELERY_TASK_SERIALIZER = os.environ.get('CELERY_TASK_SERIALIZER', 'json')
 CELERY_RESULT_SERIALIZER = os.environ.get('CELERY_RESULT_SERIALIZER', 'json')
 CELERY_TIMEZONE = os.environ.get('CELERY_TIMEZONE', 'Africa/Johannesburg')
 
+# celery beat
+# CELERY_BEAT_SCHEDULE = {
+#     'check-expiring-products': {
+#         'task': 'inventory.tasks.check_expiring_products',
+#         'schedule': timedelta(seconds=30),  # Daily at 5 PM
+#     },
+# }
+
 # Email Backend Configuration
-EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
-EMAIL_HOST = os.environ.get('EMAIL_HOST', 'localhost')
-EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 25)) 
-EMAIL_USE_SSL = os.environ.get('EMAIL_USE_SSL', 'False').lower() == 'true'  
-EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
-EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+# EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
+# EMAIL_HOST = os.environ.get('EMAIL_HOST', 'localhost')
+# EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 25)) 
+# EMAIL_USE_SSL = os.environ.get('EMAIL_USE_SSL', 'False').lower() == 'true'  
+# EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+# EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
 
-
+EMAIL_BACKENED = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'mail.techcity.co.zw'  
+EMAIL_PORT = '465'
+EMAIL_HOST_USER = 'admin@techcity.co.zw'
+EMAIL_HOST_PASSWORD = 'kv]j[N~StShy'
+EMAIL_USE_SSL = True
 
 # channels
 CHANNEL_LAYERS = {
-    # 'default': {
-    #     'BACKEND': 'channels_redis.core.RedisChannelLayer',
-    #     'CONFIG': {
-    #         "hosts": [('127.0.0.1', 6379)],
-    #     },
-    # },
     'default': {
-        "BACKEND": "channels.layers.InMemoryChannelLayer",
-    }
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [('127.0.0.1', 6379)],
+        },
+    },
 }

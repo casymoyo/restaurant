@@ -1,10 +1,14 @@
 import datetime
 from loguru import logger
-from .models import Notification, CheckList, Product
+from .models import CheckList, Product
+from notifications.models import Notification
 
 def notification_processor(request):
     notifications = Notification.objects.filter(is_read=False)
-    return {'notifications': notifications}
+    return {
+        'notifications': notifications,
+        'notifications_count':notifications.count()
+    }
 
 def check_list_processor(request):
     products = CheckList.objects.filter(date=datetime.datetime.today())

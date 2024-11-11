@@ -9,15 +9,24 @@
         </div>
     </div>
     <div class="row mt-4">
-        <a href="{% url 'settings:list_emails' %}">
-            <div class="col-4">
+        <div class="col-4">
+            <a href="{% url 'settings:list_emails' %}">
                 <div class="card border-none">
                     <div class="card-body d-flex justify-content-center align-items-center">
                         <p>Email Notifications</p>
                     </div>
                 </div>
-            </div>
-        </a>
+            </a>
+        </div>
+        <div class="col-4">
+            <a href="{% url 'settings:stock_valuation' %}">
+                <div class="card border-none">
+                    <div class="card-body d-flex justify-content-center align-items-center">
+                        <p>Stock Evaluation</p>
+                    </div>
+                </div>
+            </a>
+        </div>
     </div>
 </div>
 {% endblock %}

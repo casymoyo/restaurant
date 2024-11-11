@@ -21,18 +21,12 @@
                             <a href="{% url 'inventory:production_sales' %}" class='btn btn-outline-dark mx-2'>Sales in portions</a>
                         </li>
                         <li class="">
-                            <a href="{% url 'inventory:meal_list' %}" class='btn btn-outline-dark mx-2'>Meals</a>
+                            <a href="{% url 'inventory:meal_list' %}" class='btn btn-outline-dark'>Meals</a>
                         </li>
                         <li class="">
-                            <a href="{% url 'inventory:dish_list' %}" class='btn btn-outline-dark'>Dishes</a>
+                            <a href="{% url 'inventory:dish_list' %}" class='btn btn-outline-dark mx-2'>Dishes</a>
                         </li>
-                        <li class="">
-                            <a href="{% url 'inventory:production_transfers' %}" class='btn btn-outline-dark mx-2'>
-                                Receive Transfers
-                                <span class='badge text-dark'>{{ transfer_count }}</span>
-                            </a>
-                        </li>
-                        <li class="">
+                        <li>
                             <a href="{% url 'inventory:production_raw_materials' %}" class='btn btn-outline-dark'>Production Raw Materials</a>
                         </li>
                     </ul>

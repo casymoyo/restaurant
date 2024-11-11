@@ -1,19 +1,80 @@
-version: '3'
+version: '3.9'
 
 services:
-  restaurant_apps:
-    build: .
-    command: daphne -b 0.0.0.0 -p 8000 restaurant.asgi:application
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: techcity_db
+      POSTGRES_USER: techcity_user
+      POSTGRES_PASSWORD: techcity_password
     volumes:
-      - .:/app
-    ports:
-      - "8000:8000"
-    depends_on:
-      - redis
-    env_file:
-      - .env
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - techcity_net
 
   redis:
-    image: redis:6.2-alpine
+    image: redis:6
+    networks:
+      - techcity_net
+
+  web:
+    build: .
+    command: gunicorn techcity.wsgi:application --bind 0.0.0.0:8000
+    volumes:
+      - .:/app
+    expose:
+      - "8000"
+    depends_on:
+      - db
+      - redis
+    networks:
+      - techcity_net
+    environment:
+      - POSTGRES_DB=techcity_db
+      - POSTGRES_USER=techcity_user
+      - POSTGRES_PASSWORD=techcity_password
+      - POSTGRES_HOST=db
+
+  celery:
+    build: .
+    command: celery -A techcity worker --loglevel=info
+    volumes:
+      - .:/app
+    depends_on:
+      - db
+      - redis
+    networks:
+      - techcity_net
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+
+  celery-beat:
+    build: .
+    command: celery -A techcity beat --loglevel=info
+    volumes:
+      - .:/app
+    depends_on:
+      - db
+      - redis
+    networks:
+      - techcity_net
+
+  nginx:
+    image: nginx:alpine
     ports:
-      - "6379:6379"
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - .:/app
+    depends_on:
+      - web
+    networks:
+      - techcity_net
+
+volumes:
+  postgres_data:
+
+networks:
+  techcity_net:
+    driver: bridge

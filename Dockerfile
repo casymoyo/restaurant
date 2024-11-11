@@ -1,24 +1,36 @@
-# Use the official Python image from the Docker Hub
+# Use the official Python 3.12 image from Docker Hub
 FROM python:3.12-slim
 
 # Set environment variables
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 
 # Set the working directory in the container
 WORKDIR /app
 
-# Copy the requirements file into the container
+# Install system dependencies
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+    nginx \
+    netcat \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy and install requirements
 COPY requirements.txt /app/
+RUN pip install --upgrade pip && pip install -r requirements.txt
 
-# Install dependencies
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy the application code into the container
+# Copy the Django project into the working directory
 COPY . /app/
 
-# Expose the port the app runs on
+# Copy NGINX configuration file
+COPY ./nginx/nginx.conf /etc/nginx/nginx.conf
+
+# Expose the port that the app runs on
 EXPOSE 8000
 
-# Start Daphne server
-CMD ["daphne", "-b", "0.0.0.0", "-p", "8000", "restaurant.asgi:application"]
+# Run the entrypoint script to start Gunicorn and NGINX
+COPY ./entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
+CMD ["/app/entrypoint.sh"]

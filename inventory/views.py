@@ -1,6 +1,8 @@
 import json, csv, io
+from users.models import User
 from django.utils import timezone
 from . models import *
+from notifications.models import Notification
 from loguru import logger
 from decimal import Decimal
 from django.views import View    
@@ -25,7 +27,6 @@ from django.core.mail import EmailMessage
 from finance.models import COGS
 from datetime import timedelta
 import datetime
-
 from finance.models import (
     Sale,
     SaleItem,
@@ -37,8 +38,10 @@ from finance.models import (
 from .tasks import (
     send_production_creation_notification,
     transfer_notification,
-    supplier_email
+    supplier_email,
+    send_purchase_order_email
 )
+from notifications.tasks import send_email_task
 from . forms import (
     MealForm,
     AddProductForm,
@@ -55,6 +58,9 @@ from . forms import (
 )
 
 from utils.supplier_best_price import best_price
+from django.shortcuts import render
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 
 @login_required
 def unit_of_measurement(request):
@@ -118,20 +124,25 @@ def inventory(request):
 
 @login_required
 def add_product_category(request):
-    categories = Category.objects.all().values()
+    
+    if request.method == 'GET': 
+        categories = Category.objects.all().values()
+        logger.info(categories)
+        return JsonResponse(list(categories), safe=False)
     
     if request.method == 'POST':
         data = json.loads(request.body)
         category_name = data['name']
         
         if Category.objects.filter(name=category_name).exists():
-            return JsonResponse({'error', 'Category Exists'})
+            return JsonResponse({'success':False, 'message':'Category Exists'})
         
-        Category.objects.create(
+        category = Category.objects.create(
             name=category_name
         )
-    return JsonResponse(list(categories), safe=False)   
-
+        logger.info('here')
+        return JsonResponse({'success':True, 'id': category.id, 'name':category.name})  
+      
 
 @login_required
 def product(request):
@@ -150,7 +161,8 @@ def product(request):
             portion_multiplier: int
             description
             raw_material:bool,
-            finished_product:bool
+            finished_product:bool,
+            expiry_date:date
         """
         try:
             data = json.loads(request.body)
@@ -184,6 +196,7 @@ def product(request):
             raw_material = True if data['raw_material'] else False,
             finished_product = True if data['finished_product'] else False,
             unit = unit,
+            expiry_date = data['expiry_date']
         )
         product.save()
         logger.info(f'product saved')
@@ -214,6 +227,7 @@ def product_detail(request, product_id):
             'logs': logs,
         }
     )
+
 
 @login_required
 def production_rm_detail(request, rm_id):
@@ -366,9 +380,7 @@ def purchase_orders(request):
       
 @login_required
 def create_purchase_order(request):
-    
-    # include the vat account and the purchase order account and the cash account
-    
+
     if request.method == 'GET':
         supplier_form = AddSupplierForm()
         product_form = AddProductForm()
@@ -391,6 +403,8 @@ def create_purchase_order(request):
             data = json.loads(request.body)
             purchase_order_data = data.get('purchase_order', {})
             purchase_order_items_data = data.get('po_items', [])
+            expenses = data.get('expenses')
+
         except json.JSONDecodeError:
             return JsonResponse({'success': False, 'message': 'Invalid JSON payload'}, status=400)
 
@@ -400,12 +414,11 @@ def create_purchase_order(request):
         notes = purchase_order_data['notes']
         total_cost = Decimal(purchase_order_data['total_cost'])
         discount = Decimal(purchase_order_data['discount'])
-        handling_amount = Decimal(purchase_order_data['handling_amount'])
-        tax_amount = Decimal(purchase_order_data['tax_amount'])
+        tax_amount = Decimal(purchase_order_data['tax_amount']) or 0
         other_amount = Decimal(purchase_order_data['other_amount'])
     
-        if not all([supplier_id, delivery_date, status, total_cost, tax_amount]):
-            return JsonResponse({'success': False, 'message': 'Missing required fields'}, status=400)
+        # if not all([supplier_id, delivery_date, status, total_cost, tax_amount]):
+        #     return JsonResponse({'success': False, 'message': 'Missing required fields'}, status=400)
 
         try:
             supplier = Supplier.objects.get(id=supplier_id)
@@ -423,7 +436,6 @@ def create_purchase_order(request):
                     total_cost=total_cost,
                     discount=discount,
                     tax_amount=tax_amount,
-                    handling_amount=handling_amount,
                     other_amount=other_amount,
                     is_partial = False,
                     received = False
@@ -455,8 +467,7 @@ def create_purchase_order(request):
                         received=False,
                         note=note
                     )
-
-                    supplier_email(purchase_order.supplier.id, purchase_order_item)
+                    # supplier_email(purchase_order.supplier.id, purchase_order_item)
 
                 # consider to put expenses
                 if purchase_order.status == 'received': 
@@ -471,15 +482,33 @@ def create_purchase_order(request):
                         description = f'Purchase order{purchase_order.order_number}',
                         cancel = False
                     )
-                    
+
+                    expense_bulk = []
+                    for exp in expenses:
+                        name = exp['name'] 
+                        amount = exp['amount']
+
+                        expense_bulk.append(
+                            otherExpenses(
+                                purchase_order=purchase_order,
+                                name=name,
+                                amount=amount
+                            )
+                        )
+                    otherExpenses.objects.bulk_create(expense_bulk)  
                     CashBook.objects.create(
                         amount = purchase_order.total_cost,
                         expense = expense,
                         credit = True,
                         description = f'Expense purchase order{purchase_order.order_number}',
                     )
+                    # po_items = PurchaseOrderItem.objects.filter(purchase_order=purchase_order)
+                    # items = [ f'{p.product.name} x {p.quantity} @ {p.actual_cost}'22222]
+
+                    # send_purchase_order_email.delay(purchase_order.id, items_list)
 
         except Exception as e:
+            logger.info(e)
             return JsonResponse({'success': False, 'message': str(e)}, status=500)
 
         return JsonResponse({'success': True, 'message': 'Purchase order created successfully'})
@@ -622,26 +651,52 @@ def process_received_order(request):
             
             if (quantity + order_item.received_quantity) > order_item.quantity:
                 return JsonResponse({'success': False, 'message': 'Quantity received cannot be more.'})
-             
-            purchase_order = order_item.purchase_order
-            product = order_item.product
+            
+            with transaction.atomic():
+                purchase_order = order_item.purchase_order
+                product = order_item.product
 
-            product.quantity += quantity
-            product.cost = order_item.unit_cost
-            product.save()
+                product.quantity += quantity
+                product.cost = order_item.unit_cost
+                product.save()
 
-            Logs.objects.create(
-                purchase_order=purchase_order,
-                user=request.user, 
-                action='stock in',
-                product=product,
-                quantity=quantity,
-                description=f'Stock in from {purchase_order.order_number}',
-                total_quantity=product.quantity
-            )
+                Stock.objects.create(
+                    quantity = product.quantity,
+                    cost = product.cost,
+                    product = product
+                )
 
-            order_item.receive_items(quantity)
-            order_item.check_received()
+                Logs.objects.create(
+                    purchase_order=purchase_order,
+                    user=request.user, 
+                    action='stock in',
+                    product=product,
+                    quantity=quantity,
+                    description=f'Stock in from {purchase_order.order_number}',
+                    total_quantity=product.quantity
+                )
+
+                notification = Notification.objects.create(
+                    description = f'{request.user.username} received {quantity} of {product.name}'
+                )
+
+                order_item.receive_items(quantity)
+                order_item.check_received()
+
+                # email details
+                subject = f'Creation and updating of Inventory'
+                message = f'{request.user.username} received {quantity} {product.unit} of {product.name} at {notification.timestamp}. Total product quantity is now {product.quantity} {product.unit}'
+
+                # recepient list
+                users = User.objects.all()
+                
+                recipient_list = []
+                for r in users.values():
+                    if r['role'] in ['Admin', 'admin', 'Owner', 'owner',]:
+                        recipient_list.append(r['email'])
+               
+                logger.info(recipient_list)
+                send_email_task.delay(subject, message, recipient_list)
 
             return JsonResponse({'success': True, 'message': 'Inventory updated successfully'}, status=200)
 
@@ -732,9 +787,16 @@ def create_production_plan(request):
             for raw_material in raw_materials_to_checklist
             if raw_material.id not in existing_checklists
         ]
+
+        logger.info(new_checklists)
         CheckList.objects.bulk_create(new_checklists)
 
-        send_production_creation_notification(production_plan.id)
+        items = [ f'{i.dish.name}: {i.portions} portions' for i in production_items]
+        logger.info(items)
+        items_list = "\n".join(items)
+      
+
+        send_production_creation_notification.delay(production_plan.id, items_list)
 
         return JsonResponse({'success': True, 'message': 'Production plan created successfully'}, status=201)
 
@@ -888,7 +950,7 @@ def confirm_minor_raw_materials(request, pp_id):
         data = json.loads(request.body)
         data =data.get('items')
         raw_material_id = data.get('raw_material_id')
-        
+        logger.info('here')
     except Exception as e:
         return JsonResponse({'success':False, 'message':f'{e}'}, status=400)
     try:
@@ -1010,7 +1072,6 @@ def confirm_production_plan(request, pp_id):
                                 'expected_quantity': float(expected_quantity),
                             }
                         )
-            logger.info(raw_materials)
             
         except Exception as e:
             messages.warning(request, f'{e}')
@@ -1213,6 +1274,7 @@ def confirm_declaration(request):
         
         COGS.objects.create(
             production=production,
+            details=f'{production.production_plan_number}',
             amount=total_cost
         )
         
@@ -1248,7 +1310,7 @@ def raw_material_json(request):
             'unit__unit_name'
         )
         r_m = list(r_m)
-    
+        logger.info(f'raw material: {r_m}')
         return JsonResponse({'success':True, 'data':r_m})
     except Exception as e:
         return JsonResponse({'success': False, 'message':f'{e}'})

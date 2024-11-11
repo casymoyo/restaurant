@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Notification</title>
+    <script>
+        const socket = new WebSocket('ws://' + window.location.host + '/ws/notifications/');
+
+        socket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            alert(data.message);  // Display the notification
+        };
+
+        socket.onopen = function() {
+            console.log('WebSocket connection established');
+        };
+
+        socket.onclose = function() {
+            console.log('WebSocket connection closed');
+        };
+    </script>
+</head>
+<body>
+    <h1>Test Notification Page</h1>
+    <p>Access this page to trigger a notification.</p>
+</body>
+</html>

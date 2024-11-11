@@ -4,6 +4,7 @@ from django.db import models
 # from users.models import User
 from django.db.models import F
 from django.forms import modelformset_factory
+from settings.models import StockEvaluation
 
 class Category(models.Model):
     name = models.CharField(max_length=255)
@@ -23,7 +24,6 @@ class Supplier(models.Model):
     email = models.EmailField()
     phone = models.CharField(max_length=20)
     address = models.TextField()
-
     def __str__(self):
         return self.name
     
@@ -51,9 +51,22 @@ class Product(models.Model):
     finished_product = models.BooleanField(default=False)
     description = models.TextField()
     deactivate = models.BooleanField(default=False)
+    stock_evaluation_method = models.ForeignKey(StockEvaluation, on_delete=models.CASCADE, null=True)
+    expiry_date = models.DateField(null=True)
     
     def __str__(self) -> str:
         return self.name
+    
+class Stock(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    quantity = models.FloatField(null=True)
+    date = models.DateField(auto_now_add=True)
+    cost = models.DecimalField(max_digits=10, decimal_places=2)
+    out_of_stock = models.BooleanField(default=False)
+
+    def __str__(self) -> str:
+        return f'{self.product.name}: {self.cost}'
+
 class ProductionRawMaterials(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.FloatField()
@@ -97,6 +110,9 @@ class ProductionItems(models.Model):
     portions_sold = models.FloatField(default=0, null=True)
     allocated = models.BooleanField(default=False)
 
+    def __str__(self) -> str:
+        return self.dish.name
+
 class MinorProductionItems(models.Model):
     production = models.ForeignKey(Production, on_delete=models.CASCADE)
     minor_raw_material = models.ForeignKey(Product, on_delete=models.CASCADE)
@@ -119,6 +135,7 @@ class AllocatedRawMaterials(models.Model):
     
     def __str__(self) -> str:
         return f'{self.production} ({self.raw_material}: ({self.quantity}))'
+    
 class ProductionInventory(models.Model):
     raw_material = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.FloatField()
@@ -353,13 +370,13 @@ class ProductionLogs(models.Model):
     description = models.CharField(max_length=255, null=True)   
 
 
-class Notification(models.Model):
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, null=True)
-    production = models.ForeignKey(Production, on_delete=models.CASCADE, null=True)
-    expense = models.ForeignKey('finance.Expense', on_delete=models.CASCADE, null=True)
-    message = models.TextField()
-    timestamp = models.DateTimeField(auto_now_add=True)
-    is_read = models.BooleanField(default=False)
+# class Notification(models.Model):
+#     product = models.ForeignKey(Product, on_delete=models.CASCADE, null=True)
+#     production = models.ForeignKey(Production, on_delete=models.CASCADE, null=True)
+#     expense = models.ForeignKey('finance.Expense', on_delete=models.CASCADE, null=True)
+#     message = models.TextField()
+#     timestamp = models.DateTimeField(auto_now_add=True)
+#     is_read = models.BooleanField(default=False)
 
 class CheckList(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
@@ -369,5 +386,16 @@ class CheckList(models.Model):
     def __str__(self):
         return self.product.name
     
+
+class otherExpenses(models.Model):
+
+    """additional expenses for the purchase order"""
+
+    purchase_order = models.ForeignKey(PurchaseOrder, on_delete=models.CASCADE, null=True)
+    name = models.CharField(max_length=100)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def __str__(self) -> str:
+        return f'{self.purchase_order} : {self.name} -> {self.amount}'
 
     

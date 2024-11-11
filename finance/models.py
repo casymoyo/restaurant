@@ -13,6 +13,7 @@ class ExpenseCategory(models.Model):
 class COGS(models.Model):
     date = models.DateField(auto_now_add=True)
     production = models.ForeignKey('inventory.production', on_delete=models.CASCADE, null=True)
+    details = models.CharField(null=True, max_length=255)
     amount = models.DecimalField(max_digits=10, decimal_places=2, default=0) 
     
 class Expense(models.Model):
@@ -135,7 +136,6 @@ class Change(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
     cashier = models.ForeignKey(User, on_delete=models.CASCADE)
     claimed = models.BooleanField(default=False)
-    # ca
     
     def __str__(self) -> str:
         return f'{self.cashier.username} ({self.amount})'

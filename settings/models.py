@@ -22,4 +22,18 @@ class NotificationEmails(models.Model):
     def __str__(self):
         return f'{self.module}: ({self.email})'
 
+class StockEvaluation(models.Model):
+    name = models.CharField(max_length=255)
 
+    def __str__(self) -> str:
+        return self.name
+
+
+class Permission(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    parent = models.CharField(max_length=100)  
+    name = models.CharField(max_length=100)    
+    is_allowed = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.parent} - {self.name} : {'Allowed' if self.is_allowed else 'Not Allowed'}"

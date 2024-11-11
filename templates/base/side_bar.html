@@ -5,10 +5,10 @@
         height: 100vh;
         position: fixed;
         width: 250px;
-        {% comment %} background-color: #f8f9fa; {% endcomment %}
         display: flex;
         flex-direction: column;
         padding-top: 20px;
+        overflow-y: auto;
     }
 
     .sidebar .card {
@@ -36,13 +36,9 @@
     .sidebar a {
         text-decoration: none;
         color: inherit;
-        margin-bottom: 10px;
+        margin-bottom: 2px;
     }
 
-    .content {
-        margin-left: 270px; /* Adjust based on the sidebar width */
-        padding: 20px;
-    }
 </style>
 
 <div class="sidebar">
@@ -80,6 +76,19 @@
             </div>
         </div>
     </a>
+
+    <a href="{% url 'inventory:production_transfers' %}">
+        <div class="card">
+            <div class="card-body">
+                <i class='bx bx-transfer fs-3' width="30rem"></i>
+                <p class="mx-3">
+                    Transfers
+                    <span class='badge text-dark'>{{ transfer_count }}</span>
+                </p>
+            </div>
+        </div>
+    </a>
+
     <a href="{% url 'inventory:production_plans' %}">
         <div class="card">
             <div class="card-body">
