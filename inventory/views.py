@@ -251,9 +251,9 @@ def edit_inventory(request, product_id):
             
         Logs.objects.create(
             user=request.user, 
-            action= 'Edit',
+            action= 'Stock update',
             product=product,
-            quantity=product.quantity,
+            quantity=request.POST['quantity'],
             total_quantity=product.quantity,
         )
         

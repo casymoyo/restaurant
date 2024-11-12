@@ -42,7 +42,7 @@
                                     </small>
                                 </td>
                                 <td><small>
-                                    {% if log.action == 'stock in' or log.action == 'Update' or log.action == 'sale cancelled' or log.action == 'Stock in' %}
+                                    {% if log.action == 'stock in' or log.action == 'Stock update' or log.action == 'sale cancelled' or log.action == 'Stock in' %}
                                         <span class='text-success'>{{log.quantity}}</span>
                                         <i class='text-success bx bx-chevron-up'></i>
                                     {% elif log.action == 'defective'%}

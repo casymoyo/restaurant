@@ -58,8 +58,8 @@ class UnitOfMeasurementForm(forms.ModelForm):
 class EditProductForm(forms.ModelForm):
     class Meta:
         model = Product
-        exclude = ['quantity']
-
+        fields = '__all__'
+        
 # class productionForm(forms.ModelForm):
 #     class Meta:
 #         model = Production
