@@ -17,11 +17,13 @@
             <span class='mt-2 fs-5'>Transfer to Production</span>
         </div>
     </div>
+    <hr/>
     <div class="row">
         <div class="col-9" style='height:70vh; overflow-y:auto;'>
             <div id="productList">
-                <h5 class='px-1 fw-bold py-2'>Available Products</h5>
-                <table class='table' id='available'>
+                <h5 class='px-1 fw-bold py-3'>Available Products</h5>
+                <hr/>
+                <table class='table table-bordered' id='available'>
                     <thead>
                         <tr>
                             <th>Product Name</th>
@@ -43,7 +45,7 @@
                 </table>
             </div>
         </div>
-        <div class="col-3 rounded" style="height: 70vh; background: white; overflow-y: auto; display: flex; flex-direction: column;">
+        <div class="col-3 rounded border" style="height: 70vh; background: white; overflow-y: auto; display: flex; flex-direction: column;">
             <div id="cartItems">
                 <div class="text-center">
                     <h5>Transfer Items</h5>
@@ -60,7 +62,9 @@
     <script>
         let cart = [];
         document.addEventListener('DOMContentLoaded', function() {
-            new DataTable('#available');
+            new DataTable('#available',{
+                paging:false
+            });
             
             renderCartItems();
         
@@ -123,7 +127,7 @@
             emptyCartMessage.innerText = 'Empty Transfer Cart :)';
         
             if (cart.length === 0) {
-                cartItemsDiv.innerHTML = ''; // Clear previous content
+                cartItemsDiv.innerHTML = ''; 
                 cartItemsDiv.classList.add('d-flex', 'justify-content-center', 'align-items-center');
                 cartItemsDiv.appendChild(emptyCartMessage);
             } else {
@@ -132,6 +136,7 @@
         
                 const table = document.createElement('table');
                 table.classList.add('table');
+                table.classList.add('table-bordered')
                 const headerRow = document.createElement('tr');
                 headerRow.innerHTML = '<th>Product Name</th><th>Quantity</th><th>Actions</th>';
                 table.appendChild(headerRow);
