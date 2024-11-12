@@ -12,28 +12,32 @@
                     {% endif %}
                     <span class='fs-5 mx-2'>Production</span>
                 </div>
-                <div>
+                <div class="d-flex align-items-center">
+                    <div class="dropdown">
+                        <button class="btn btn-outline-dark dropdown-toggle" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
+                          Add
+                        </button>
+                        <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
+                            <li class="">
+                                <a href="{% url 'inventory:meal_list' %}">Meals</a>
+                            </li>
+                            <li class="">
+                                <a href="{% url 'inventory:dish_list' %}">Dishes</a>
+                            </li>
+                            <li class="">
+                                <a href="{% url 'inventory:production_raw_materials' %}">Production Raw Materials</a>
+                            </li>
+                        </ul>
+                    </div>
                     <ul class="list-unstyled mt-2 d-flex">
                         <li class="">
                             <a href="{% url 'inventory:create_production_plan' %}" class='btn btn-outline-dark'>Create Production Plan</a>
-                        </li>
-                        <li class="">
-                            <a href="{% url 'inventory:production_sales' %}" class='btn btn-outline-dark mx-2'>Sales in portions</a>
-                        </li>
-                        <li class="">
-                            <a href="{% url 'inventory:meal_list' %}" class='btn btn-outline-dark mx-2'>Meals</a>
-                        </li>
-                        <li class="">
-                            <a href="{% url 'inventory:dish_list' %}" class='btn btn-outline-dark'>Dishes</a>
                         </li>
                         <li class="">
                             <a href="{% url 'inventory:production_transfers' %}" class='btn btn-outline-dark mx-2'>
                                 Receive Transfers
                                 <span class='badge text-dark'>{{ transfer_count }}</span>
                             </a>
-                        </li>
-                        <li class="">
-                            <a href="{% url 'inventory:production_raw_materials' %}" class='btn btn-outline-dark'>Production Raw Materials</a>
                         </li>
                     </ul>
                 </div>
