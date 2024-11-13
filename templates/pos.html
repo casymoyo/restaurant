@@ -133,14 +133,12 @@
                         <!-- <li>
                             <button class="btn btn-outline-dark w-100">F2 Seacrch</button>
                         </li>
-                        <li class='mx-2'>
-                            <button class="btn btn-outline-dark w-100">F3 Create Change</button>
-                        </li> -->
+                         -->
                         <li>
                             <a href='{% url "pos:change_list" %}' class="btn btn-outline-dark w-100">View Change</a>
                         </li>
                         <li class='mx-2'>
-                            <button class="btn btn-outline-dark w-100">Spacebar Charge</button>
+                            <button class="btn btn-outline-dark w-100">Enter Charge</button>
                         </li >
                         <li>
                             <a class="btn btn-outline-dark w-100">Promo</a>
@@ -172,7 +170,7 @@
                         <div class="d-flex justify-content-center mt-3">
                             <button class="btn btn-warning w-100 " id="chargeButton">Charge $0.00
                                 <span class="text-light mx-2">
-                                    Spacebar 
+                                    Enter
                                 </span>
                             </button>
                         </div>
@@ -205,8 +203,8 @@
                             <input type="text" class="form-control" id="changeDisplay" readonly>
                         </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <div class="modal-footer d-flex justify-content-between align-items-center">
+                        <button class="btn btn-danger">F3 Change not available</button>
                         <button type="button" class="btn btn-primary" onclick="finalizeSale(false)">Finalize Sale</button>
                     </div>
                 </div>
@@ -281,29 +279,34 @@
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="customModalLabel">Change</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <h5 class="modal-title" id="customModalLabel">Fill In Details Change Customer</h5>
+                        <!-- <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button> -->
                     </div>
                     <div class="modal-body">
                         <form id="customForm">
-                            <div class="mb-3">
-                                <label for="inputField1" class="form-label">Full name</label>
+                            <div class="mb-3s">
+                                <label for="id_cient_name" class="form-label">Full name</label>
                                 <input type="text" class="form-control" id="client_name" required>
                             </div>
                             <div class="mb-3">
-                                <label for="inputField2" class="form-label">Phone number</label>
-                                <input type="text" class="form-control" id="phonenumber" required>
+                                <label for="id_phone_number" class="form-label">Phone number</label>
+                                <input type="text" class="form-control" id="phonenumber" placeholder="Optional">
                             </div>
                             <div class="mb-3">
-                                <label for="inputField2" class="form-label">Change Amount</label>
+                                <label for="id_change_amount" class="form-label">Change Amount</label>
                                 <input type="text" class="form-control" id="change_amount" required>
                             </div>
                             <div class="mb-3">
-                                <label for="inputField3" class="form-label">Receipt number</label>
-                                <textarea class="form-control" id="receipt_number" rows="1" required></textarea>
+                                <label for="id_change_given" class="form-label">Change Given</label>
+                                <input type="text" class="form-control" id="change_given" required>
                             </div>
-                            <div class='d-flex justify-content-end'>
-                                <button type="submit" class="btn btn-primary">Save</button>
+                            <div class="mb-3">
+                                <label for="id_balance" class="form-label">Balance</label>
+                                <textarea class="form-control" id="balance" rows="1" required></textarea>
+                            </div>
+                            <div class='d-flex justify-content-between'>
+                                <button type="button" class="btn btn-outline-dark" id="btn_back">Back</button>
+                                <button type="button" class="btn btn-primary" id="btn_proceed">Proceed</button>
                             </div>
                         </form>
                     </div>
@@ -321,18 +324,73 @@
         let items = [];
         let mealsData = []
         let orderType = ''
+        let changeAmount = 0;
+        const changeData = []
 
         const chargeModal = new bootstrap.Modal(document.getElementById('chargeModal'));
         const staffModal = new bootstrap.Modal(document.getElementById('staffModal'))
         const staffChargeModal = new bootstrap.Modal(document.getElementById('staffChargeModal'))
         const staff = document.getElementById('staff')    
-        
+        const proceedBtn = document.getElementById('btn_proceed')
+        const changeEl = document.getElementById('id_change')
+        const backButton = document.getElementById('btn_back')
+
+        // to remove the absolute create customer change function it have been overide
+
+        // Proceed button for Creating change for a client
+        proceedBtn.addEventListener('click', function() {
+            const clientName = document.getElementById('client_name').value;
+            const phoneNumber = document.getElementById('phonenumber').value;
+            const amount = parseFloat(document.getElementById('change_amount').value);
+            const amountGiven = parseFloat(document.getElementById('change_given').value);
+            const balance = parseFloat(document.getElementById('balance').value);
+
+            if (!clientName || !amount || !amountGiven || !balance) {
+
+                if (!clientName) {
+                    document.getElementById('client_name').focus();
+                } else if (!amount) {
+                    document.getElementById('change_amount').focus();
+                } else if (!amountGiven) {
+                    document.getElementById('change_given').focus();
+                } else if (!balance) {
+                    document.getElementById('balance').focus();
+                }
+
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'Please fill out all required fields.',
+                    icon: 'error',
+                    confirmButtonText: 'OK'
+                });
+            } else {
+                changeData.push({
+                    name: clientName,
+                    phonenumber: phoneNumber,
+                    amount: amount,
+                    amount_given: amountGiven,
+                    balance:balance
+                });
+                $('#customModal').modal('hide');
+                chargeModal.show()
+            }
+        });
+
+        // f3 key binding for create change modal
         document.addEventListener('keydown', function(event) {
             if (event.key === 'F3') {
                 event.preventDefault(); 
+                chargeModal.hide()
                 $('#customModal').modal('show');
+                
             }
         });
+
+        // back button to the charge modal
+        backButton.addEventListener('click', ()=>{
+            $('#customModal').modal('hide');
+            chargeModal.show()
+        })
         
         document.getElementById('customForm').addEventListener('submit', function(event) {
             event.preventDefault(); 
@@ -508,7 +566,8 @@
                         quantity: meal.quantity,
                         price: meal.price,
                         type: meal.type,
-                    }))
+                    })),
+                    change_data:changeData
                 };
         
                 console.log(saleData);
@@ -557,7 +616,7 @@
                     event.preventDefault();
                     searchFunction(); 
                     break;
-                case 'Space': // Hotkey for charge button
+                case 'Enter': // Hotkey for charge button
                     event.preventDefault();
                     chargeFunction(); 
                     break;
@@ -771,6 +830,7 @@
         const total = parseFloat(document.getElementById('total').innerText.slice(1));
         const change = totalAmountInput - total;
         document.getElementById('changeDisplay').value = `$${change.toFixed(2)}`;
+        
         if(!totalAmountInput){
             Swal.fire({
                 title: "Error",
@@ -827,12 +887,26 @@
         });
     }
 
+
+
+    // calulate the change amount on input 
     document.getElementById('totalAmountInput').addEventListener('input', () => {
         const totalAmountInput = parseFloat(document.getElementById('totalAmountInput').value);
         const total = parseFloat(document.getElementById('total').innerText.slice(1));
         const change = totalAmountInput - total;
         document.getElementById('changeDisplay').value = `$${change.toFixed(2)}`;
+        document.getElementById('change_amount').value = change.toFixed(2);
+        changeAmount = change.toFixed(2);
     });
+
+    // caculate the change balance
+    document.getElementById('change_given').addEventListener('input', ()=>{
+        const amountGiven = parseFloat(document.getElementById('change_given').value);
+        const changeAmount = parseFloat(document.getElementById('change_amount').value);
+        document.getElementById('balance').value = changeAmount - amountGiven;
+    })
+
+
     
     function getCookie(name) {
         let cookieValue = null;

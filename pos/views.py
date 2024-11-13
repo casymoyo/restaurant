@@ -90,17 +90,38 @@ def meal_detail_json(request, meal_id):
             return JsonResponse({'success':False, 'message':f'meal with ID: {meal_id} doesn\'t exists'})
         
         return JsonResponse({'success':True, 'data': meal_data})
+    
 
+def create_client_change(client_data, receipt_number, cashier):
+    logger.info(f'client name: {client_data}')
+
+    Change.objects.create(
+        name=client_data.get('name'),
+        phonenumber=client_data.get('phonenumber'),
+        receipt_number=receipt_number,
+        amount=client_data.get('balance'),
+        collected=False,
+        claimed=False,
+        cashier=cashier
+    )
 
 @login_required
 def process_sale(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
+
+            logger.info(f'Sales data {data}')
+
+
             items = data['items']
             staff = data['staff']
+            change_data = data.get('change_data')
             order_type = data['order_type']
             received_amount = data.get('received_amount')
+
+            # access the change data object
+            change_data = change_data[0]
 
             sub_total = sum(item['price'] * item['quantity'] for item in items)
             
@@ -129,7 +150,7 @@ def process_sale(request):
                     if not item['type']:
                         logger.info('product')
                         try:
-                            kaolite = ProductionRawMaterials.objects.get(product__name='kaolite')
+                            kaolite = ProductionRawMaterials.objects.get(product__name='Kaolites')
                         except ProductionRawMaterials.DoesNotExist:
                             return JsonResponse({'success': False, 'message': 'Please refill the stocks for kaolites'})
                         
@@ -237,6 +258,12 @@ def process_sale(request):
                     debit=True,
                     description=f'Sale (Receipt number: {sale.receipt_number})'
                 )
+
+                # create change
+
+                if change_data:
+                    logger.info('Creating Change object')
+                    create_client_change(change_data, sale.receipt_number, sale.cashier)
 
                 logger.info(f'Now generating invoice: _ _ _ _ _')
                     
