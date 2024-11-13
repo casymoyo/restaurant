@@ -119,6 +119,7 @@ class AllocatedRawMaterials(models.Model):
     
     def __str__(self) -> str:
         return f'{self.production} ({self.raw_material}: ({self.quantity}))'
+    
 class ProductionInventory(models.Model):
     raw_material = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.FloatField()
@@ -130,8 +131,14 @@ class ProductionInventory(models.Model):
 class Dish(models.Model):
     name = models.CharField(max_length=100)
     portion_multiplier = models.FloatField()
-    selling_price_per_portion = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     cost = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    category = models.CharField(choices=[
+        ('Fast food', 'Fast food'),
+        ('Meat', 'Meat'),
+        ('Starch', 'Starch'),
+        ('Salad', 'Salad')
+    ])
 
     def __str__(self) -> str:
         return self.name

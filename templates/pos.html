@@ -85,8 +85,8 @@
     }
 
     .loader {
-        border: 16px solid #f3f3f3; /* Light grey */
-        border-top: 16px solid #333; /* Black */
+        border: 16px solid #f3f3f3; 
+        border-top: 16px solid #333; 
         border-radius: 50%;
         width: 120px;
         height: 120px;
@@ -107,12 +107,13 @@
                 <div class="col-8">
                     <div class="div" style='height:80vh;'>
                         <div class="d-flex mt-2">
+                            {{ meals }}
                             <select class="form-select" id="food_search">
-                                {% for meal in meals %}
+                                {% for item in combined_items %}
                                     <option 
-                                        value="{{ meal.id }}" 
-                                        data-price="{{ meal.price }}" 
-                                        data-type="{{ meal.type }}">
+                                        value="{{ item.id }}" 
+                                        data-price="{{ item.price }}" 
+                                        data-type="{{ item.type }}">
                                         {{ meal.name }}
                                     </option>
                                 {% endfor %}
@@ -129,17 +130,20 @@
                         <li class='mx-2'>
                             <button class="btn btn-outline-dark w-100" id="chargeStaff">Staff</button>
                         </li>
-                        <li>
+                        <!-- <li>
                             <button class="btn btn-outline-dark w-100">F2 Seacrch</button>
                         </li>
                         <li class='mx-2'>
                             <button class="btn btn-outline-dark w-100">F3 Create Change</button>
-                        </li>
+                        </li> -->
                         <li>
                             <a href='{% url "pos:change_list" %}' class="btn btn-outline-dark w-100">View Change</a>
                         </li>
                         <li class='mx-2'>
                             <button class="btn btn-outline-dark w-100">Spacebar Charge</button>
+                        </li >
+                        <li>
+                            <a class="btn btn-outline-dark w-100">Promo</a>
                         </li >
                     </div>
 

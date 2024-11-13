@@ -41,6 +41,9 @@ urlpatterns = [
     path('create/supplier/', create_supplier, name='create_supplier'),
     path('supplier/json/list/', supplier_list_json, name='supplier_list_json'),
     path('supplier_prices/<str:raw_material_name>/', supplier_prices, name='supplier_prices'),
+
+    #to remove
+    path('home', p_home, name='p_home'),
     
     # ppurchase orders
     path('purchase_orders/list/', purchase_orders, name='purchase_orders'),

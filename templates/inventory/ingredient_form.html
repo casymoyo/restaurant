@@ -15,35 +15,14 @@
 
 
         <div class="row mt-3">
-            <h5 class="mt-2 bg-secondary rounded py-1 text-light">Dish Details</h5>
-            <form action="post">
-                {% csrf_token %}
-                {{ dish_form | crispy }}
-            </form>
-
-            <h5 class="mt-2 bg-secondary rounded py-1 text-light">Dish Ingredients</h5>
-            <div class="col-9">
-                <table class="table">
-                    <thead class="bg-primary">
-                        <th>Raw Material</th>
-                        <th>Quantity (kgs)</th>
-                        <th>Total Cost</th>
-                        <th>Action</th>
-                    <tbody id="cart-items"></tbody>
-                    <tfoot>
-                        <tr>
-                            <td class='fw-bold'>Total Cost</td>
-                            <td col-span='2'></td>
-                            <td class='fw-bold' id='dish_total'>0.00</td>
-                            <td></td>
-                        </tr>
-                    </tfoot>
-                </table>
-                <div class="d-flex justify-content-end">
-                  <button class="btn border bx bx-reset mx-2" id="id_reset"></button>
-                  <button class="btn-primary btn sm bx bx-save" id="id_submit"></button>
-                </div>
-            </div>
+            <div class="row">
+             <div class="col-9">
+                <h5 class="mt-2 px-1 bg-secondary rounded py-1 text-light">Dish Details</h5>
+                <form action="post">
+                    {% csrf_token %}
+                    {{ dish_form | crispy }}
+                </form>
+             </div>
             <div class="col-3 border p-2 rounded">
                 <form id="production-plan-form" action="" method="post">
                     {% csrf_token %}
@@ -53,9 +32,9 @@
                             <span class="asteriskField">*</span> 
                         </label> 
                             <select name="raw_material" required="" id="id_raw_material" tabindex="-1" class='form-control' aria-hidden="true"> 
-                            <option value="" selected="" >---------</option> 
+                            <option value="">---------</option> 
                             {% for r in r_m %}
-                                <option value="{{ r.id}}" selected="" >{{ r.name }}</option> 
+                                <option value="{{ r.id}}">{{ r.name }}</option> 
                             {% endfor %}
                             </select> 
                     </div> 
@@ -65,6 +44,33 @@
 
                     <button type="button" id="save-button" class="btn btn-secondary btn-sm w-100">Save</button>
                 </form>
+            </div>
+            </div>
+
+            <div class="p-2">
+                <h5 class="mt-2 px-1 bg-secondary rounded py-1 text-light">Dish Ingredients</h5>
+                <div class="col">
+                    <table class="table">
+                        <thead class="bg-primary">
+                            <th>Raw Material</th>
+                            <th>Quantity (kgs)</th>
+                            <th>Total Cost</th>
+                            <th>Action</th>
+                        <tbody id="cart-items"></tbody>
+                        <tfoot>
+                            <tr>
+                                <td class='fw-bold'>Total Cost</td>
+                                <td col-span='2'></td>
+                                <td class='fw-bold' id='dish_total'>0.00</td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                    <div class="d-flex justify-content-end">
+                    <button class="btn border bx bx-reset mx-2" id="id_reset"></button>
+                    <button class="btn-primary btn sm bx bx-save" id="id_submit"></button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -80,8 +86,13 @@ $(document).ready(function() {
     let portionMultiplier = 0
     let dish_total = 0
 
-    $('#id_raw_material').select2();
     $('#id_dish').select2();
+
+    new SlimSelect({
+        select: '#id_raw_material',
+        placeholder: 'Select Raw Material'
+      });
+
 
     $('#id_raw_material').on('change', function(e){
         product = e.target.value;
@@ -128,13 +139,15 @@ $(document).ready(function() {
     });
 
     $('#id_submit').on('click', function(){
+        
       const postData = {
         csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val(),
         cart: cart,
         dish_cost: dish_total,
         name: document.getElementById('id_name').value,
         selling_price: parseFloat(document.getElementById('id_selling_price_per_portion').value),
-        portion_multiplier: parseFloat(document.getElementById('id_portion_multiplier').value)
+        portion_multiplier: parseFloat(document.getElementById('id_portion_multiplier').value),
+        category: document.getElementById('id_category').value
     };
     
     fetch('{% url "inventory:dish_create" %}', {

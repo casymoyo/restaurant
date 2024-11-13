@@ -19,30 +19,41 @@ from django.shortcuts import render, get_object_or_404
 from finance.models import Sale, SaleItem, CashBook, COGS
 from django.contrib.auth.decorators import login_required
 from inventory.models import ProductionRawMaterials, ProductionLogs
-from inventory.models import Meal, Production, ProductionItems, Product, Logs
+from inventory.models import Meal, Production, ProductionItems, Product, Logs, Dish
 from permisions.permisions import (
     admin_required,
     sales_required
 )
 from django.views.decorators.cache import cache_page
 
+
 @login_required
-@cache_page(60*50)
+# @cache_page(60*50)
 def pos(request):
     meals = Meal.objects.filter(deactivate=False)
-    
+    dishes = Dish.objects.all()
+
+    combined_items = list(meals) + list(dishes)
+
+    logger.info(f'Combined list: {combined_items}')
+
     return render(request, 'pos.html', 
         {
-            'meals':meals,
+            'combined_items': combined_items,
         }
     )
+
+@login_required
+def process_promo_meal(request):
+    pass
 
 @login_required
 def product_meal_json(request):
     meals = Meal.objects.filter(deactivate=False).values('id', 'name', 'price')
     products = Product.objects.filter(raw_material=False).values('id', 'name', 'price', 'finished_product')
+    dishes = Dish.objects.all().values('id', 'name', 'price')
 
-    combined_items = list(meals) + list(products)
+    combined_items = list(meals) + list(products) + list(dishes)
     
     data = {
         'items': combined_items
@@ -64,6 +75,7 @@ def sales_list(request):
     }
     return JsonResponse(data)
 
+
 @login_required
 def meal_detail_json(request, meal_id):
     if request.method == 'POST':
@@ -79,8 +91,9 @@ def meal_detail_json(request, meal_id):
         
         return JsonResponse({'success':True, 'data': meal_data})
 
+
 @login_required
-async def process_sale(request):
+def process_sale(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
@@ -88,139 +101,173 @@ async def process_sale(request):
             staff = data['staff']
             order_type = data['order_type']
             received_amount = data.get('received_amount')
-            
+
             sub_total = sum(item['price'] * item['quantity'] for item in items)
-            tax = sub_total * 0.15
+            
+            tax = sub_total * 0.15 
+            
             total_amount = sub_total
             
             if staff:
                 received_amount = total_amount
 
-            # Wrap synchronous operations in sync_to_async
-            try:
-                kaolite = await sync_to_async(ProductionRawMaterials.objects.get)(product__name='Kaolite')
-            except ProductionRawMaterials.DoesNotExist:
-                return JsonResponse({'success': False, 'message': 'Please refill the stocks for kaolites'})
+            with transaction.atomic():
+                
+                sale = Sale.objects.create(
+                    total_amount=total_amount,
+                    tax=tax,
+                    sub_total=sub_total,
+                    cashier=request.user,
+                    staff=staff
+                )
 
-            try:
-                salts = await sync_to_async(ProductionRawMaterials.objects.get)(product__name='salt sachets')
-            except ProductionRawMaterials.DoesNotExist:
-                return JsonResponse({'success': False, 'message': 'Please refill the stocks for salt sachets'})
-
-            sale = await sync_to_async(Sale.objects.create)(
-                total_amount=total_amount,
-                tax=tax,
-                sub_total=sub_total,
-                cashier=request.user,
-                staff=staff
-            )
-
-            today = localdate()
-            cog = await sync_to_async(COGS.objects.filter(date=today).first)()
-            daily_productions = await sync_to_async(Production.objects.filter(date_created=today).order_by('time_created'))()
-
-            # Process items asynchronously
-            for item in items:
-                if not item['type']:
-                    meal = await sync_to_async(Meal.objects.get)(id=item['meal_id'])
-                    sale_item = await sync_to_async(SaleItem.objects.create)(
-                        sale=sale,
-                        meal=meal,
-                        quantity=item['quantity'],
-                        price=meal.price
-                    )
-
-                    async def log(products, sale_item):
-                        for product in products:
-                            await sync_to_async(ProductionLogs.objects.create)(
-                                user=request.user, 
-                                action='sale',
-                                product=product,
-                                quantity=sale_item.quantity,
-                                total_quantity=product.quantity,
-                            )
-
-                    # Handling salts and kaolite quantities asynchronously
-                    if order_type == 'sitting':
-                        salts.quantity -= item['quantity']
-                        cog.amount += salts.product.cost * item['quantity']
-                        await log([salts], sale_item)
-                    else:
-                        salts.quantity -= item['quantity']
-                        kaolite.quantity -= item['quantity']
-                        cog.amount += (salts.product.cost * item['quantity'] + kaolite.product.cost * item['quantity'])
-                        await log([salts, kaolite], sale_item)
-
-                    # Save asynchronously
-                    await sync_to_async(cog.save)()
-                    await sync_to_async(salts.save)()
-                    await sync_to_async(kaolite.save)()
-
-                    for production in daily_productions:
+                today = localdate()
+                cog, _ = COGS.objects.get_or_create(date=today)
+                daily_productions = Production.objects.filter(date_created=today).order_by('time_created')
+                
+                for item in items:
+                    if not item['type']:
+                        logger.info('product')
                         try:
-                            pp_item = await sync_to_async(ProductionItems.objects.get)(production=production, dish__in=meal.dish.all())
+                            kaolite = ProductionRawMaterials.objects.get(product__name='kaolite')
+                        except ProductionRawMaterials.DoesNotExist:
+                            return JsonResponse({'success': False, 'message': 'Please refill the stocks for kaolites'})
+                        
+                        try:
+                            salts = ProductionRawMaterials.objects.get(product__name='salt sachets')
+                        except ProductionRawMaterials.DoesNotExist:
+                            return JsonResponse({'success': False, 'message': 'Please refill the stocks for salt sachets'})
+                        
+                        meal = get_object_or_404(Meal, id=item['meal_id'])
+                        
+                        sale_item = SaleItem.objects.create(
+                            sale=sale,
+                            meal=meal,
+                            quantity=item['quantity'],
+                            price=meal.price
+                        )
+                        
+                        def log(products, sale_item):
+                            for product in products:
+                                ProductionLogs.objects.create(
+                                    user=request.user, 
+                                    action='sale',
+                                    product=product,
+                                    quantity=sale_item.quantity,
+                                    total_quantity=product.quantity,
+                                )
+                                
+                        
+                        if order_type == 'sitting':
+                            salts.quantity -= item['quantity']
                             
-                            if pp_item.portions == pp_item.portions_sold:
-                                continue
-
-                            if staff:
-                                pp_item.staff_portions += sale_item.quantity
-                            else:
-                                pp_item.portions_sold += sale_item.quantity
+                            cog.amount += salts.product.cost * item['quantity']
                             
-                            pp_item.left_overs -= sale_item.quantity
-                            await sync_to_async(pp_item.save)()
-                            break
+                            log([salts], sale_item)
+                        else:
+                            salts.quantity -= item['quantity']
+                            
+                            kaolite.quantity -= item['quantity']
+                            
+                            cog.amount += (salts.product.cost * item['quantity'] + kaolite.product.cost * item['quantity'])
+                            
+                            log([salts, kaolite], sale_item)
+                        
+                        cog.save()
+                        salts.save()
+                        kaolite.save()
+                        
 
-                        except ProductionItems.DoesNotExist:
-                            continue
+                        for production in daily_productions:
+                            try:
+                                pp_item = ProductionItems.objects.get(production=production, dish__in=meal.dish.all())
+                                
+                                if pp_item.portions == pp_item.portions_sold:
+                                    continue  # Move to the next production plan if portions are exhausted
 
-                else:
-                    product = await sync_to_async(Product.objects.get)(id=item['meal_id'])
-                    product.quantity -= item['quantity']
-                    sale_item = await sync_to_async(SaleItem.objects.create)(
-                        sale=sale,
-                        product=product,
-                        quantity=item['quantity'],
-                        price=product.price
-                    )
+                                if staff:
+                                    pp_item.staff_portions += sale_item.quantity
+                                    logger.info('staff')
+                                else:
+                                    pp_item.portions_sold += sale_item.quantity
+                                    logger.info('sale')
+                                    
+                                pp_item.left_overs -= sale_item.quantity
+                                pp_item.save()
+                                
+                                break  # Stop checking further productions for this dish
+                            
+                            except ProductionItems.DoesNotExist:
+                                logger.info('Production item not found for dish.')
+                                continue  # Move to the next production plan if not found
+                            
+                    else:
+                        logger.info('other')
+                        product = get_object_or_404(Product, id=item['meal_id'])
+                        product.quantity -= item['quantity']
 
-                    cog.amount += product.cost * item['quantity']
-                    await sync_to_async(Logs.objects.create)(
-                        user=request.user, 
-                        action='sale',
-                        product=product,
-                        quantity=sale_item.quantity,
-                        total_quantity=product.quantity,
-                    )
+                        logger.info(product)
+                        
+                        sale_item = SaleItem.objects.create(
+                            sale=sale,
+                            product=product,
+                            quantity=item['quantity'],
+                            price=product.price
+                        )
 
-                    await sync_to_async(product.save)()
+                        logger.info(sale_item)
 
-            await sync_to_async(CashBook.objects.create)(
-                sale=sale, 
-                amount=sale.total_amount,
-                debit=True,
-                description=f'Sale (Receipt number: {sale.receipt_number})'
-            )
+                        cog.amount += product.cost * item['quantity']
+                        cog.details = f'Sale: {sale.receipt_number}'
+                        cog.save()
+                        
+                        Logs.objects.create(
+                            user=request.user, 
+                            action='sale',
+                            product=product,
+                            quantity=sale_item.quantity,
+                            total_quantity=product.quantity,
+                        )
+                        
+                        product.save()
+                        
+                CashBook.objects.create(
+                    sale=sale, 
+                    amount=sale.total_amount,
+                    debit=True,
+                    description=f'Sale (Receipt number: {sale.receipt_number})'
+                )
 
-            await generate_receipt(request, sale, received_amount)
-
-            return JsonResponse({'success': True, 'sale_id': sale.id}, status=201)
+                logger.info(f'Now generating invoice: _ _ _ _ _')
+                    
+                generate_receipt(request, sale, received_amount)
+                
+                logger.info(f'Sale: {sale.id} Processed')
+                return JsonResponse({'success': True, 'sale_id': sale.id}, status=201)
 
         except Exception as e:
+            logger.error(f'Error processing sale: {str(e)}')
             return JsonResponse({'success': False, 'message': str(e)}, status=400)
 
-
-async def generate_receipt(request, sale, received_amount):
-    # The receipt generation function can remain the same as long as PDF writing and printing can be handled asynchronously
+        
+@login_required
+def generate_receipt(request, sale, received_amount):
+    
     change = received_amount - sale.total_amount
+    logger.info(f'change:  {change}')
+    
+    #  page size to 8 cm by 9 cm
     PAGE_WIDTH = 8 * cm
-    PAGE_HEIGHT = 29.7 * cm
+    PAGE_HEIGHT = 29.7 * cm 
+
+    # temporary file to store the PDF
     temp_pdf = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
     pdf_path = temp_pdf.name
 
     p = canvas.Canvas(pdf_path, pagesize=(PAGE_WIDTH, PAGE_HEIGHT))
-    font_size = 9
+
+    # font size (12 px is roughly equivalent to 9 pt in ReportLab)
+    font_size = 9  # points
     p.setFont("Helvetica", font_size)
 
     def draw_centered_text(text, y_position, bold=False):
@@ -232,22 +279,94 @@ async def generate_receipt(request, sale, received_amount):
         x_position = (PAGE_WIDTH - text_width) / 2
         p.drawString(x_position, y_position, text)
 
+    # starting positions
     y_position = PAGE_HEIGHT - 1 * cm
+
+    # title and company info
     draw_centered_text("Pars Sales Investments", y_position, bold=True)
     y_position -= 0.5 * cm
     draw_centered_text("65 Speke Ave", y_position)
     y_position -= 0.5 * cm
     draw_centered_text("Harare", y_position)
-    
-    # Continue with other drawing as before...
+
+    # "TAX INVOICE" header
+    y_position -= 0.7 * cm
+    draw_centered_text("**TAX INVOICE**", y_position, bold=True)
+
+    # tax and TIN numbers
+    y_position -= 0.5 * cm
+    p.drawString(1 * cm, y_position, "TAX NR : 220356643")
+    y_position -= 0.5 * cm
+    p.drawString(1 * cm, y_position, "TIN No: 2001020099")
+
+    # item and price details
+    for s in SaleItem.objects.filter(sale=sale):
+        y_position -= 0.7 * cm
+        p.drawString(1 * cm, y_position, f"{s.meal}")
+        p.drawString(4.5 * cm, y_position, f"{s.quantity} @")
+        p.drawString(6 * cm, y_position, f"${s.price}")
+
+    # totals
+    y_position -= 0.7 * cm
+    p.drawString(1 * cm, y_position, "TAX :")
+    p.drawString(6 * cm, y_position, f"{sale.tax}")
+
+    y_position -= 0.5 * cm
+    p.drawString(1 * cm, y_position, "TOTAL :")
+    p.setFont("Helvetica-Bold", font_size)
+    p.drawString(6 * cm, y_position, f"{sale.total_amount}")
+
+    y_position -= 0.5 * cm
+    p.setFont("Helvetica", font_size)
+    p.drawString(1 * cm, y_position, "Cash :")
+    p.drawString(6 * cm, y_position, f"{received_amount}")
+
+    y_position -= 0.5 * cm
+    p.drawString(1 * cm, y_position, "Change :")
+    p.drawString(6 * cm, y_position, f'${change}')
+
+    # cashier and transaction info
+    y_position -= 0.7 * cm
+    p.drawString(1 * cm, y_position, "Cashier :")
+    p.drawString(6 * cm, y_position, f"{request.user.first_name}")
+
+    # date and time
+    y_position -= 0.5 * cm
+    now = datetime.datetime.now().strftime("%a %d %m, %Y %H:%M")
+    p.drawString(1 * cm, y_position, "Date :")
+    p.drawString(6 * cm, y_position, now)
+
+    # transaction number
+    y_position -= 0.5 * cm
+    p.drawString(1 * cm, y_position, "Transaction :")
+    p.drawString(6 * cm, y_position, f'{sale.receipt_number}')
+
+    y_position -= 0.5 * cm
+    p.drawString(1 * cm, y_position, "Sales Channel :")
+    p.drawString(6 * cm, y_position, "USD")
+
+    draw_centered_text("Thank You Call Again", y_position, bold=True)
+
+    y_position -= 0.5 * cm
+    draw_centered_text("www.techcity.co.zw", y_position)
 
     p.showPage()
     p.save()
+    
+    # Close the temporary file
     temp_pdf.close()
-
+    
+    logger.info(pdf_path)
+    
     try:
-        printer_name = "EPSON TM-T88V"
-        subprocess.run([r"C:\Users\PC\AppData\Local\SumatraPDF\SumatraPDF.exe", "-print-to", printer_name, pdf_path], check=True)
+        printer_name = "EPSON TM-T88V"  
+       
+        subprocess.run([
+            r"C:\Users\PC\AppData\Local\SumatraPDF\SumatraPDF.exe", 
+            "-print-to",
+            printer_name,
+            pdf_path
+        ], check=True)
     except Exception as e:
         logger.error(f"Error printing the file: {e}")
 

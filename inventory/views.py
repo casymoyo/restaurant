@@ -1258,13 +1258,40 @@ class DishListView(View):
     def get(self, request):
         dishes = Dish.objects.all()
         ingredients = Ingredient.objects.all()
-        logger.info(ingredients)
+
+        # if download:
+        #     logger.info('download')
+        #     response = HttpResponse(content_type='text/csv')
+        #     response['Content-Disposition'] = f'attachment; filename="_{filter_option}.csv"'
+
+        #     writer = csv.writer(response)
+        #     writer.writerow(['Date', 'Description', 'Done By', 'Amount'])
+
+        #     total_expense = 0  
+        #     for expense in expenses:
+        #         total_expense += expense.amount
+
+        #         writer.writerow([
+        #             expense.date,
+        #             expense.description,
+        #             expense.user.first_name,
+        #             expense.amount,
+        #         ])
+
+        #     writer.writerow(['Total', '', '', total_expense])
+        
+            # return response
         return render(request, 'inventory/dish_list.html', 
             {
                 'dishes': dishes,
                 'ingredients':ingredients
             }
         )
+    
+# to remove
+def p_home(request):
+    return render(request, 'inventory/production_home.html')
+    
 class DishCreateView(View):
     def get(self, request):
         form = DishForm()
@@ -1365,6 +1392,7 @@ def add_dish(request): # didn't change the name of the template, it caters for b
             name:str
             portion_multiplier:float
             cost:float
+            category:str
             
             "cart": [
                 {
@@ -1376,8 +1404,8 @@ def add_dish(request): # didn't change the name of the template, it caters for b
             ]
         }
         """
+        
         try:
-            
             data = json.loads(request.body)
             cart = data.get('cart')
         
@@ -1385,32 +1413,31 @@ def add_dish(request): # didn't change the name of the template, it caters for b
             portion_multiplier = data.get('portion_multiplier')
             cost = data.get('dish_cost')
             selling_price = data.get('selling_price')
+            category = data.get('category')
 
             if not dish_name or not portion_multiplier or not cost or not selling_price:
                 return JsonResponse({'success': False, 'message': f'Please fill all the missing data'}, status=400)
             
-        except json.JSONDecodeError as e:
-            return JsonResponse({'success': False, 'message': f'Invalid JSON data: {e}'}, status=400)
-        
-        try:
-            dish = Dish.objects.create(
-                cost = cost,
-                name = dish_name,
-                portion_multiplier = portion_multiplier
-            )
-            
-            for item in cart:
-                
-                raw_material = Product.objects.get(name=item.get('raw_material'))
-                
-                Ingredient.objects.create(
-                    dish=dish,
-                    note=item.get('note'),
-                    raw_material=raw_material,
-                    quantity=item.get('quantity'),
+            with transaction.atomic():
+                dish = Dish.objects.create(
+                    cost = cost,
+                    name = dish_name,
+                    portion_multiplier = portion_multiplier,
+                    price = selling_price,
+                    category=category
                 )
+                
+                for item in cart:
+                    raw_material = Product.objects.get(name=item.get('raw_material'))
+                    Ingredient.objects.create(
+                        dish=dish,
+                        note=item.get('note'),
+                        raw_material=raw_material,
+                        quantity=item.get('quantity'),
+                    )
 
         except Exception as e:
+            logger.info(e)
             return JsonResponse({'success':False, 'message':f'{e}'})
         return JsonResponse({'success':True, 'meessage':f'Ingridient successfully added'})
 
@@ -1689,11 +1716,11 @@ def end_of_day_detail(request, e_o_d_id):
               
         for end in end_of_day_items:
             dish = Dish.objects.get(name=end.dish_name)
-            portion_cost_value += Decimal(end.expected) * dish.selling_price_per_portion
-            wastage_cost_value += Decimal(end.wastage) * dish.selling_price_per_portion
+            portion_cost_value += Decimal(end.expected) * dish.price
+            wastage_cost_value += Decimal(end.wastage) * dish.price
             
-            logger.info(f'{wastage_cost_value} = {end.wastage} * {dish.selling_price_per_portion}')
-            logger.info(f'{portion_cost_value} = {end.expected} * {ing.dish.selling_price_per_portion}')
+            logger.info(f'{wastage_cost_value} = {end.wastage} * {dish.price}')
+            logger.info(f'{portion_cost_value} = {end.expected} * {ing.dish.price}')
         
         # total_staff_portions= end_of_day_items.objects.aggregate(total_staff_portions=Sum('staff_portions'))['total_staff_portions'] or 0
         
@@ -1855,6 +1882,7 @@ def confirm_minor_raw(request):
         with transaction.atomic():
             raw_material = Product.objects.select_for_update().get(id=raw_material_id)
             production = Production.objects.get(id=production_id)
+            production_plan_item = ProductionItems.objects.filter(production=production, )
             
             p_raw_materials, created = ProductionRawMaterials.objects.get_or_create(
                 product=raw_material,

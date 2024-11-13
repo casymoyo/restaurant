@@ -21,6 +21,7 @@
             <tr>
                 <th>Name</th>
                 <th>Dishes</th>
+                <th>Selling Price</th>
                 <th>Actions</th>
             </tr>
         </thead>
@@ -30,10 +31,13 @@
                     <td>{{ meal.name }}</td>
                     <td>
                         {% for dish in meal.dish.all %}
-                            {{ dish.name }}<br>
+                            {{ dish.name }} | ${{ dish.selling_price_per_portion}} <br>
                         {% empty %}
                             No dishes available
                         {% endfor %}
+                    </td>
+                    <td>
+                        {{ meal.price }}
                     </td>
                     <td>
                         <a href="{% url 'inventory:edit_meal' meal.id %}" class="btn btn-sm bx bx-edit"></a>

@@ -3,15 +3,21 @@
 {% block content %}
 <div class="">
     <nav class="d-flex justify-content-between align-items-center border-bottom">
-        <div class='d-flex'>
+        <div class='d-flex align-items-center'>
             <a href='{% url "inventory:production_plans" %}' class='border btn bx bx-arrow-back fs-5'></a>
             <a href='/' class='bx bx-home btn border fs-5 mx-2'></a>
             <span class='fs-5'>Dishes</span>
         </div>
         <div>
-            <ul class="list-unstyled d-flex">
+            <ul class="list-unstyled d-flex mt-3">
                 <li class="">
-                    <a href="{% url 'inventory:dish_create' %}" class="btn btn-outline-dark mt-2">Add New Dish</a>
+                    <a href="{% url 'inventory:dish_create' %}" class="btn btn-outline-dark mx-2">Add New Dish</a>
+                </li>
+                <li class="">
+                    <a href="{% url 'inventory:dish_create' %}" class="btn btn-outline-dark">
+                        Download 
+                        <i class="bx bx-download"></i>
+                    </a>
                 </li>
             </ul>
         </div>
@@ -21,6 +27,7 @@
             <thead>
                 <tr>
                     <th>Name</th>
+                    <th>Category</th>
                     <th>Portion Multiplier</th>
                     <th>Cost</th>
                     <th>Selling Price</th>
@@ -32,9 +39,10 @@
                 {% for dish in dishes %}
                     <tr>
                         <td>{{ dish.name }}</td>
+                        <td>{{ dish.category }}</td>
                         <td>{{ dish.portion_multiplier }}</td>
                         <td>{{ dish.cost }}</td>
-                        <td>{{ dish.selling_price_per_portion }}
+                        <td>{{ dish.price }}
                         <td>
                             {% for ingredient in ingredients %}
                                 {% if dish == ingredient.dish %}
