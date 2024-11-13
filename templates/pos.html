@@ -557,10 +557,18 @@
                     event.preventDefault();
                     chargeFunction(); 
                     break;
+                case 'Escape': // Hotkey for emptying the cart
+                    event.preventDefault();
+                    emptyCart();
                 default:
                     break;
             }
         });
+
+        function emptyCart() {
+            cart = []
+            updateOrderDetails()
+        }
     
         function searchFunction(e) {
             const searchField = $('#food_search'); 

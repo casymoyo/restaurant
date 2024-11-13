@@ -373,7 +373,7 @@ def generate_receipt(request, sale, received_amount):
 @login_required
 def change_list(request):
     filter_option = request.GET.get('filter', 'today')
-    now = datetime.now()
+    now = datetime.datetime.now()
     end_date = now
     
     if filter_option == 'today':
