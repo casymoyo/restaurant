@@ -79,7 +79,6 @@ class Production(models.Model):
 
     def __str__(self) -> str:
         return self.production_plan_number
-
     
 class ProductionItems(models.Model):
     production = models.ForeignKey(Production, on_delete=models.CASCADE)
@@ -260,14 +259,14 @@ class Logs(models.Model):
         ('deactivated', 'deactivated'),
         ('removed', 'removed')
     ]
-    
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    sale = models.ForeignKey('finance.sale', on_delete=models.CASCADE, null=True)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, null=True)
     user = models.ForeignKey('users.User', on_delete=models.SET_NULL, null=True)
     action = models.CharField(max_length=20, choices=ACTION_CHOICES)
     purchase_order = models.ForeignKey(PurchaseOrder, null=True, blank=True, on_delete=models.SET_NULL)
     quantity = models.FloatField()
     total_quantity = models.FloatField()
-    timestamp = models.DateField(auto_now_add=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
     description = models.CharField(max_length=255, null=True)
     
 class MinorRawMaterials(models.Model):

@@ -92,10 +92,11 @@ def meal_detail_json(request, meal_id):
         return JsonResponse({'success':True, 'data': meal_data})
     
 
-def create_client_change(client_data, receipt_number, cashier):
+def create_client_change(client_data, receipt_number, cashier, sale):
     logger.info(f'client name: {client_data}')
 
     Change.objects.create(
+        sale=sale,
         name=client_data.get('name'),
         phonenumber=client_data.get('phonenumber'),
         receipt_number=receipt_number,
@@ -120,14 +121,21 @@ def process_sale(request):
             order_type = data['order_type']
             received_amount = data.get('received_amount')
 
+            logger.info('here ---------------------------------------------------------------------')
+
             # access the change data object
-            change_data = change_data[0]
+            print(change_data)
 
             sub_total = sum(item['price'] * item['quantity'] for item in items)
             
             tax = sub_total * 0.15 
             
             total_amount = sub_total
+
+            balance=0
+            if change_data:
+                change_data = change_data[0]
+                balance = change_data['balance']
             
             if staff:
                 received_amount = total_amount
@@ -139,12 +147,18 @@ def process_sale(request):
                     tax=tax,
                     sub_total=sub_total,
                     cashier=request.user,
-                    staff=staff
+                    staff=staff,
+                    change=balance,
+                    amount_paid=received_amount
                 )
+
+                logger.info(sale)
 
                 today = localdate()
                 cog, _ = COGS.objects.get_or_create(date=today)
                 daily_productions = Production.objects.filter(date_created=today).order_by('time_created')
+
+                logger.info(f'sale: {sale}')
                 
                 for item in items:
                     if not item['type']:
@@ -165,7 +179,7 @@ def process_sale(request):
                             sale=sale,
                             meal=meal,
                             quantity=item['quantity'],
-                            price=meal.price
+                            price=meal.price,
                         )
                         
                         def log(products, sale_item):
@@ -233,7 +247,7 @@ def process_sale(request):
                             sale=sale,
                             product=product,
                             quantity=item['quantity'],
-                            price=product.price
+                            price=product.price,
                         )
 
                         logger.info(sale_item)
@@ -260,14 +274,22 @@ def process_sale(request):
                 )
 
                 # create change
-
+                logger.info('change')
                 if change_data:
                     logger.info('Creating Change object')
-                    create_client_change(change_data, sale.receipt_number, sale.cashier)
+                    create_client_change(change_data, sale.receipt_number, sale.cashier, sale)
 
                 logger.info(f'Now generating invoice: _ _ _ _ _')
                     
                 generate_receipt(request, sale, received_amount)
+
+                Logs.objects.create(
+                    user=request.user, 
+                    action='sale',
+                    sale=sale,
+                    quantity=sale_item.quantity,
+                    total_quantity=sale_item.quantity,
+                )
                 
                 logger.info(f'Sale: {sale.id} Processed')
                 return JsonResponse({'success': True, 'sale_id': sale.id}, status=201)

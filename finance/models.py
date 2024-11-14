@@ -35,6 +35,9 @@ class Sale(models.Model):
     date = models.DateField(auto_now_add=True)
     receipt_number = models.CharField(max_length=10, blank=True)
     staff = models.BooleanField(default=False)
+    change = models.DecimalField(max_digits=10, decimal_places=2, default=0) 
+    amount_paid = models.DecimalField(max_digits=10, decimal_places=2, default=0) 
+
     
     def __str__(self) -> str:
         return f'{self.cashier} -> ({self.total_amount})'
@@ -127,6 +130,7 @@ class EmailNotifications(models.Model):
     expense_notification = models.BooleanField(default=True)
     
 class Change(models.Model):
+    sale = models.ForeignKey(Sale, on_delete=models.CASCADE, related_name='sale_change')
     name = models.CharField(max_length=100)
     phonenumber = models.CharField(max_length=20)
     amount = models.DecimalField(max_digits=10, decimal_places=2, default=0) 
@@ -138,4 +142,4 @@ class Change(models.Model):
     
     def __str__(self) -> str:
         return f'{self.cashier.username} ({self.amount})'
-     
+

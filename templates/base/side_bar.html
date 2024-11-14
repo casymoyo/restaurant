@@ -115,6 +115,17 @@
             </div>
         </div>
     </a>
+
+    <!-- transactions logs -->
+    <a href="{% url 'finance:logs' %}">
+        <div class="card">
+            <div class="card-body d-flex align-items-center">
+                <img src="{% static 'assets/pngs/log.png'%}" alt="settings_icon" width="25rem">
+                <p>Transaction Logs</p>
+            </div>
+        </div>
+    </a>
+
     <a href="{% url 'settings:settings' %}">
         <div class="card">
             <div class="card-body d-flex align-items-center">

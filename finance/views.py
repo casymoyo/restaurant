@@ -18,7 +18,7 @@ from django.template.loader import render_to_string
 from . tasks import send_expense_creation_notification
 from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
-
+from inventory.models import Logs
 
 def get_previous_month():
     first_day_of_current_month = datetime.datetime.now().replace(day=1)
@@ -907,3 +907,12 @@ def days_data(request):
     
     return JsonResponse(data)
 
+@login_required
+def transaction_logs(request):
+    transactions = Logs.objects.all()
+    sale_items = SaleItem.objects.all()
+
+    return render(request, 'transaction_logs.html', {
+        'sale_items':sale_items,
+        'transactions':transactions
+    })

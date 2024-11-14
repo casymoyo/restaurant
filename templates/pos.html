@@ -204,7 +204,7 @@
                         </div>
                     </div>
                     <div class="modal-footer d-flex justify-content-between align-items-center">
-                        <button class="btn btn-danger">F3 Change not available</button>
+                        <button class="btn btn-danger" onclick="showChangeForm()">Change not available (<span class="text-light">Shift</span>)</button>
                         <button type="button" class="btn btn-primary" onclick="finalizeSale(false)">Finalize Sale</button>
                     </div>
                 </div>
@@ -337,6 +337,11 @@
 
         // to remove the absolute create customer change function it have been overide
 
+        // show change modal
+        function showChangeForm(){
+            $('#customModal').modal('show');
+        }
+
         // Proceed button for Creating change for a client
         proceedBtn.addEventListener('click', function() {
             const clientName = document.getElementById('client_name').value;
@@ -378,7 +383,7 @@
 
         // f3 key binding for create change modal
         document.addEventListener('keydown', function(event) {
-            if (event.key === 'F3') {
+            if (event.key === 'Shift') {
                 event.preventDefault(); 
                 chargeModal.hide()
                 $('#customModal').modal('show');
@@ -849,7 +854,8 @@
                 quantity: meal.quantity,
                 price: meal.price,
                 type:meal.type,
-            }))
+            })),
+            change_data:changeData
         };
         
         console.log(saleData)

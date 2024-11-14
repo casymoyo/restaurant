@@ -41,5 +41,8 @@ urlpatterns = [
     path('claim-cashup/<int:cashup_id>/', claim_cashup_difference, name='claim-cashup'),
     path('charge_cashup_difference/', charge_cashup_difference, name='charge_cashup_difference'),
     
-    path('days_data', days_data, name='days_data')
+    path('days_data', days_data, name='days_data'),
+
+    #transaction logs
+    path('transaction-logs', transaction_logs, name='logs')
 ]
