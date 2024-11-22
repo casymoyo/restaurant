@@ -14,57 +14,94 @@
                     <a href="{% url 'inventory:dish_create' %}" class="btn btn-outline-dark mx-2">Add New Dish</a>
                 </li>
                 <li class="">
-                    <a href="{% url 'inventory:dish_create' %}" class="btn btn-outline-dark">
-                        Download 
-                        <i class="bx bx-download"></i>
-                    </a>
+                    <button onclick="printTable()" class="btn btn-outline-dark">
+                        Print Table
+                        <i class="bx bx-printer"></i>
+                    </button>
                 </li>
             </ul>
         </div>
     </nav>
     <div class='mt-2'>
-        <table class="table table-hover table-bordered" id="dishes_table">
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Category</th>
-                    <th>Portion Multiplier</th>
-                    <th>Cost</th>
-                    <th>Selling Price</th>
-                    <th>Ingredients</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for dish in dishes %}
+        <div id="printable_area">
+            <table class="table table-hover table-bordered table-striped" id="dishes_table">
+                <thead>
                     <tr>
-                        <td>{{ dish.name }}</td>
-                        <td>{{ dish.category }}</td>
-                        <td>{{ dish.portion_multiplier }}</td>
-                        <td>{{ dish.cost }}</td>
-                        <td>{{ dish.price }}
-                        <td>
-                            {% for ingredient in ingredients %}
-                                {% if dish == ingredient.dish %}
-                                    {{ ingredient.raw_material.name }} ({{ ingredient.quantity }})<br>
-                                {% endif %}
-                            {% endfor %}
-                        </td>
-                        <td>
-                            {% comment %} <a href="{% url 'inventory:dish_update' dish.id %}" class="btn btn-warning btn-sm bx bx-edit"></a> {% endcomment %}
-                            <a href="{% url 'inventory:dish_delete' dish.id %}" class="btn bx bx-trash"></a>
-                            {% comment %} <a href="{% url 'inventory:ingredient_create' dish.id %}" class="btn btn-light btn-sm">Add Ingridients</a> {% endcomment %}
-                            <!-- <a href="" class="btn btn-danger btn-sm">Update Ingridients</a> -->
-                        </td>
+                        <th>Count</th>
+                        <th>Name</th>
+                        <th>Category</th>
+                        <th>Portion Multiplier</th>
+                        <th>Cost</th>
+                        <th>Selling Price</th>
+                        <th>GP (%)</th>
+                        <th>Ingredients</th>
+                        <th>Actions</th>
                     </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    {% for dish in dishes %}
+                        <tr>
+                            <td><small>{{ forloop.counter }}</small></td>
+                            <td><small>{{ dish.name }}</small></td>
+                            <td><small>{{ dish.category }}</small></td>
+                            <td><small>{{ dish.portion_multiplier }}</small></td>
+                            <td><small class="cost">{{ dish.cost }}</small></td>
+                            <td><small class="price">{{ dish.price }}</small></td>
+                            <td><small class="gp"></small></td>
+                            <td>
+                                <small>
+                                    {% for ingredient in ingredients %}
+                                        {% if dish == ingredient.dish %}
+                                            {{ ingredient.raw_material.name }} ({{ ingredient.quantity }})<br>
+                                        {% endif %}
+                                    {% endfor %}
+                                </small>
+                            </td>
+                            <td>
+                                <small>
+                                    <a href="" class="btn bx bx-edit mx-1"></a>
+                                    <a href="{% url 'inventory:dish_delete' dish.id %}" class="btn bx bx-trash"></a>
+                                </small>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
+
 <script>
-    new DataTable('#dishes_table',{
-        pageLength: 100
-    })
+    function printTable() {
+        const originalContent = document.body.innerHTML; 
+        const tableContent = document.getElementById('printable_area').innerHTML; 
+        document.body.classList.add('p-2')
+        document.body.innerHTML = tableContent; 
+        window.print(); 
+        document.body.innerHTML = originalContent; 
+        location.reload(); 
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const rows = document.querySelectorAll("#dishes_table tbody tr");
+        rows.forEach(row => {
+            const cost = parseFloat(row.querySelector(".cost").textContent.trim()) || 0;
+            const price = parseFloat(row.querySelector(".price").textContent.trim()) || 0;
+            const gpCell = row.querySelector(".gp");
+
+            if (price > 0) {
+                const gp = ((price - cost) / price) * 100;
+                gpCell.textContent = gp.toFixed(2) + " %";
+            } else {
+                gpCell.textContent = "N/A";
+            }
+        });
+    });
+
+    new DataTable('#dishes_table', {
+        paging: false,
+        fixedHeader: true,
+        responsive: true
+    });
 </script>
 {% endblock %}

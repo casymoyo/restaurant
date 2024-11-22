@@ -103,6 +103,24 @@ $(document).ready(function() {
       updateCartTable()
     })
 
+    const getDishData = () =>{
+        fetch('/inventory/dish_data_json/{{ dish.id }}/',{
+            method:'GET',
+            headers:{
+
+            }
+        })
+        .then(response => response.json())
+        .then(data =>{
+            console.log(data)
+            if(data.success){
+
+            }else{
+                
+            }
+        })
+    }
+
     $('#id_raw_material').on('change', function(e) {
         const selectedProductId = e.target.value;
         const postData = {

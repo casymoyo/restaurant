@@ -1485,6 +1485,24 @@ def add_meal(request):
         }
     )
 
+@login_required
+def get_dish_data(request, dish_id):
+    try:
+        dish = Dish.objects.filter(id=dish_id).values(
+            'name',
+            'cost',
+            'price',
+            'category',
+            'portion_multiplier'
+        )
+        ingredients =Ingredient.objects.filter(dish__id = dish_id).values()
+
+        return JsonResponse({'success':True, 'dish':list(dish), 'ingridients':list(ingredients)})
+
+    except Exception as e:
+        return JsonResponse({'success':False, 'message':f'{e}'})
+
+
 
 @login_required
 def edit_meal(request, meal_id):
