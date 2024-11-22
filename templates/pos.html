@@ -623,7 +623,7 @@
                     break;
                 case 'Enter': // Hotkey for charge button
                     event.preventDefault();
-                    chargeFunction(); 
+                    chargeFunction(event); 
                     break;
                 case 'Escape': // Hotkey for emptying the cart
                     event.preventDefault();
@@ -646,7 +646,7 @@
         
         }
     
-        function chargeFunction() {
+        function chargeFunction(event) {
             if (cart.length === 0){
                 Swal.fire({
                     title: "Error",
@@ -654,9 +654,15 @@
                     icon: "error"
                 });
             }else{
+                // const chargeModal = new bootstrap.Modal(document.getElementById('chargeModal'));
+                // const isModalOpen = chargeModal.classList.contains('show')
+                // if(!isModalOpen){
+                //     event.preventDefault()
+                    
+                // }
                 chargeModal.show()
             }
-            console.log('Charge triggered');
+
         }
 
         staff.addEventListener('click', ()=>{

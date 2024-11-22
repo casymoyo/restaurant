@@ -16,7 +16,7 @@ from asgiref.sync import sync_to_async
 from django.utils.timezone import localdate
 from django.http import JsonResponse, HttpResponse
 from django.shortcuts import render, get_object_or_404
-from finance.models import Sale, SaleItem, CashBook, COGS
+from finance.models import Sale, SaleItem, CashBook
 from django.contrib.auth.decorators import login_required
 from inventory.models import ProductionRawMaterials, ProductionLogs
 from inventory.models import Meal, Production, ProductionItems, Product, Logs, Dish
@@ -25,6 +25,8 @@ from permisions.permisions import (
     sales_required
 )
 from django.views.decorators.cache import cache_page
+import requests
+import tempfile
 
 
 @login_required
@@ -33,13 +35,13 @@ def pos(request):
     meals = Meal.objects.filter(deactivate=False)
     dishes = Dish.objects.all()
 
-    combined_items = list(meals) + list(dishes)
+    combined_items = list(meals) + list(dishes) # to revert added a meal from dish creation
 
-    logger.info(f'Combined list: {combined_items}')
+    logger.info(f'user session: {request.user.session_key}')
 
     return render(request, 'pos.html', 
         {
-            'combined_items': combined_items,
+            'combined_items': meals,
         }
     )
 
@@ -155,7 +157,7 @@ def process_sale(request):
                 logger.info(sale)
 
                 today = localdate()
-                cog, _ = COGS.objects.get_or_create(date=today)
+
                 daily_productions = Production.objects.filter(date_created=today).order_by('time_created')
 
                 logger.info(f'sale: {sale}')
@@ -195,20 +197,14 @@ def process_sale(request):
                         
                         if order_type == 'sitting':
                             salts.quantity -= item['quantity']
-                            
-                            cog.amount += salts.product.cost * item['quantity']
-                            
                             log([salts], sale_item)
                         else:
                             salts.quantity -= item['quantity']
                             
                             kaolite.quantity -= item['quantity']
                             
-                            cog.amount += (salts.product.cost * item['quantity'] + kaolite.product.cost * item['quantity'])
-                            
                             log([salts, kaolite], sale_item)
                         
-                        cog.save()
                         salts.save()
                         kaolite.save()
                         
@@ -251,10 +247,6 @@ def process_sale(request):
                         )
 
                         logger.info(sale_item)
-
-                        cog.amount += product.cost * item['quantity']
-                        cog.details = f'Sale: {sale.receipt_number}'
-                        cog.save()
                         
                         Logs.objects.create(
                             user=request.user, 
@@ -298,10 +290,7 @@ def process_sale(request):
             logger.error(f'Error processing sale: {str(e)}')
             return JsonResponse({'success': False, 'message': str(e)}, status=400)
 
-        
-@login_required
 def generate_receipt(request, sale, received_amount):
-    
     change = received_amount - sale.total_amount
     logger.info(f'change:  {change}')
     
@@ -404,20 +393,145 @@ def generate_receipt(request, sale, received_amount):
     
     # Close the temporary file
     temp_pdf.close()
-    
-    logger.info(pdf_path)
-    
+
+    # Send the generated PDF to the Windows client for printing
     try:
-        printer_name = "EPSON TM-T88V"  
-       
-        subprocess.run([
-            r"C:\Users\PC\AppData\Local\SumatraPDF\SumatraPDF.exe", 
-            "-print-to",
-            printer_name,
-            pdf_path
-        ], check=True)
+        pdf_data = open(pdf_path, "rb").read()
+
+        # Assuming you have a service running on the Windows machine
+        # Replace with your Windows client server's IP address and endpoint
+        windows_client_url = 'http://192.168.10.39:500/print_receipt'
+        
+        response = requests.post(windows_client_url, files={'receipt': pdf_data})
+
+        if response.status_code == 200:
+            return JsonResponse({'success': True, 'message': 'Receipt sent to printer successfully.'})
+        else:
+            return JsonResponse({'success': False, 'message': 'Failed to send receipt to printer.'})
+
     except Exception as e:
-        logger.error(f"Error printing the file: {e}")
+        logger.error(f"Error sending receipt to printer: {e}")
+        return JsonResponse({'success': False, 'message': str(e)})
+    
+# @login_required
+# def generate_receipt(request, sale, received_amount):
+    
+#     change = received_amount - sale.total_amount
+#     logger.info(f'change:  {change}')
+    
+#     #  page size to 8 cm by 9 cm
+#     PAGE_WIDTH = 8 * cm
+#     PAGE_HEIGHT = 29.7 * cm 
+
+#     # temporary file to store the PDF
+#     temp_pdf = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
+#     pdf_path = temp_pdf.name
+
+#     p = canvas.Canvas(pdf_path, pagesize=(PAGE_WIDTH, PAGE_HEIGHT))
+
+#     # font size (12 px is roughly equivalent to 9 pt in ReportLab)
+#     font_size = 9  # points
+#     p.setFont("Helvetica", font_size)
+
+#     def draw_centered_text(text, y_position, bold=False):
+#         if bold:
+#             p.setFont("Helvetica-Bold", font_size)
+#         else:
+#             p.setFont("Helvetica", font_size)
+#         text_width = p.stringWidth(text)
+#         x_position = (PAGE_WIDTH - text_width) / 2
+#         p.drawString(x_position, y_position, text)
+
+#     # starting positions
+#     y_position = PAGE_HEIGHT - 1 * cm
+
+#     # title and company info
+#     draw_centered_text("Pars Sales Investments", y_position, bold=True)
+#     y_position -= 0.5 * cm
+#     draw_centered_text("65 Speke Ave", y_position)
+#     y_position -= 0.5 * cm
+#     draw_centered_text("Harare", y_position)
+
+#     # "TAX INVOICE" header
+#     y_position -= 0.7 * cm
+#     draw_centered_text("**TAX INVOICE**", y_position, bold=True)
+
+#     # tax and TIN numbers
+#     y_position -= 0.5 * cm
+#     p.drawString(1 * cm, y_position, "TAX NR : 220356643")
+#     y_position -= 0.5 * cm
+#     p.drawString(1 * cm, y_position, "TIN No: 2001020099")
+
+#     # item and price details
+#     for s in SaleItem.objects.filter(sale=sale):
+#         y_position -= 0.7 * cm
+#         p.drawString(1 * cm, y_position, f"{s.meal}")
+#         p.drawString(4.5 * cm, y_position, f"{s.quantity} @")
+#         p.drawString(6 * cm, y_position, f"${s.price}")
+
+#     # totals
+#     y_position -= 0.7 * cm
+#     p.drawString(1 * cm, y_position, "TAX :")
+#     p.drawString(6 * cm, y_position, f"{sale.tax}")
+
+#     y_position -= 0.5 * cm
+#     p.drawString(1 * cm, y_position, "TOTAL :")
+#     p.setFont("Helvetica-Bold", font_size)
+#     p.drawString(6 * cm, y_position, f"{sale.total_amount}")
+
+#     y_position -= 0.5 * cm
+#     p.setFont("Helvetica", font_size)
+#     p.drawString(1 * cm, y_position, "Cash :")
+#     p.drawString(6 * cm, y_position, f"{received_amount}")
+
+#     y_position -= 0.5 * cm
+#     p.drawString(1 * cm, y_position, "Change :")
+#     p.drawString(6 * cm, y_position, f'${change}')
+
+#     # cashier and transaction info
+#     y_position -= 0.7 * cm
+#     p.drawString(1 * cm, y_position, "Cashier :")
+#     p.drawString(6 * cm, y_position, f"{request.user.first_name}")
+
+#     # date and time
+#     y_position -= 0.5 * cm
+#     now = datetime.datetime.now().strftime("%a %d %m, %Y %H:%M")
+#     p.drawString(1 * cm, y_position, "Date :")
+#     p.drawString(6 * cm, y_position, now)
+
+#     # transaction number
+#     y_position -= 0.5 * cm
+#     p.drawString(1 * cm, y_position, "Transaction :")
+#     p.drawString(6 * cm, y_position, f'{sale.receipt_number}')
+
+#     y_position -= 0.5 * cm
+#     p.drawString(1 * cm, y_position, "Sales Channel :")
+#     p.drawString(6 * cm, y_position, "USD")
+
+#     draw_centered_text("Thank You Call Again", y_position, bold=True)
+
+#     y_position -= 0.5 * cm
+#     draw_centered_text("www.techcity.co.zw", y_position)
+
+#     p.showPage()
+#     p.save()
+    
+#     # Close the temporary file
+#     temp_pdf.close()
+    
+#     logger.info(pdf_path)
+    
+#     try:
+#         printer_name = "EPSON TM-T88V"  
+       
+#         subprocess.run([
+#             r"C:\Users\PC\AppData\Local\SumatraPDF\SumatraPDF.exe", 
+#             "-print-to",
+#             printer_name,
+#             pdf_path
+#         ], check=True)
+#     except Exception as e:
+#         logger.error(f"Error printing the file: {e}")
 
 @login_required
 def change_list(request):

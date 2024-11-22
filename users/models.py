@@ -60,6 +60,7 @@ class User(AbstractUser):
     phonenumber = models.CharField(max_length=13)
     role = models.CharField(choices=USER_ROLES, max_length=50)
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="users", null=True)
+    session_key = models.CharField(max_length=255)
 
     def __str__(self) -> str:
         return self.username

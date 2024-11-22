@@ -643,35 +643,61 @@
             unit: document.getElementById('id_unit').value, 
             min_stock_level: parseInt(document.getElementById('id_min_stock_level').value),
             description: document.getElementById('id_description').value,
-            raw_material:document.getElementById('id_raw_material').checked,
-            finished_product:document.getElementById('id_finished_product').checked
+            raw_material: document.getElementById('id_raw_material').checked,
+            finished_product: document.getElementById('id_finished_product').checked
         };
-        console.log(data)
+
+        console.log(data);
+
+        Swal.fire({
+            title: 'Processing...',
+            text: 'Saving the product data.',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
         fetch("{% url 'inventory:product' %}", {
             method: "POST",
             headers: {
-              "Content-Type": "application/json",
-              "X-CSRFToken": getCookie("csrftoken"), 
+                "Content-Type": "application/json",
+                "X-CSRFToken": getCookie("csrftoken"),
             },
             body: JSON.stringify(data),
-          })
-          .then(response => response.json())
-          .then(data=>{
-              if (data.success) {
-                successModal.show() 
-                supplierFormModal.hide()
-                fetchProducts()
-                setTimeout(()=>{
-                    successModal.hide()
-                }, 2000)
-              } else {
-                errorEl.textContent=data.message;
-              } 
-            })
-            .catch((error) => {
-              errorEl.textContent=data.error;
+        })
+        .then(response => response.json())
+        .then(data => {
+            
+            Swal.close();
+
+            if (data.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Product Added!',
+                    text: 'The product has been successfully added.',
+                }).then(() => {
+                    supplierFormModal.hide();
+                    fetchProducts();
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: data.message,
+                });
+            }
+        })
+        .catch((error) => {
+            Swal.close();
+            
+            Swal.fire({
+                icon: 'error',
+                title: 'Oops...',
+                text: 'An error occurred while saving the product.',
             });
-    } 
+        });
+    }
 
     async function fetchProducts(){
         try {

@@ -93,6 +93,12 @@ def login_view(request):
                 login(request, user)
                 logger.info(f'User: {user.first_name + " " + user.email} logged in')
                 logger.info(f'User role: {user.role}')
+
+                session_key = request.session.session_key
+                user.session_key = session_key
+                user.save()
+
+                logger.info(f'logged with session key: {session_key}')
                 if user.role in ['accountant', 'admin', 'owner']:
                     logger.info(f'User: {user.first_name + " " + user.email} is an {user.role}')
                     return redirect('dashborad')
@@ -103,14 +109,7 @@ def login_view(request):
                 messages.error(request, 'Your account is not active, contact admin')
         else:
             messages.warning(request, 'Invalid username or password')
-    
-    # if request.method == 'GET':
-    #     User = get_user_model()
-    #     if not User.objects.exists():
-    #         logger.info('here')
-    #         return redirect('company:register_company')
-    #     elif request.user.is_authenticated:
-    #         return redirect('pos:pos')
+
     return render(request, 'auth/login.html')
 
 

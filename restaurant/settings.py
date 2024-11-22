@@ -17,7 +17,8 @@ DEBUG = True
 ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1', 
-    'web-production-20d8.up.railway.app'
+    'web-production-20d8.up.railway.app',
+    '192.168.10.39'
 ]
 
 CSRF_TRUSTED_ORIGINS = [
@@ -103,17 +104,17 @@ LOGIN_URL = "users:login"
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
 DATABASES = {
-      'default': dj_database_url.config(
-        default='postgresql://postgres:bsgtOvAIFbBQgIcHLvlUFlvIiAiapbHm@autorack.proxy.rlwy.net:44818/railway'
-    )
-    # 'default': {
-    #     'ENGINE': 'django.db.backends.postgresql',
-    #     'NAME':  'urban_eats',
-    #     'USER': 'postgres',
-    #     'PASSWORD': 'neverfail',
-    #     # 'HOST': 'local',
-    #     'PORT': '5432'
-    # }
+    #   'default': dj_database_url.config(
+    #     default='postgresql://postgres:neverfail@192.168.10.156:5434/postgres'
+    # )
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME':  'urban_eats',
+        'USER': 'postgres',
+        'PASSWORD': 'neverfail',
+        # 'HOST': 'local',
+        'PORT': '5432'
+    }
 }
 
 AUTH_USER_MODEL = 'users.User'
@@ -227,3 +228,6 @@ CHANNEL_LAYERS = {
         "BACKEND": "channels.layers.InMemoryChannelLayer",
     }
 }
+
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+SESSION_COOKIE_AGE = 86400 #1day

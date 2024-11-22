@@ -1419,6 +1419,7 @@ def add_dish(request): # didn't change the name of the template, it caters for b
                 return JsonResponse({'success': False, 'message': f'Please fill all the missing data'}, status=400)
             
             with transaction.atomic():
+ 
                 dish = Dish.objects.create(
                     cost = cost,
                     name = dish_name,
@@ -1427,6 +1428,19 @@ def add_dish(request): # didn't change the name of the template, it caters for b
                     category=category
                 )
                 
+                """if category exists in meal category return else create and assign to the dish"""
+                category, _ =  MealCategory.objects.get_or_create(name=dish.name)
+
+                meal = Meal.objects.create(
+                    name=dish.name,
+                    price=dish.price,
+                    category=category,
+                    deactivate=False
+                )
+                
+                meal.dish.set([dish])
+                meal.save()
+
                 for item in cart:
                     raw_material = Product.objects.get(name=item.get('raw_material'))
                     Ingredient.objects.create(
