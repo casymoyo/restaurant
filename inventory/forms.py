@@ -60,6 +60,8 @@ class EditProductForm(forms.ModelForm):
         model = Product
         fields = '__all__'
         
+        cost = forms.DecimalField(max_digits=10, decimal_places=4)
+        
 # class productionForm(forms.ModelForm):
 #     class Meta:
 #         model = Production

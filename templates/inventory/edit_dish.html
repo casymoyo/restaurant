@@ -9,7 +9,7 @@
             <div>
                 <a href='{% url "inventory:dish_list" %}' class='border btn bx bx-arrow-back fs-5'></a>
                 <a href='/' class='bx bx-home btn border fs-5 mx-2'></a>
-                <span class='mt-2 fs-5'>Add Dish</span> 
+                <span class='mt-2 fs-5'>Edit Dish: {{ dish.name }}</span> 
             </div>
         </div>
 
@@ -103,6 +103,82 @@ $(document).ready(function() {
       updateCartTable()
     })
 
+    // get dish and ingridients data 
+    const getDishData = () =>{
+        
+        Swal.fire({
+            title: 'Loading...',
+            text: 'Please wait while we fetch the dish data.',
+            icon: 'info',
+            showConfirmButton: false,
+            allowOutsideClick: false, 
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        fetch('/inventory/dish_data_json/{{ dish.id }}/',{
+            method:'GET',
+            headers:{
+
+            }
+        })
+        .then(response => response.json())
+        .then(data =>{
+            console.log(data)
+            if(data.success){
+                displayDishData(data.dish[0], data.ingridients)
+                Swal.close()
+                console.log('data: ', data)
+            }else {
+                    Swal.fire({
+                        title: 'Error!',
+                        text: 'Failed to load dish data. Please try again.',
+                        icon: 'error',
+                        confirmButtonText: 'Ok'
+                    });
+                }
+            })
+            .catch(error => {
+                Swal.close();
+                console.log(error)
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'An error occurred while fetching data. Please try again later.',
+                    icon: 'error',
+                    confirmButtonText: 'Ok'
+                });
+            });
+    }
+
+    getDishData()
+
+    const displayDishData = (dish, ingridients) => {
+        // display dish info
+        console.log('dish', dish)
+        document.getElementById('dish_total').innerText = dish.cost
+        document.getElementById('id_name').value = dish.name
+        document.getElementById('id_price').value= dish.price
+        document.getElementById('id_portion_multiplier').value = dish.portion_multiplier
+        document.getElementById('id_category').value = dish.category
+
+        // display ingridients
+        console.log(ingridients)
+        ingridients.forEach((ing)=>{
+            totalProductCost =  totalCost(ing.quantity, ing.raw_material__cost, dish.portion_multiplier)
+            const item = {
+                note: ing.note,
+                raw_material: ing.raw_material__name,
+                quantity: ing.quantity,
+                cost: totalProductCost.toFixed(3),
+            };
+
+            cart.push(item);
+            updateCartTable();
+        })
+    }
+
+
     $('#id_raw_material').on('change', function(e) {
         const selectedProductId = e.target.value;
         const postData = {
@@ -150,7 +226,7 @@ $(document).ready(function() {
         category: document.getElementById('id_category').value
     };
     
-    fetch('{% url "inventory:dish_create" %}', {
+    fetch('/inventory/edit_dish/{{ dish.id }}/', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',

@@ -1,7 +1,7 @@
 import csv
 import asyncio
 import tempfile
-import subprocess
+# import subprocess
 import json, datetime
 from loguru import logger
 from decimal import Decimal
@@ -273,7 +273,7 @@ def process_sale(request):
 
                 logger.info(f'Now generating invoice: _ _ _ _ _')
                     
-                generate_receipt(request, sale, received_amount)
+                # generate_receipt(request, sale, received_amount)
 
                 Logs.objects.create(
                     user=request.user, 
@@ -290,129 +290,7 @@ def process_sale(request):
             logger.error(f'Error processing sale: {str(e)}')
             return JsonResponse({'success': False, 'message': str(e)}, status=400)
 
-def generate_receipt(request, sale, received_amount):
-    change = received_amount - sale.total_amount
-    logger.info(f'change:  {change}')
-    
-    #  page size to 8 cm by 9 cm
-    PAGE_WIDTH = 8 * cm
-    PAGE_HEIGHT = 29.7 * cm 
-
-    # temporary file to store the PDF
-    temp_pdf = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
-    pdf_path = temp_pdf.name
-
-    p = canvas.Canvas(pdf_path, pagesize=(PAGE_WIDTH, PAGE_HEIGHT))
-
-    # font size (12 px is roughly equivalent to 9 pt in ReportLab)
-    font_size = 9  # points
-    p.setFont("Helvetica", font_size)
-
-    def draw_centered_text(text, y_position, bold=False):
-        if bold:
-            p.setFont("Helvetica-Bold", font_size)
-        else:
-            p.setFont("Helvetica", font_size)
-        text_width = p.stringWidth(text)
-        x_position = (PAGE_WIDTH - text_width) / 2
-        p.drawString(x_position, y_position, text)
-
-    # starting positions
-    y_position = PAGE_HEIGHT - 1 * cm
-
-    # title and company info
-    draw_centered_text("Pars Sales Investments", y_position, bold=True)
-    y_position -= 0.5 * cm
-    draw_centered_text("65 Speke Ave", y_position)
-    y_position -= 0.5 * cm
-    draw_centered_text("Harare", y_position)
-
-    # "TAX INVOICE" header
-    y_position -= 0.7 * cm
-    draw_centered_text("**TAX INVOICE**", y_position, bold=True)
-
-    # tax and TIN numbers
-    y_position -= 0.5 * cm
-    p.drawString(1 * cm, y_position, "TAX NR : 220356643")
-    y_position -= 0.5 * cm
-    p.drawString(1 * cm, y_position, "TIN No: 2001020099")
-
-    # item and price details
-    for s in SaleItem.objects.filter(sale=sale):
-        y_position -= 0.7 * cm
-        p.drawString(1 * cm, y_position, f"{s.meal}")
-        p.drawString(4.5 * cm, y_position, f"{s.quantity} @")
-        p.drawString(6 * cm, y_position, f"${s.price}")
-
-    # totals
-    y_position -= 0.7 * cm
-    p.drawString(1 * cm, y_position, "TAX :")
-    p.drawString(6 * cm, y_position, f"{sale.tax}")
-
-    y_position -= 0.5 * cm
-    p.drawString(1 * cm, y_position, "TOTAL :")
-    p.setFont("Helvetica-Bold", font_size)
-    p.drawString(6 * cm, y_position, f"{sale.total_amount}")
-
-    y_position -= 0.5 * cm
-    p.setFont("Helvetica", font_size)
-    p.drawString(1 * cm, y_position, "Cash :")
-    p.drawString(6 * cm, y_position, f"{received_amount}")
-
-    y_position -= 0.5 * cm
-    p.drawString(1 * cm, y_position, "Change :")
-    p.drawString(6 * cm, y_position, f'${change}')
-
-    # cashier and transaction info
-    y_position -= 0.7 * cm
-    p.drawString(1 * cm, y_position, "Cashier :")
-    p.drawString(6 * cm, y_position, f"{request.user.first_name}")
-
-    # date and time
-    y_position -= 0.5 * cm
-    now = datetime.datetime.now().strftime("%a %d %m, %Y %H:%M")
-    p.drawString(1 * cm, y_position, "Date :")
-    p.drawString(6 * cm, y_position, now)
-
-    # transaction number
-    y_position -= 0.5 * cm
-    p.drawString(1 * cm, y_position, "Transaction :")
-    p.drawString(6 * cm, y_position, f'{sale.receipt_number}')
-
-    y_position -= 0.5 * cm
-    p.drawString(1 * cm, y_position, "Sales Channel :")
-    p.drawString(6 * cm, y_position, "USD")
-
-    draw_centered_text("Thank You Call Again", y_position, bold=True)
-
-    y_position -= 0.5 * cm
-    draw_centered_text("www.techcity.co.zw", y_position)
-
-    p.showPage()
-    p.save()
-    
-    # Close the temporary file
-    temp_pdf.close()
-
-    # Send the generated PDF to the Windows client for printing
-    try:
-        pdf_data = open(pdf_path, "rb").read()
-
-        # Assuming you have a service running on the Windows machine
-        # Replace with your Windows client server's IP address and endpoint
-        windows_client_url = 'http://192.168.10.39:500/print_receipt'
         
-        response = requests.post(windows_client_url, files={'receipt': pdf_data})
-
-        if response.status_code == 200:
-            return JsonResponse({'success': True, 'message': 'Receipt sent to printer successfully.'})
-        else:
-            return JsonResponse({'success': False, 'message': 'Failed to send receipt to printer.'})
-
-    except Exception as e:
-        logger.error(f"Error sending receipt to printer: {e}")
-        return JsonResponse({'success': False, 'message': str(e)})
-    
 # @login_required
 # def generate_receipt(request, sale, received_amount):
     

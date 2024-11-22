@@ -18,7 +18,8 @@ ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1', 
     'web-production-20d8.up.railway.app',
-    '192.168.10.39'
+    '192.168.10.156',
+    '192.168.10.173'
 ]
 
 CSRF_TRUSTED_ORIGINS = [
@@ -104,17 +105,22 @@ LOGIN_URL = "users:login"
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
 DATABASES = {
-    #   'default': dj_database_url.config(
-    #     default='postgresql://postgres:neverfail@192.168.10.156:5434/postgres'
-    # )
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME':  'urban_eats',
+        'NAME': 'postgres',  
         'USER': 'postgres',
         'PASSWORD': 'neverfail',
-        # 'HOST': 'local',
-        'PORT': '5432'
+        'HOST': '192.168.10.173',
+        'PORT': '5433',
     }
+    # 'default': {
+    #     'ENGINE': 'django.db.backends.postgresql',
+    #     'NAME': 'urban_eats',  
+    #     'USER': 'postgres',
+    #     'PASSWORD': 'neverfail',
+    #     # 'HOST': '192.168.10.173',
+    #     'PORT': '5432',
+    # }
 }
 
 AUTH_USER_MODEL = 'users.User'

@@ -41,8 +41,8 @@ class Product(models.Model):
     
     name = models.CharField(max_length=255)
     quantity = models.FloatField()
-    cost = models.DecimalField(max_digits=10, decimal_places=2)
-    price = models.DecimalField(max_digits=10, decimal_places=2, default=1) 
+    cost = models.DecimalField(max_digits=10, decimal_places=4)
+    price = models.DecimalField(max_digits=10, decimal_places=3, default=1) 
     unit = models.ForeignKey(UnitOfMeasurement, on_delete=models.CASCADE, null=True)
     category = models.ForeignKey(Category, on_delete=models.CASCADE, null=True)
     tax_type = models.CharField(max_length=50, choices=tax_choices, null=True)

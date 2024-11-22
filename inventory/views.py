@@ -1499,6 +1499,119 @@ def add_meal(request):
         }
     )
 
+@login_required
+def get_dish_data(request, dish_id):
+    try:
+        dish = Dish.objects.filter(id=dish_id).values(
+            'name',
+            'cost',
+            'price',
+            'category',
+            'portion_multiplier'
+        )
+        ingredients =Ingredient.objects.filter(dish__id = dish_id).values(
+            'note',
+            'quantity',
+            'raw_material__name',
+            'raw_material__cost'
+        )
+
+        return JsonResponse({'success':True, 'dish':list(dish), 'ingridients':list(ingredients)})
+
+    except Exception as e:
+        return JsonResponse({'success':False, 'message':f'{e}'})
+
+@login_required
+def edit_dish(request, dish_id):
+    if request.method == 'GET':
+        try:
+            dish = Dish.objects.get(id=dish_id)
+            dish_form = DishForm()
+            r_m = Product.objects.filter(raw_material=True)
+
+            return render(request, 'inventory/edit_dish.html',{
+                'r_m':r_m,
+                'dish':dish,
+                'dish_form': dish_form
+            })
+        except:
+            return JsonResponse({'success':False, 'message':f'Dish not found'})
+        
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            cart = data.get('cart', [])
+            
+            logger.info(f'cart: {cart}')
+            
+            dish_name = data.get('name')
+            portion_multiplier = data.get('portion_multiplier')
+            cost = data.get('dish_cost')
+            selling_price = data.get('selling_price')
+            category = data.get('category')
+
+            # Query and update the dish
+            dish = Dish.objects.get(id=dish_id)
+            logger.info(f'Dish name: {dish_name}')
+            dish.name = dish_name
+            dish.portion_multiplier = portion_multiplier
+            dish.cost = cost
+            dish.price = selling_price
+            dish.category = MealCategory.objects.get_or_create(name=category) 
+
+            # Query existing ingredients
+            existing_ingredients = Ingredient.objects.filter(dish=dish)
+            existing_ingredient_names = {ing.raw_material.name for ing in existing_ingredients}
+            raw_material_map = {rm.name: rm for rm in Product.objects.all()}
+
+            ingredient_updates = []
+            ingredients_to_delete = existing_ingredients[:]
+
+            for item in cart:
+                raw_material_name = item['raw_material']
+                raw_material = raw_material_map.get(raw_material_name)
+
+                if not raw_material:
+                    return JsonResponse({'success': False, 'message': f'Raw material "{raw_material_name}" not found.'})
+
+                if raw_material_name in existing_ingredient_names:
+                    # Update existing ingredient
+                    ing = next(ing for ing in existing_ingredients if ing.raw_material.name == raw_material_name)
+                    ing.quantity = item['quantity']
+                    ing.note = item['note']
+                    ingredient_updates.append(ing)
+
+                    # Remove from deletion list
+                    ingredients_to_delete.remove(ing)
+                else:
+                    # Add new ingredient
+                    ingr = Ingredient.objects.create(
+                        dish=dish,
+                        raw_material=raw_material,
+                        quantity=item['quantity'],
+                        note=item['note'],
+                    )
+                    logger.info(f'Added ingredient: {ingr}')
+
+            # Delete ingredients that are no longer in the cart
+            if ingredients_to_delete:
+                logger.info(f'Deleting ingredients: {ingredients_to_delete}')
+                Ingredient.objects.filter(id__in=[ing.id for ing in ingredients_to_delete]).delete()
+
+            # Bulk update ingredients
+            if ingredient_updates:
+                logger.info(f'Updating ingredients: {ingredient_updates}')
+                with transaction.atomic():
+                    Ingredient.objects.bulk_update(ingredient_updates, fields=['quantity', 'note'])
+
+            dish.save()
+            return JsonResponse({'success': True}, status=200)
+
+        except Exception as e:
+            logger.error(f'Error processing request: {e}')
+            return JsonResponse({'success': False, 'message': str(e)}, status=400)
+        
+    return JsonResponse({'success':False, 'message':'Invalid request'}, status=500)
 
 @login_required
 def edit_meal(request, meal_id):

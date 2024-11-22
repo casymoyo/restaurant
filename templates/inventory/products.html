@@ -38,7 +38,7 @@
                 {% for raw_material in raw_materials  %}
                     <tr>
                         <td><small>{{ raw_material.name }}</small></td>
-                        <td><small>{{ raw_material.cost}}</small></td>
+                        <td><small>{{ raw_material.cost | floatformat:3 }}</small></td>
                         <td><small>{{ raw_material.quantity | floatformat:3 }} {{ raw_material.unit }}</small></td>
                         <td>
                             <small>

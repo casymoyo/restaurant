@@ -57,10 +57,12 @@ urlpatterns = [
     
     # dishes
     path('dishes/', DishListView.as_view(), name='dish_list'),
+    path('edit_dish/<int:dish_id>/', edit_dish, name='edit_dish'),
     path('create/dish/', add_dish, name='dish_create'),
     path('dishes/<int:pk>/edit/', DishUpdateView.as_view(), name='dish_update'),
     path('dishes/<int:pk>/delete/', DishDeleteView.as_view(), name='dish_delete'),
     path('dish_json_detail/', dish_json_detail, name='dish_json_detail'),
+    path('dish_data_json/<int:dish_id>/', get_dish_data, name='dish_json'),
     
     # ingridients
     path('ingredients/', IngredientListView.as_view(), name='ingredient_list'),
