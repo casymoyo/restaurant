@@ -106,7 +106,7 @@
                                         <option value="{{ category.id }}">{{ category.name }}</option>
                                     {% endfor %}
                                 </select>
-                                <button type="button" class="btn btn-outline-dark bx bx-plus ml-1" id="id_add_cat"></button>
+                                <button type="button" class="btn btn-outline-dark bx bx-plus ml-1" data-bs-toggle="modal" data-bs-target="#AddCategoryModal"></button>
                             </div>
                         </div>
                         <div id="div_id_amount" class="mb-3">
@@ -195,10 +195,10 @@
         const addModal = new bootstrap.Modal(document.getElementById('AddExpenseModal'))
         const categoryModal = new bootstrap.Modal(document.getElementById('AddCategoryModal'))
 
-        document.getElementById('id_add_cat').addEventListener('click', ()=>{
-            addModal.hide()
-            categoryModal.show()
-        })
+        // document.getElementById('id_add_cat').addEventListener('click', ()=>{
+        //     addModal.hide()
+        //     categoryModal.show()
+        // })
 
         document.getElementById('id_add_expense').addEventListener('click', ()=>{
             addModal.show()
