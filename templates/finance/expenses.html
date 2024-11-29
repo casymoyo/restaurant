@@ -32,6 +32,7 @@
             <button class="btn btn-secondary" onclick="downloadReport()">Download Report</button>
         </div>
     </nav>
+
     <table class="table table-hover border table-striped table-bordered p-1" id="expense_table" style="width: 100%;">
         <thead>
             <tr>
@@ -85,7 +86,6 @@
             </tr>
         </tfoot>
     </table>
-    
     
     <div class="modal fade" id="editExpenseModal" tabindex="-1" aria-labelledby="editExpenseModalLabel" aria-hidden="true">
         <div class="modal-dialog">
@@ -287,7 +287,7 @@
     
         function updateCategory(data){
             const catElement = document.querySelector('#id_category')
-            // const editCatElement = document.getElementById('id_e_category')
+            const editCatElement = document.getElementById('id_e_category')
 
             while(catElement.options.length > 1){
                 catElement.remove(1)
@@ -296,12 +296,12 @@
                 catElement.innerHTML += `<option value=${category.id}>${category.name}</option>`
             })
 
-            // while(editCatElement.options.length > 1){
-            //     editCatElement.remove(1)
-            // }
-            // data.forEach((category)=>{
-            //     editCatElement.innerHTML += `<option value=${category.id}>${category.name}</option>`
-            // })
+            while(editCatElement.options.length > 1){
+                editCatElement.remove(1)
+            }
+            data.forEach((category)=>{
+                editCatElement.innerHTML += `<option value=${category.id}>${category.name}</option>`
+            })
         }
 
 
@@ -549,19 +549,23 @@
         return cookieValue;
     }
 
-    // let tableRows = document.querySelectorAll('#expense_table tbody, tr');
-    // let runningBalance = 0;
-    // tableRows.forEach((row, index) => {
-    //     if (index === 0) return;
+      function calculateTotal() {
+        const amounts = document.querySelectorAll('#expense_table .amount');
+        let total = 0;
 
-    //     let totalAmountCell = document.getElementById('total')
-    //     let amountCell = row.querySelector(".amount");
-    //     let amount = parseFloat(amountCell.textContent) || 0;
+        amounts.forEach(amountElement => {
+            const amountText = amountElement.textContent.trim();
+            const amountValue = parseFloat(amountText.replace(/,/g, '')); 
+            if (!isNaN(amountValue)) {
+                total += amountValue;
+            }
+        });
 
-    //     runningBalance = runningBalance + amount;
-        
-    //     totalAmountCell.textContent = runningBalance.toFixed(2);
-    // });
+
+        document.getElementById('total').textContent = total.toFixed(2);
+    }
+    window.onload = calculateTotal;
+
     </script>
 </div>
 {% endblock %}
