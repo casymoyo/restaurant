@@ -1550,6 +1550,8 @@ def edit_dish(request, dish_id):
             selling_price = data.get('selling_price')
             category = data.get('category')
 
+
+            cat, _= MealCategory.objects.get_or_create(name=category) 
             # Query and update the dish
             dish = Dish.objects.get(id=dish_id)
             logger.info(f'Dish name: {dish_name}')
@@ -1557,8 +1559,7 @@ def edit_dish(request, dish_id):
             dish.portion_multiplier = portion_multiplier
             dish.cost = cost
             dish.price = selling_price
-            dish.category = MealCategory.objects.get_or_create(name=category) 
-
+            dish.category = cat
             # Query existing ingredients
             existing_ingredients = Ingredient.objects.filter(dish=dish)
             existing_ingredient_names = {ing.raw_material.name for ing in existing_ingredients}

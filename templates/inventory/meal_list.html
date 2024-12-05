@@ -31,7 +31,7 @@
                     <td>{{ meal.name }}</td>
                     <td>
                         {% for dish in meal.dish.all %}
-                            {{ dish.name }} | ${{ dish.selling_price_per_portion}} <br>
+                            {{ dish.name }} - ${{ dish.cost }} <br>
                         {% empty %}
                             No dishes available
                         {% endfor %}
