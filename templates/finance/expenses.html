@@ -11,9 +11,9 @@
             <span class='mt-2 fs-5'>Expenses</span>
         </div>
         <div class="d-flex justify-content-between mt-1">
-            <a href="" class="btn btn-outline-dark mx-2"  data-bs-toggle="modal" data-bs-target="#AddExpenseModal">
+            <button type="button" class="btn btn-outline-dark mx-2" id="id_add_expense">
                 Add Expense
-            </a>
+            </button>
             <div>
                 <select class="form-select" id="filterSelect" onchange="filterCashBook()">
                     <option value="today" {% if filter_option == 'today' %}selected{% endif %}>Today</option>
@@ -32,6 +32,7 @@
             <button class="btn btn-secondary" onclick="downloadReport()">Download Report</button>
         </div>
     </nav>
+
     <table class="table table-hover border table-striped table-bordered p-1" id="expense_table" style="width: 100%;">
         <thead>
             <tr>
@@ -50,7 +51,7 @@
                 <td class="{% if expense.cancel %}text-decoration-line-through text-danger{% endif %}"><small>{{ expense.date }}</small></td>
                 <td class="{% if expense.cancel %}text-decoration-line-through text-danger{% endif %}"><small>{{ expense.description }}</small></td>
                 <td class="{% if expense.cancel %}text-decoration-line-through text-danger{% endif %}"><small>{{ expense.category.name }}</small></td>
-                <td class="{% if expense.cancel %}text-decoration-line-through text-danger{% endif %}"><small class="amount">{{ expense.amount }}</small></td>
+                <td class="{% if expense.cancel %}text-decoration-line-through text-danger{% endif %}"><small class="amount" id="exp_amount">{{ expense.amount }}</small></td>
                 <td class="{% if expense.cancel %}text-decoration-line-through text-danger{% endif %}"><small>{{ expense.user.username }}</small></td>
                 <td>
                     <input type="checkbox" 
@@ -85,7 +86,6 @@
             </tr>
         </tfoot>
     </table>
-    
     
     <div class="modal fade" id="editExpenseModal" tabindex="-1" aria-labelledby="editExpenseModalLabel" aria-hidden="true">
         <div class="modal-dialog">
@@ -158,7 +158,7 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <form method="post"
+                    <form method="post">
                         {% csrf_token %}
                         <div id="div_id_category" class="mb-3">
                             <label for="id_category" class="form-label requiredField">Category<span class="asteriskField">*</span></label>
@@ -190,22 +190,22 @@
     </div>
     
     <script>
-        let tableRows = document.querySelectorAll('#expense_table tbody, tr');
-        let runningBalance = 0;
-        new DataTable('#expense_table')
+        new DataTable('#expense_table',{
+            paging:false
+        })
 
-        tableRows.forEach((row, index) => {
-            if (index === 0) return;
+        const addModal = new bootstrap.Modal(document.getElementById('AddExpenseModal'))
+        const categoryModal = new bootstrap.Modal(document.getElementById('AddCategoryModal'))
 
-            let totalAmountCell = document.getElementById('total')
-            let amountCell = row.querySelector(".amount");
-            let amount = parseFloat(amountCell.textContent) || 0;
+        document.getElementById('id_add_cat').addEventListener('click', ()=>{
+            addModal.hide()
+            categoryModal.show()
+        })
+
+        document.getElementById('id_add_expense').addEventListener('click', ()=>{
+            addModal.show()
+        })
     
-            runningBalance = runningBalance + amount;
-            
-            totalAmountCell.textContent = runningBalance.toFixed(2);
-        });
-
         function updateExpenseStatus(expenseId) {
             const checkbox = document.querySelector(`input[onchange="updateExpenseStatus(${expenseId})"]`);
             const status = checkbox.checked;
@@ -239,13 +239,9 @@
             });
         }
 
-        const addModal = new bootstrap.Modal(document.getElementById('AddExpenseModal'))
-        const categoryModal = new bootstrap.Modal(document.getElementById('AddCategoryModal'))
-
         function categorySubmit(){
         
             const data = {name:$('#id_name').val()}
-            console.log(data)
               
             fetch("{% url 'finance:add_expense_category' %}", {
                 method: "POST",
@@ -258,9 +254,9 @@
               .then(response => response.json())
               .then(data => {
                   if (data.success) {
-                    fetchCategories()
                     categoryModal.hide()
                     addModal.show()
+                    fetchCategories()
                   } else {
                     Swal.fire({
                         title: "Error",
@@ -539,7 +535,6 @@
         window.location.href = url;
     }
 
-    
 
     function getCookie(name) {
         let cookieValue = null;
@@ -555,6 +550,24 @@
         }
         return cookieValue;
     }
+
+      function calculateTotal() {
+        const amounts = document.querySelectorAll('#expense_table .amount');
+        let total = 0;
+
+        amounts.forEach(amountElement => {
+            const amountText = amountElement.textContent.trim();
+            const amountValue = parseFloat(amountText.replace(/,/g, '')); 
+            if (!isNaN(amountValue)) {
+                total += amountValue;
+            }
+        });
+
+
+        document.getElementById('total').textContent = total.toFixed(2);
+    }
+    window.onload = calculateTotal;
+
     </script>
 </div>
 {% endblock %}

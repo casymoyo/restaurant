@@ -94,11 +94,11 @@ def login_view(request):
                 logger.info(f'User: {user.first_name + " " + user.email} logged in')
                 logger.info(f'User role: {user.role}')
 
-                session_key = request.session.session_key
-                user.session_key = session_key
-                user.save()
+                # session_key = request.session.session_key
+                # user.session_key = session_key
+                # user.save()
 
-                logger.info(f'logged with session key: {session_key}')
+                # logger.info(f'logged with session key: {session_key}')
                 if user.role in ['accountant', 'admin', 'owner']:
                     logger.info(f'User: {user.first_name + " " + user.email} is an {user.role}')
                     return redirect('dashborad')
