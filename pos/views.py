@@ -37,8 +37,6 @@ def pos(request):
 
     combined_items = list(meals) + list(dishes) # to revert added a meal from dish creation
 
-    logger.info(f'user session: {request.user.session_key}')
-
     return render(request, 'pos.html', 
         {
             'combined_items': meals,
