@@ -1685,7 +1685,6 @@ def end_of_day_view(request):
         except EndOfDay.DoesNotExist:
             e_o_d = None
 
-        
         productions_today = Production.objects.filter(date_created=today, status=True, declared=True)
         production_items_today = ProductionItems.objects.filter(production__in=productions_today)
 
@@ -1763,12 +1762,15 @@ def confirm_end_of_day(request):
         data = json.loads(request.body)
         amount = data.get('cashed_amount')
         sales = Sale.objects.filter(date=localdate(), staff=False).aggregate(total_amount=Sum('total_amount'))['total_amount'] or 0
+        total_amount_staff_sold_today = Sale.objects.filter(date=localdate(), staff=True).aggregate(total_amount=Sum('total_amount'))['total_amount'] or 0
         
         e_o_d = EndOfDay.objects.get(date=localdate())
         e_o_d.total_sales = sales
         e_o_d.cashed_amount = Decimal(amount)
         e_o_d.done = True
         e_o_d.save()
+
+        end_of_day_items = EndOfDayItems.objects.filter(end_of_day=e_o_d)
         
         # create cash in object
         CashUp.objects.create(
@@ -1778,7 +1780,10 @@ def confirm_end_of_day(request):
             user = request.user, 
             status = True if amount == sales else False
         )
-        
+
+        buffer = generate_end_of_day_report(e_o_d, end_of_day_items, total_amount_staff_sold_today)
+        logger.info(f'buffer: {buffer}')
+        send_end_of_day_report(request, buffer)
         
         logger.info('saved')
     except Exception as e:
@@ -1789,9 +1794,9 @@ def confirm_end_of_day(request):
 @login_required
 def supplier_prices(request, raw_material_name):
     """
-    {
-        raw_material_name: str
-    }
+        {
+            raw_material_name: str
+        }
     """
     try:
         
@@ -1877,98 +1882,54 @@ def end_of_day_detail(request, e_o_d_id):
             'wastage_cost_value':wastage_cost_value
         }
     )
-    
+
+from django.http import HttpResponse
+
 @login_required
-def generate_end_of_day_report(end_of_day, items, staff_sold_amount):
-    buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4)
-
-    elements = []
-
-    # Title
-    styles = getSampleStyleSheet()
-    title_style = ParagraphStyle(
-        'title_style',
-        fontSize=16,
-        alignment=TA_CENTER,
-        spaceAfter=12,
+def generate_and_email_report(request):
+    # Mock data
+    end_of_day = EndOfDay(
+        total_sales=500.00,
+        cashed_amount=480.00,
+        date=datetime.date.today()
     )
-    title = Paragraph(f"End Of Day Report: {end_of_day.date}", title_style)
-    elements.append(title)
-    elements.append(Spacer(1, 12))
-
-    # Sales Section Title
-    sales_title = Paragraph("Sales", styles['Heading2'])
-    elements.append(sales_title)
-    elements.append(Spacer(1, 6))
-
-    # Sales Section
-    sales_data = [
-        ["Details", "Quantity", "Amount"],
-        ["Total", "", f"{end_of_day.total_sales:.2f}"],
-        ["Staff", "", "(6.00)"],
-        ["Non Staff", "", f"{end_of_day.total_sales - 6:.2f}"],
-        ["Cashed Amount", "", f"{end_of_day.cashed_amount:.2f}"],
-        ["Difference", "", f"{end_of_day.cashed_amount - (end_of_day.total_sales - staff_sold_amount):.2f}"],
+    items = [
+        EndOfDayItem(
+            dish_name="Spaghetti",
+            total_portions=50,
+            total_sold=45,
+            staff_portions=5,
+            wastage=0,
+            leftovers=0,
+            expected=0
+        ),
+        EndOfDayItem(
+            dish_name="Burger",
+            total_portions=30,
+            total_sold=28,
+            staff_portions=2,
+            wastage=0,
+            leftovers=0,
+            expected=0
+        ),
     ]
+    staff_sold_amount = 6.00
 
-    sales_table = Table(sales_data, colWidths=[2 * inch, 1 * inch, 2 * inch])
-    sales_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
-        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),  
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, -1), 10),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-        ('BACKGROUND', (0, 1), (-1, -1), colors.white),
-        ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
-        ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
-    ]))
-    elements.append(sales_table)
-    elements.append(Spacer(1, 12))
+    # Generate PDF
+    pdf_buffer = generate_end_of_day_report(end_of_day, items, staff_sold_amount)
 
-    # Dishes Section Title
-    dishes_title = Paragraph("Dishes", styles['Heading2'])
-    elements.append(dishes_title)
-    elements.append(Spacer(1, 6))
+    # Send Email
+    send_end_of_day_report(request, pdf_buffer)
 
-    # Dishes Section
-    dish_data = [
-        ["Dish Name", "S A C Portions", "P Sold", "S Portions", "Price Per Unit", "Wastage", "Left Overs", "Over/Less"]
-    ]
-    for item in items:
-        dish_data.append([
-            item.dish_name,
-            item.total_portions,
-            item.total_sold,
-            item.staff_portions,
-            "N/A",  
-            item.wastage,
-            item.leftovers,
-            item.expected
-        ])
-
-    dish_table = Table(dish_data, colWidths=[1 * inch] * 8)
-    dish_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, -1), 10),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-        ('BACKGROUND', (0, 1), (-1, -1), colors.white),
-        ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
-        ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
-    ]))
-    elements.append(dish_table)
-
-    doc.build(elements)
-    buffer.seek(0)
-    return buffer
+    # Optionally Return PDF in HTTP Response
+    response = HttpResponse(pdf_buffer, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="EndOfDayReport.pdf"'
+    return response
 
 
-@login_required # put to tasks
+# @login_required # put to tasks
 def send_end_of_day_report(request, buffer):
+    logger.info(f'Sending Email')
     email = EmailMessage(
         f"End of Day Report:",
         "Please find the attached End of Day report. The expected amount is to be calculated on cost price, since they are no stipulated prices per dishes, but if they to be put the expected table will be relavant.",

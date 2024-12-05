@@ -4,8 +4,8 @@
 {% block title%} Users {% endblock%}
 {% block content %}
 <div class="users container">
-    <div class='mt-2 mb-2'>
-        <div class='mt-2 d-flex justify-content-between align-items-center'>
+    <div class='mb-2'>
+        <div class='d-flex justify-content-between align-items-center border-bottom rounded'>
             <div>
                 <a href='/' class='bx bx-home btn border fs-5'></a>
                 <span class='mt-2 fs-5 mx-2'>Users</span>
@@ -21,8 +21,9 @@
     </div>
 
     <table class="table table-striped" style='width:100%;' id='users_table'>
-        <thead>
+        <thead class="table-dark">
             <tr>
+                <th>#</th>
                 <th>ID</th>
                 <th>Name</th>
                 <th>Email</th>
@@ -33,6 +34,7 @@
         <tbody>
             {% for user in users %}
             <tr>
+                <td><small>{{ forloop.counter }}</small></td>
                 <td><small>{{ user.id }}</small></td>
                 <td><small>{{ user.get_full_name|default:user.username }}</small></td>
                 <td><small>{{ user.email }}</small></td>
@@ -108,7 +110,10 @@
 
 <script src="{% static 'css/bootstrap/js/bootstrap.bundle.min.js'%}"></script>  
 <script>
-    new DataTable('#users_table')
+    new DataTable('#users_table', {
+        paging:false
+    })
+
     const addBtn = document.getElementById('addUser');
     const addModal = new bootstrap.Modal(document.getElementById('addUserModal'));
 

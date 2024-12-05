@@ -108,22 +108,22 @@ DATABASES = {
     # 'default': dj_database_url.config(
     #     default='postgresql://postgres:bsgtOvAIFbBQgIcHLvlUFlvIiAiapbHm@autorack.proxy.rlwy.net:44818/railway'
     # )
-    # 'default': {
-    #     'ENGINE': 'django.db.backends.postgresql',
-    #     'NAME': 'urban_eats',  
-    #     'USER': 'postgres',
-    #     'PASSWORD': 'neverfail',
-    #     # 'HOST': '192.168.10.173',
-    #     'PORT': '5432',
-    # }
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'urban_eats',  
         'USER': 'postgres',
         'PASSWORD': 'neverfail',
-        'HOST': '192.168.10.173',
-        'PORT': '5433',
+        # 'HOST': '192.168.10.173',
+        'PORT': '5432',
     }
+    # 'default': {
+    #     'ENGINE': 'django.db.backends.postgresql',
+    #     'NAME': 'postgres',  
+    #     'USER': 'postgres',
+    #     'PASSWORD': 'neverfail',
+    #     'HOST': '192.168.10.173',
+    #     'PORT': '5433',
+    # }
 }
 
 AUTH_USER_MODEL = 'users.User'
@@ -240,3 +240,49 @@ CHANNEL_LAYERS = {
 
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 SESSION_COOKIE_AGE = 86400 #1day
+
+# LOGGING = {
+#     'version': 1,
+#     'disable_existing_loggers': False, 
+#     'formatters': {
+#         'verbose': {
+#             'format': '{levelname} {asctime} {module} {message}',
+#             'style': '{',
+#         },
+#         'simple': {
+#             'format': '{levelname} {message}',
+#             'style': '{',
+#         },
+#     },
+#     'handlers': {
+#         'file': {
+#             'level': 'WARNING',
+#             'class': 'logging.FileHandler',
+#             'filename': os.path.join(BASE_DIR, 'logs/app.log'),
+#             'formatter': 'verbose',
+#         },
+#         'console': {
+#             'level': 'DEBUG',
+#             'class': 'logging.StreamHandler',
+#             'formatter': 'simple',
+#         },
+#         'mail_admins': {
+#             'level': 'ERROR',
+#             'class': 'django.utils.log.AdminEmailHandler',
+#             'formatter': 'verbose',
+#         },
+#     },
+#     'loggers': {
+#         'django': {
+#             'handlers': ['file', 'console', 'mail_admins'],
+#             'level': 'DEBUG',  
+#             'propagate': True,
+#         },
+#         'restaurant': { 
+#             'handlers': ['file', 'console'],
+#             'level': 'INFO',
+#             'propagate': False,
+#         },
+#     },
+# }
+

@@ -11,18 +11,18 @@ from loguru import logger
 from settings.models import NotificationEmails
 from utils.email_notification import modules_list
 
-def send_end_of_day_report(buffer):
-    email = EmailMessage(
-        f"End of Day Report:",
-        "Please find the attached End of Day report. The expected amount is to be calculated on cost price, since they are no stipulated prices per dishes, but if they to be put the expected table will be relavant.",
-        'admin@techcity.co.zw',
-        ['mirackletec@gmail.com'],
-    )
-    email.attach(f'EndOfDayReport.pdf', buffer.getvalue(), 'application/pdf')
+# def send_end_of_day_report(buffer):
+#     email = EmailMessage(
+#         f"End of Day Report:",
+#         "Please find the attached End of Day report. The expected amount is to be calculated on cost price, since they are no stipulated prices per dishes, but if they to be put the expected table will be relavant.",
+#         'admin@techcity.co.zw',
+#         ['mirackletec@gmail.com'],
+#     )
+#     email.attach(f'EndOfDayReport.pdf', buffer.getvalue(), 'application/pdf')
     
-    EmailThread(email).start()
+#     EmailThread(email).start()
 
-    logger.info(f' End of day report email sent.')
+#     logger.info(f' End of day report email sent.')
  
 
 def send_production_creation_notification(production_id):
