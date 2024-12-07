@@ -1550,16 +1550,15 @@ def edit_dish(request, dish_id):
             selling_price = data.get('selling_price')
             category = data.get('category')
 
-            # Query and update the dish
+
+            cat, _= MealCategory.objects.get_or_create(name=category) 
             dish = Dish.objects.get(id=dish_id)
             logger.info(f'Dish name: {dish_name}')
             dish.name = dish_name
             dish.portion_multiplier = portion_multiplier
             dish.cost = cost
             dish.price = selling_price
-            dish.category = MealCategory.objects.get_or_create(name=category) 
-
-            # Query existing ingredients
+            dish.category = dish.category
             existing_ingredients = Ingredient.objects.filter(dish=dish)
             existing_ingredient_names = {ing.raw_material.name for ing in existing_ingredients}
             raw_material_map = {rm.name: rm for rm in Product.objects.all()}
@@ -1575,16 +1574,13 @@ def edit_dish(request, dish_id):
                     return JsonResponse({'success': False, 'message': f'Raw material "{raw_material_name}" not found.'})
 
                 if raw_material_name in existing_ingredient_names:
-                    # Update existing ingredient
                     ing = next(ing for ing in existing_ingredients if ing.raw_material.name == raw_material_name)
                     ing.quantity = item['quantity']
                     ing.note = item['note']
                     ingredient_updates.append(ing)
 
-                    # Remove from deletion list
                     ingredients_to_delete.remove(ing)
                 else:
-                    # Add new ingredient
                     ingr = Ingredient.objects.create(
                         dish=dish,
                         raw_material=raw_material,
@@ -1593,12 +1589,10 @@ def edit_dish(request, dish_id):
                     )
                     logger.info(f'Added ingredient: {ingr}')
 
-            # Delete ingredients that are no longer in the cart
             if ingredients_to_delete:
                 logger.info(f'Deleting ingredients: {ingredients_to_delete}')
                 Ingredient.objects.filter(id__in=[ing.id for ing in ingredients_to_delete]).delete()
 
-            # Bulk update ingredients
             if ingredient_updates:
                 logger.info(f'Updating ingredients: {ingredient_updates}')
                 with transaction.atomic():
