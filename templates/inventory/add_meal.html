@@ -90,6 +90,11 @@
 </div>
 <script>
 
+     new SlimSelect({
+        select: '#id_dish',
+        placeholder: 'Select Product'
+    });
+
     function populateCategories() {
         fetch("{% url 'inventory:create_meal_category' %}", {
             method: 'GET',

@@ -98,17 +98,14 @@
         100% { transform: rotate(360deg); }
     }
 </style>
-<!-- <div class="loader-wrapper" id="loader">
-    <div class="loader"></div>
-</div> -->
     <div class="pos px-2">
         <div class="">
             <div class="row">
                 <div class="col-8">
-                    <div class="div" style='height:80vh;'>
-                        <div class="d-flex mt-2">
-                            {{ meals }}
-                            <select class="form-select" id="food_search">
+                    <div class="div" style='height:78vh;'>
+                        <div class="d-flex justify-content-between bg-dark text-light p-1 rounded mt-2 align-items-center">
+                            <h5 class="text-light">Products</h5>
+                            <!-- <select class="form-select w-25" id="food_search">
                                 {% for item in combined_items %}
                                     <option 
                                         value="{{ item.id }}" 
@@ -117,10 +114,17 @@
                                         {{ meal.name }}
                                     </option>
                                 {% endfor %}
-                            </select>
+                            </select> -->
+                            <input 
+                                type="text" 
+                                id="searchInput" 
+                                class="form-control form-control-sm w-25" 
+                                placeholder="Search for items..." 
+                                oninput="searchItems()"
+                            >
                         </div>
                         <div class="mt-4">
-                            <div class="row" id="itemsContainer" style="height: 60vh; overflow-y: visible;"></div>
+                            <div class="row" id="itemsContainer" style='height:70vh; overflow-y: auto;'></div>
                         </div>
                     </div>
 
@@ -130,10 +134,6 @@
                         <li class='mx-2'>
                             <button class="btn btn-outline-dark w-100" id="chargeStaff">Staff</button>
                         </li>
-                        <!-- <li>
-                            <button class="btn btn-outline-dark w-100">F2 Seacrch</button>
-                        </li>
-                         -->
                         <li>
                             <a href='{% url "pos:change_list" %}' class="btn btn-outline-dark w-100">View Change</a>
                         </li>
@@ -315,7 +315,7 @@
         </div>
 
     </div>
-    
+    <script src="https://unpkg.com/imask"></script>
     <script>
         const VAT_RATE = 0.15;
         let cart = [];
@@ -337,9 +337,41 @@
 
         // to remove the absolute create customer change function it have been overide
 
+        const phoneMask = IMask(
+            document.getElementById('phonenumber'),
+            { mask: '(+263) 778587612' } // US phone number format
+        );
+
         // show change modal
-        function showChangeForm(){
+        const showChangeForm = () =>{
+            chargeModal.hide()
             $('#customModal').modal('show');
+        }
+
+        function renderItems(items) {
+            itemsContainer.innerHTML = ''; 
+            items.forEach(item => {
+                const itemCard = document.createElement('div');
+                itemCard.className = 'col-md-3';
+                itemCard.innerHTML = `
+                    <div class="card mb-4 box-shadow">
+                        <div class="card-body rounded p-3 d-flex align-items-center bg-warning" style='height:50px;' onclick="addToCart(${item.id}, '${item.name}', ${item.price}, ${item.finished_product})">
+                            <p class="card-text text">${item.name}</p>
+                        </div>
+                    </div>
+                `;
+                itemsContainer.appendChild(itemCard);
+            });
+        }
+
+        function searchItems() {
+            console.log(mealsData)
+            const query = document.getElementById('searchInput').value
+            console.log(query)
+            const filteredItems = items.filter(item => 
+                item.name.toLowerCase().includes(query) 
+            );
+            displayItems(filteredItems);
         }
 
         // Proceed button for Creating change for a client
@@ -387,7 +419,6 @@
                 event.preventDefault(); 
                 chargeModal.hide()
                 $('#customModal').modal('show');
-                
             }
         });
 
@@ -447,27 +478,27 @@
         });
         
 
-        $(document).ready(function() {
-            $('#food_search').select2(
-                {placeholder: 'Search'}
-            ).on('change', function (e){
-                    const element = document.getElementById('food_search');
-                    const selectedOption = element.options[element.selectedIndex]
+        // $(document).ready(function() {
+        //     $('#food_search').select2(
+        //         {placeholder: 'Search'}
+        //     ).on('change', function (e){
+        //             const element = document.getElementById('food_search');
+        //             const selectedOption = element.options[element.selectedIndex]
 
-                    console.log(selectedOption)
+        //             console.log(selectedOption)
                     
-                    price = parseFloat(selectedOption.getAttribute('data-price'))
+        //             price = parseFloat(selectedOption.getAttribute('data-price'))
 
-                    addToCart(
-                            selectedOption.value, 
-                            selectedOption.text, 
-                            price, 
-                            selectedOption.getAttribute('data-type')
-                        );
+        //             addToCart(
+        //                     selectedOption.value, 
+        //                     selectedOption.text, 
+        //                     price, 
+        //                     selectedOption.getAttribute('data-type')
+        //                 );
 
-                        $('#food_search').val(null).trigger('change');
-            })
-        }) 
+        //                 $('#food_search').val(null).trigger('change');
+        //     })
+        // }) 
 
         document.addEventListener('DOMContentLoaded', function() {
             const sittingButton = document.getElementById('sitting-btn');
@@ -638,13 +669,13 @@
             updateOrderDetails()
         }
     
-        function searchFunction(e) {
-            const searchField = $('#food_search'); 
-            searchField.select2('open');
+        // function searchFunction(e) {
+        //     const searchField = $('#food_search'); 
+        //     searchField.select2('open');
         
-            const searchInput = $('.select2-search__field'); 
+        //     const searchInput = $('.select2-search__field'); 
         
-        }
+        // }
     
         function chargeFunction(event) {
             if (cart.length === 0){
@@ -683,12 +714,12 @@
             }
         })
 
-        document.getElementById('food_search').addEventListener('input', function () {
-            const searchValue = this.value.toLowerCase();
-            const filteredItems = items.filter(item => item.name.toLowerCase().includes(searchValue));
+        // document.getElementById('food_search').addEventListener('input', function () {
+        //     const searchValue = this.value.toLowerCase();
+        //     const filteredItems = items.filter(item => item.name.toLowerCase().includes(searchValue));
             
-            displayItems(filteredItems);
-        });
+        //     displayItems(filteredItems);
+        // });
     
         function displayItems(itemsToDisplay) {
             const itemsContainer = document.getElementById('itemsContainer');

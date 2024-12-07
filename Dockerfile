@@ -1,24 +1,33 @@
-# Use the official Python image from the Docker Hub
+# Use official Python image as a base
 FROM python:3.12-slim
 
 # Set environment variables
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
 
-# Set the working directory in the container
+# Set the working directory inside the container
 WORKDIR /app
 
-# Copy the requirements file into the container
-COPY . .
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    libpq-dev \
+    build-essential \
+    curl \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Install dependencies
+# Install Redis client library
+RUN pip install redis
+
+# Copy requirements file and install dependencies
+COPY requirements.txt /app/
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the application code into the container
+# Copy project files to the container
 COPY . /app/
 
-# Expose the port the app runs on
+# Expose port for the application
 EXPOSE 8000
 
-# Start Daphne server
-CMD ["daphne", "-b", "0.0.0.0", "-p", "8000", "restaurant.asgi:application"]
+# Run Django application
+CMD ["gunicorn", "resturant.wsgi:application", "--bind", "0.0.0.0:8000"]

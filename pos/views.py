@@ -1,7 +1,7 @@
 import csv
 import asyncio
 import tempfile
-# import subprocess
+import subprocess
 import json, datetime
 from loguru import logger
 from decimal import Decimal
@@ -28,14 +28,17 @@ from django.views.decorators.cache import cache_page
 import requests
 import tempfile
 
+import logging
 
-@login_required
+logger = logging.getLogger('restaurant')  
+
+
 # @cache_page(60*50)
 def pos(request):
     meals = Meal.objects.filter(deactivate=False)
     dishes = Dish.objects.all()
 
-    combined_items = list(meals) + list(dishes) # to revert added a meal from dish creation
+    combined_items = list(meals) + list(dishes)
 
     return render(request, 'pos.html', 
         {
@@ -287,127 +290,126 @@ def process_sale(request):
         except Exception as e:
             logger.error(f'Error processing sale: {str(e)}')
             return JsonResponse({'success': False, 'message': str(e)}, status=400)
-
-        
-# @login_required
-# def generate_receipt(request, sale, received_amount):
+     
+@login_required
+def generate_receipt(request, sale, received_amount):
     
-#     change = received_amount - sale.total_amount
-#     logger.info(f'change:  {change}')
+    change = received_amount - sale.total_amount
+    logger.info(f'change:  {change}')
     
-#     #  page size to 8 cm by 9 cm
-#     PAGE_WIDTH = 8 * cm
-#     PAGE_HEIGHT = 29.7 * cm 
+    #  page size to 8 cm by 9 cm
+    PAGE_WIDTH = 8 * cm
+    PAGE_HEIGHT = 29.7 * cm 
 
-#     # temporary file to store the PDF
-#     temp_pdf = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
-#     pdf_path = temp_pdf.name
+    # temporary file to store the PDF
+    temp_pdf = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
+    pdf_path = temp_pdf.name
 
-#     p = canvas.Canvas(pdf_path, pagesize=(PAGE_WIDTH, PAGE_HEIGHT))
+    p = canvas.Canvas(pdf_path, pagesize=(PAGE_WIDTH, PAGE_HEIGHT))
 
-#     # font size (12 px is roughly equivalent to 9 pt in ReportLab)
-#     font_size = 9  # points
-#     p.setFont("Helvetica", font_size)
+    # font size (12 px is roughly equivalent to 9 pt in ReportLab)
+    font_size = 9  # points
+    p.setFont("Helvetica", font_size)
 
-#     def draw_centered_text(text, y_position, bold=False):
-#         if bold:
-#             p.setFont("Helvetica-Bold", font_size)
-#         else:
-#             p.setFont("Helvetica", font_size)
-#         text_width = p.stringWidth(text)
-#         x_position = (PAGE_WIDTH - text_width) / 2
-#         p.drawString(x_position, y_position, text)
+    def draw_centered_text(text, y_position, bold=False):
+        if bold:
+            p.setFont("Helvetica-Bold", font_size)
+        else:
+            p.setFont("Helvetica", font_size)
+        text_width = p.stringWidth(text)
+        x_position = (PAGE_WIDTH - text_width) / 2
+        p.drawString(x_position, y_position, text)
 
-#     # starting positions
-#     y_position = PAGE_HEIGHT - 1 * cm
+    # starting positions
+    y_position = PAGE_HEIGHT - 1 * cm
 
-#     # title and company info
-#     draw_centered_text("Pars Sales Investments", y_position, bold=True)
-#     y_position -= 0.5 * cm
-#     draw_centered_text("65 Speke Ave", y_position)
-#     y_position -= 0.5 * cm
-#     draw_centered_text("Harare", y_position)
+    # title and company info
+    draw_centered_text("Pars Sales Investments", y_position, bold=True)
+    y_position -= 0.5 * cm
+    draw_centered_text("65 Speke Ave", y_position)
+    y_position -= 0.5 * cm
+    draw_centered_text("Harare", y_position)
 
-#     # "TAX INVOICE" header
-#     y_position -= 0.7 * cm
-#     draw_centered_text("**TAX INVOICE**", y_position, bold=True)
+    # "TAX INVOICE" header
+    y_position -= 0.7 * cm
+    draw_centered_text("**TAX INVOICE**", y_position, bold=True)
 
-#     # tax and TIN numbers
-#     y_position -= 0.5 * cm
-#     p.drawString(1 * cm, y_position, "TAX NR : 220356643")
-#     y_position -= 0.5 * cm
-#     p.drawString(1 * cm, y_position, "TIN No: 2001020099")
+    # tax and TIN numbers
+    y_position -= 0.5 * cm
+    p.drawString(1 * cm, y_position, "TAX NR : 220356643")
+    y_position -= 0.5 * cm
+    p.drawString(1 * cm, y_position, "TIN No: 2001020099")
 
-#     # item and price details
-#     for s in SaleItem.objects.filter(sale=sale):
-#         y_position -= 0.7 * cm
-#         p.drawString(1 * cm, y_position, f"{s.meal}")
-#         p.drawString(4.5 * cm, y_position, f"{s.quantity} @")
-#         p.drawString(6 * cm, y_position, f"${s.price}")
+    # item and price details
+    for s in SaleItem.objects.filter(sale=sale):
+        y_position -= 0.7 * cm
+        p.drawString(1 * cm, y_position, f"{s.meal}")
+        p.drawString(4.5 * cm, y_position, f"{s.quantity} @")
+        p.drawString(6 * cm, y_position, f"${s.price}")
 
-#     # totals
-#     y_position -= 0.7 * cm
-#     p.drawString(1 * cm, y_position, "TAX :")
-#     p.drawString(6 * cm, y_position, f"{sale.tax}")
+    # totals
+    y_position -= 0.7 * cm
+    p.drawString(1 * cm, y_position, "TAX :")
+    p.drawString(6 * cm, y_position, f"{sale.tax}")
 
-#     y_position -= 0.5 * cm
-#     p.drawString(1 * cm, y_position, "TOTAL :")
-#     p.setFont("Helvetica-Bold", font_size)
-#     p.drawString(6 * cm, y_position, f"{sale.total_amount}")
+    y_position -= 0.5 * cm
+    p.drawString(1 * cm, y_position, "TOTAL :")
+    p.setFont("Helvetica-Bold", font_size)
+    p.drawString(6 * cm, y_position, f"{sale.total_amount}")
 
-#     y_position -= 0.5 * cm
-#     p.setFont("Helvetica", font_size)
-#     p.drawString(1 * cm, y_position, "Cash :")
-#     p.drawString(6 * cm, y_position, f"{received_amount}")
+    y_position -= 0.5 * cm
+    p.setFont("Helvetica", font_size)
+    p.drawString(1 * cm, y_position, "Cash :")
+    p.drawString(6 * cm, y_position, f"{received_amount}")
 
-#     y_position -= 0.5 * cm
-#     p.drawString(1 * cm, y_position, "Change :")
-#     p.drawString(6 * cm, y_position, f'${change}')
+    y_position -= 0.5 * cm
+    p.drawString(1 * cm, y_position, "Change :")
+    p.drawString(6 * cm, y_position, f'${change}')
 
-#     # cashier and transaction info
-#     y_position -= 0.7 * cm
-#     p.drawString(1 * cm, y_position, "Cashier :")
-#     p.drawString(6 * cm, y_position, f"{request.user.first_name}")
+    # cashier and transaction info
+    y_position -= 0.7 * cm
+    p.drawString(1 * cm, y_position, "Cashier :")
+    p.drawString(6 * cm, y_position, f"{request.user.first_name}")
 
-#     # date and time
-#     y_position -= 0.5 * cm
-#     now = datetime.datetime.now().strftime("%a %d %m, %Y %H:%M")
-#     p.drawString(1 * cm, y_position, "Date :")
-#     p.drawString(6 * cm, y_position, now)
+    # date and time
+    y_position -= 0.5 * cm
+    now = datetime.datetime.now().strftime("%a %d %m, %Y %H:%M")
+    p.drawString(1 * cm, y_position, "Date :")
+    p.drawString(6 * cm, y_position, now)
 
-#     # transaction number
-#     y_position -= 0.5 * cm
-#     p.drawString(1 * cm, y_position, "Transaction :")
-#     p.drawString(6 * cm, y_position, f'{sale.receipt_number}')
+    # transaction number
+    y_position -= 0.5 * cm
+    p.drawString(1 * cm, y_position, "Transaction :")
+    p.drawString(6 * cm, y_position, f'{sale.receipt_number}')
 
-#     y_position -= 0.5 * cm
-#     p.drawString(1 * cm, y_position, "Sales Channel :")
-#     p.drawString(6 * cm, y_position, "USD")
+    y_position -= 0.5 * cm
+    p.drawString(1 * cm, y_position, "Sales Channel :")
+    p.drawString(6 * cm, y_position, "USD")
 
-#     draw_centered_text("Thank You Call Again", y_position, bold=True)
+    draw_centered_text("Thank You Call Again", y_position, bold=True)
 
-#     y_position -= 0.5 * cm
-#     draw_centered_text("www.techcity.co.zw", y_position)
+    y_position -= 0.5 * cm
+    draw_centered_text("www.techcity.co.zw", y_position)
 
-#     p.showPage()
-#     p.save()
+    p.showPage()
+    p.save()
     
-#     # Close the temporary file
-#     temp_pdf.close()
+    # Close the temporary file
+    temp_pdf.close()
     
-#     logger.info(pdf_path)
+    logger.info(pdf_path)
     
-#     try:
-#         printer_name = "EPSON TM-T88V"  
+    try:
+        printer_name = "EPSON TM-T88V"  
        
-#         subprocess.run([
-#             r"C:\Users\PC\AppData\Local\SumatraPDF\SumatraPDF.exe", 
-#             "-print-to",
-#             printer_name,
-#             pdf_path
-#         ], check=True)
-#     except Exception as e:
-#         logger.error(f"Error printing the file: {e}")
+        subprocess.run([
+            r"C:\Users\PC\AppData\Local\SumatraPDF\SumatraPDF.exe", 
+            "-print-to",
+            printer_name,
+            pdf_path
+        ], check=True)
+    except Exception as e:
+        logger.error(f"Error printing the file: {e}")
 
 @login_required
 def change_list(request):
