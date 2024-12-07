@@ -1876,49 +1876,93 @@ def end_of_day_detail(request, e_o_d_id):
             'wastage_cost_value':wastage_cost_value
         }
     )
+    
+def generate_end_of_day_report(end_of_day, items, staff_sold_amount):
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4)
 
-from django.http import HttpResponse
+    elements = []
 
-@login_required
-def generate_and_email_report(request):
-    # Mock data
-    end_of_day = EndOfDay(
-        total_sales=500.00,
-        cashed_amount=480.00,
-        date=datetime.date.today()
+    # Title
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        'title_style',
+        fontSize=16,
+        alignment=TA_CENTER,
+        spaceAfter=12,
     )
-    items = [
-        EndOfDayItem(
-            dish_name="Spaghetti",
-            total_portions=50,
-            total_sold=45,
-            staff_portions=5,
-            wastage=0,
-            leftovers=0,
-            expected=0
-        ),
-        EndOfDayItem(
-            dish_name="Burger",
-            total_portions=30,
-            total_sold=28,
-            staff_portions=2,
-            wastage=0,
-            leftovers=0,
-            expected=0
-        ),
+    title = Paragraph(f"End Of Day Report: {end_of_day.date}", title_style)
+    elements.append(title)
+    elements.append(Spacer(1, 12))
+
+    # Sales Section Title
+    sales_title = Paragraph("Sales", styles['Heading2'])
+    elements.append(sales_title)
+    elements.append(Spacer(1, 6))
+
+    # Sales Section
+    sales_data = [
+        ["Details", "Quantity", "Amount"],
+        ["Total", "", f"{end_of_day.total_sales:.2f}"],
+        ["Staff", "", "(6.00)"],
+        ["Non Staff", "", f"{end_of_day.total_sales - 6:.2f}"],
+        ["Cashed Amount", "", f"{end_of_day.cashed_amount:.2f}"],
+        ["Difference", "", f"{end_of_day.cashed_amount - (end_of_day.total_sales - staff_sold_amount):.2f}"],
     ]
-    staff_sold_amount = 6.00
 
-    # Generate PDF
-    pdf_buffer = generate_end_of_day_report(end_of_day, items, staff_sold_amount)
+    sales_table = Table(sales_data, colWidths=[2 * inch, 1 * inch, 2 * inch])
+    sales_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),  
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+        ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+    ]))
+    elements.append(sales_table)
+    elements.append(Spacer(1, 12))
 
-    # Send Email
-    send_end_of_day_report(request, pdf_buffer)
+    # Dishes Section Title
+    dishes_title = Paragraph("Dishes", styles['Heading2'])
+    elements.append(dishes_title)
+    elements.append(Spacer(1, 6))
 
-    # Optionally Return PDF in HTTP Response
-    response = HttpResponse(pdf_buffer, content_type='application/pdf')
-    response['Content-Disposition'] = f'attachment; filename="EndOfDayReport.pdf"'
-    return response
+    # Dishes Section
+    dish_data = [
+        ["Dish Name", "S A C Portions", "P Sold", "S Portions", "Price Per Unit", "Wastage", "Left Overs", "Over/Less"]
+    ]
+    for item in items:
+        dish_data.append([
+            item.dish_name,
+            item.total_portions,
+            item.total_sold,
+            item.staff_portions,
+            "N/A",  
+            item.wastage,
+            item.leftovers,
+            item.expected
+        ])
+
+    dish_table = Table(dish_data, colWidths=[1 * inch] * 8)
+    dish_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+        ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+    ]))
+    elements.append(dish_table)
+
+    doc.build(elements)
+    buffer.seek(0)
+    return buffer
 
 
 # @login_required # put to tasks
