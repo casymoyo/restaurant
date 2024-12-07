@@ -27,11 +27,9 @@ from permisions.permisions import (
 from django.views.decorators.cache import cache_page
 import requests
 import tempfile
-
 import logging
 
 logger = logging.getLogger('restaurant')  
-
 
 # @cache_page(60*50)
 def pos(request):
@@ -274,7 +272,7 @@ def process_sale(request):
 
                 logger.info(f'Now generating invoice: _ _ _ _ _')
                     
-                # generate_receipt(request, sale, received_amount)
+                generate_receipt(request, sale, received_amount)
 
                 Logs.objects.create(
                     user=request.user, 
