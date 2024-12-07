@@ -243,6 +243,18 @@ $(document).ready(function() {
 
         dish_total = total;
         document.getElementById('dish_total').innerText = `${dish_total.toFixed(3)}`;
+
+        // success swal
+        Swal.fire({
+            icon: 'success',
+            text: 'Ingredient successfully added to cart.',
+            title: 'Success',
+            timer: 1000, 
+            timerProgressBar: true 
+        }).then(()=>{
+            document.getElementById('id_quantity').value=0
+            $('#id_raw_material option:selected').val = ''
+        })
     }
 
     window.deleteItem = function(index) {
