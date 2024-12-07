@@ -28,6 +28,7 @@ from django.views.decorators.cache import cache_page
 import requests
 import tempfile
 import logging
+from django.db.models import Q
 
 logger = logging.getLogger('restaurant')  
 
@@ -165,7 +166,9 @@ def process_sale(request):
                     if not item['type']:
                         logger.info('product')
                         try:
-                            kaolite = ProductionRawMaterials.objects.get(product__name='Kaolites')
+                            kylite = ProductionRawMaterials.objects.get(
+                                Q(product__name__iexact='Kylites') | Q(product__name__iexact='kylites')
+                            )
                         except ProductionRawMaterials.DoesNotExist:
                             return JsonResponse({'success': False, 'message': 'Please refill the stocks for kaolites'})
                         
@@ -193,19 +196,18 @@ def process_sale(request):
                                     total_quantity=product.quantity,
                                 )
                                 
-                        
                         if order_type == 'sitting':
                             salts.quantity -= item['quantity']
                             log([salts], sale_item)
                         else:
                             salts.quantity -= item['quantity']
                             
-                            kaolite.quantity -= item['quantity']
+                            kylite.quantity -= item['quantity']
                             
-                            log([salts, kaolite], sale_item)
+                            log([salts, kylite], sale_item)
                         
                         salts.save()
-                        kaolite.save()
+                        kylite.save()
                         
 
                         for production in daily_productions:
