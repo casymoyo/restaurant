@@ -300,7 +300,6 @@ class EndOfDayItems(models.Model):
     def __str__(self) -> str:
         return f'{self.end_of_day.date}: {self.dish_name}'
     
-
 class Reorder(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     ordered = models.BooleanField(default=False)

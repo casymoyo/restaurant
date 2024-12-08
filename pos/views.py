@@ -30,7 +30,7 @@ import tempfile
 import logging
 from django.db.models import Q
 
-logger = logging.getLogger('restaurant')  
+# logger = logging.getLogger('restaurant')  
 
 # @cache_page(60*50)
 def pos(request):
@@ -160,31 +160,43 @@ def process_sale(request):
 
                 daily_productions = Production.objects.filter(date_created=today).order_by('time_created')
 
-                logger.info(f'sale: {sale}')
+                logger.info(f'daily productions: {daily_productions}')
                 
                 for item in items:
                     if not item['type']:
                         logger.info('product')
                         try:
                             kylite = ProductionRawMaterials.objects.get(
-                                Q(product__name__iexact='Kylites') | Q(product__name__iexact='kylites')
+                                Q(product__name__iexact='Kylites #25') | Q(product__name__iexact='kylites #25')
                             )
                         except ProductionRawMaterials.DoesNotExist:
-                            return JsonResponse({'success': False, 'message': 'Please refill the stocks for kaolites'})
+                            return JsonResponse({'success': False, 'message': 'Please refill the stocks for kylites'})
                         
                         try:
                             salts = ProductionRawMaterials.objects.get(product__name='salt sachets')
                         except ProductionRawMaterials.DoesNotExist:
                             return JsonResponse({'success': False, 'message': 'Please refill the stocks for salt sachets'})
                         
-                        meal = get_object_or_404(Meal, id=item['meal_id'])
+                        meal = None
+                        dish = None
+
+                        try:
+                            meal = get_object_or_404(Meal, id=item['meal_id'])
+                        except Exception as e:
+                            dish = get_object_or_404(Dish, id=item['meal_id'])
                         
                         sale_item = SaleItem.objects.create(
                             sale=sale,
-                            meal=meal,
                             quantity=item['quantity'],
-                            price=meal.price,
+                            price=meal.price if meal else dish.price,
                         )
+
+                        if meal:
+                            sale_item.meal=meal
+                        elif dish:
+                            sale_item.dish=dish
+                        
+                        sale_item.save()
                         
                         def log(products, sale_item):
                             for product in products:
@@ -209,11 +221,13 @@ def process_sale(request):
                         salts.save()
                         kylite.save()
                         
-
                         for production in daily_productions:
                             try:
-                                pp_item = ProductionItems.objects.get(production=production, dish__in=meal.dish.all())
-                                
+                                if meal:
+                                    pp_item = ProductionItems.objects.get(production=production, dish__in=meal.dish.all())
+                                elif dish:
+                                    pp_item = ProductionItems.objects.get(production=production, dish=dish)
+
                                 if pp_item.portions == pp_item.portions_sold:
                                     continue  # Move to the next production plan if portions are exhausted
 

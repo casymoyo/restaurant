@@ -1,5 +1,5 @@
 from django.db import models
-from inventory.models import Meal, Product
+from inventory.models import Meal, Product, Dish
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
@@ -58,6 +58,7 @@ class SaleItem(models.Model):
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0) 
     time = models.TimeField(auto_now_add=True)
     meal = models.ForeignKey(Meal, on_delete=models.CASCADE, null=True)
+    dish = models.ForeignKey(Dish, on_delete=models.CASCADE, null=True)
     product = models.ForeignKey(Product, on_delete=models.CASCADE, null=True)
     quantity = models.IntegerField()
     

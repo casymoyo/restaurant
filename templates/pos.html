@@ -541,17 +541,17 @@
                     totalAmountInput.select();
                 }, 100);
 
-                if(staff){
+                if (staff) {
                     selectedOrderType = 'sitting';
-                }else{
+                } else {
                     selectedOrderType = selectedOrderType;
                 }
-        
+
                 const totalAmount = parseFloat(totalAmountInput.value);
                 const total = parseFloat(document.getElementById('total').innerText.slice(1));
                 const change = totalAmount - total;
                 document.getElementById('changeDisplay').value = `$${change.toFixed(2)}`;
-                
+
                 if (!totalAmount) {
                     Swal.fire({
                         title: "Error",
@@ -560,7 +560,7 @@
                     });
                     return;
                 }
-                console.log(selectedOrderType)
+
                 if (!selectedOrderType) {
                     Swal.fire({
                         title: "Error",
@@ -569,22 +569,33 @@
                     });
                     return;
                 }
-                
+
                 const saleData = {
                     received_amount: totalAmount,
                     staff: staff,
-                    order_type: {selectedOrderType},
+                    order_type: selectedOrderType,
                     items: cart.map(meal => ({
                         meal_id: meal.id,
                         quantity: meal.quantity,
                         price: meal.price,
                         type: meal.type,
                     })),
-                    change_data:changeData
+                    change_data: changeData
                 };
-        
+
                 console.log(saleData);
-        
+
+                // Show "Processing..." Swal
+                Swal.fire({
+                    title: "Processing...",
+                    text: "Please wait while the sale is being processed.",
+                    allowOutsideClick: false, // Lock the page
+                    allowEscapeKey: false,   // Prevent closing with Escape key
+                    didOpen: () => {
+                        Swal.showLoading(); // Show loading spinner
+                    }
+                });
+
                 fetch('{% url "pos:process_sale" %}', {
                     method: 'POST',
                     headers: {
@@ -595,16 +606,17 @@
                 })
                 .then(response => response.json())
                 .then(data => {
+                    Swal.close(); // Close the "Processing..." Swal
                     if (data.success) {
                         console.log('Sale processed successfully:', data);
                         Swal.fire({
                             title: "Success",
                             text: "Processing Receipt",
                             icon: "success"
-                        }).then(()=>{
+                        }).then(() => {
                             cart = [];
                             updateOrderDetails();
-                            window.location.reload()
+                            window.location.reload();
                         });
                     } else {
                         Swal.fire({
@@ -617,9 +629,16 @@
                     }
                 })
                 .catch(error => {
+                    Swal.close(); // Close the "Processing..." Swal
                     console.error('Error:', error);
+                    Swal.fire({
+                        title: "Error",
+                        text: "An error occurred while processing the sale.",
+                        icon: "error"
+                    });
                 });
-            }
+            };
+
         });
         
 
