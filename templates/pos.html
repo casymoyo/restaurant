@@ -128,21 +128,25 @@
                         </div>
                     </div>
 
-                    <div id="floatingButton" class="floating-button">
-                        <i class="bx bx-menu"></i> 
-                        <li><a href="{% url 'inventory:end_of_day_view' %}" class="btn btn-outline-dark w-100">End of day</a></li>
-                        <li class='mx-2'>
-                            <button class="btn btn-outline-dark w-100" id="chargeStaff">Staff</button>
-                        </li>
-                        <li>
-                            <a href='{% url "pos:change_list" %}' class="btn btn-outline-dark w-100">View Change</a>
-                        </li>
-                        <li class='mx-2'>
-                            <button class="btn btn-outline-dark w-100">Enter Charge</button>
-                        </li >
-                        <li>
-                            <a class="btn btn-outline-dark w-100">Promo</a>
-                        </li >
+                    <div id="floatingButton" class="floating-button d-flex justify-content-between align-items-center">
+                        <div class="d-flex">
+                            <i class="bx bx-menu"></i> 
+                            <li><a href="{% url 'inventory:end_of_day_view' %}" class="btn btn-outline-dark w-100">End of day</a></li>
+                            <li class='mx-2'>
+                                <button class="btn btn-outline-dark w-100" id="chargeStaff">Staff</button>
+                            </li>
+                            <li>
+                                <a href='{% url "pos:change_list" %}' class="btn btn-outline-dark w-100">View Change</a>
+                            </li>
+                            <li class='mx-2'>
+                                <button class="btn btn-outline-dark w-100">Enter Charge</button>
+                            </li>
+                        </div>
+                        <div>
+                            <li>
+                                <a class="btn btn-danger text-light w-100" id="void">Void</a>
+                            </li>
+                        </div>
                     </div>
 
                 </div>
@@ -178,6 +182,43 @@
                 </div>
             </div>
         </div>
+
+        <div class="modal fade" id="authModal" tabindex="-1" aria-labelledby="chargeModalLabel" aria-hidden="true">
+            <div class="modal-dialog bg modal-dialog-centered">
+                <div class="modal-content p-2">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="chargeModalLabel">Authenticate to void</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <form action="" method="POST" autocomplete="off" >
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Username</label>
+                            <input 
+                                type="text" 
+                                id="username" 
+                                name="username" 
+                                class="form-control" 
+                                placeholder="Enter username" 
+                                autocomplete="off"
+                                required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Password</label>
+                            <input 
+                                type="password" 
+                                id="password" 
+                                name="password" 
+                                class="form-control" 
+                                placeholder="Enter password" 
+                                autocomplete="new-password"
+                                required>
+                        </div>
+                        <button type="button" id="authForm" class="btn btn-primary w-100">Authenticate</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
     
         <!-- Modal -->
         <div class="modal fade" id="chargeModal" tabindex="-1" aria-labelledby="chargeModalLabel" aria-hidden="true">
@@ -328,19 +369,20 @@
         const changeData = []
 
         const chargeModal = new bootstrap.Modal(document.getElementById('chargeModal'));
-        const staffModal = new bootstrap.Modal(document.getElementById('staffModal'))
-        const staffChargeModal = new bootstrap.Modal(document.getElementById('staffChargeModal'))
-        const staff = document.getElementById('staff')    
-        const proceedBtn = document.getElementById('btn_proceed')
-        const changeEl = document.getElementById('id_change')
-        const backButton = document.getElementById('btn_back')
+        const staffModal = new bootstrap.Modal(document.getElementById('staffModal'));
+        const staffChargeModal = new bootstrap.Modal(document.getElementById('staffChargeModal'));
+        const staff = document.getElementById('staff');    
+        const proceedBtn = document.getElementById('btn_proceed');
+        const changeEl = document.getElementById('id_change');
+        const backButton = document.getElementById('btn_back');
+        const authenticateBtn = document.getElementById('void')
+        const authenticateModal = new bootstrap.Modal(document.getElementById('authModal'));
 
         // to remove the absolute create customer change function it have been overide
 
-        const phoneMask = IMask(
-            document.getElementById('phonenumber'),
-            { mask: '(+263) 778587612' } // US phone number format
-        );
+        authenticateBtn.addEventListener('click', ()=>{
+            authenticateModal.show()
+        })
 
         // show change modal
         const showChangeForm = () =>{
@@ -959,6 +1001,68 @@
         const changeAmount = parseFloat(document.getElementById('change_amount').value);
         document.getElementById('balance').value = changeAmount - amountGiven;
     })
+
+    //authenticate function
+    const authenticate = async (username, password) => {
+        console.log(username, password)
+        try {
+            const response = await fetch('{% url "pos:authenticate" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ username, password })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success) {
+                    Swal.fire({
+                        title: 'Success!',
+                        text: 'Authentication successful!',
+                        icon: 'success',
+                    }).then(() => {
+                        Swal.close
+                        window.location.href = '{% url "pos:sales" %}';
+                    });
+                } else {
+                    Swal.fire({
+                        title: 'Authentication Failed',
+                        text: data.message || 'Invalid username or password.',
+                        icon: 'error',
+                        confirmButtonText: 'Try Again'
+                    });
+                }
+            } else {
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'Unable to reach the server. Please try again later.',
+                    icon: 'error',
+                    confirmButtonText: 'OK'
+                });
+            }
+        } catch (error) {
+            console.error('Error during authentication:', error);
+            Swal.fire({
+                title: 'Oops!',
+                text: 'Something went wrong. Please try again later.',
+                icon: 'error',
+                confirmButtonText: 'OK'
+            });
+        }
+    };
+
+    const form = document.querySelector('#authForm');
+
+    form.addEventListener('click', (event) => {
+        event.preventDefault(); 
+
+        const username = document.querySelector('#username').value;
+        const password = document.querySelector('#password').value;
+
+        authenticate(username, password); 
+    });
 
     function getCookie(name) {
         let cookieValue = null;

@@ -19,7 +19,8 @@ ALLOWED_HOSTS = [
     '127.0.0.1', 
     'web-production-20d8.up.railway.app',
     '192.168.10.156',
-    '192.168.10.173'
+    '192.168.10.173',
+    '192.168.10.38'
 ]
 
 CSRF_TRUSTED_ORIGINS = [

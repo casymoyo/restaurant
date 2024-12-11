@@ -37,6 +37,7 @@ class Sale(models.Model):
     staff = models.BooleanField(default=False)
     change = models.DecimalField(max_digits=10, decimal_places=2, default=0) 
     amount_paid = models.DecimalField(max_digits=10, decimal_places=2, default=0) 
+    void = models.BooleanField(default=False)
 
     
     def __str__(self) -> str:
