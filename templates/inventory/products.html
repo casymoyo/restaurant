@@ -26,6 +26,11 @@
             </ul>
         </div>
     </nav>
+    <div class="d-flex justify-content-between mt-2 mb-2 w-100">
+        <h5>Raw Materials</h35>
+        <button onclick="printTable()" class="btn btn-primary btn-sm">Print Table</button>
+    </div>
+    
     <div class="tables">
         <table class="table table-hover table-responsive table-bordered table-striped" id="raw_materials_table" style="width: 100%;">
             <thead class="bg-primary">
@@ -66,8 +71,123 @@
     </div>
         </div>
 </div>
-<script>
+<!-- <script>
     new DataTable('#raw_materials_table')
-    new DataTable('#products_table')
+    // new DataTable('#products_table')
+
+    function printTable() {
+        // Select the table
+        const table = document.querySelector('#raw_materials_table');
+
+        // Open a new window
+        const printWindow = window.open('', '_blank');
+
+        // Write the table content to the new window
+        printWindow.document.write(`
+            <html>
+            <head>
+                <title>Print Table</title>
+                <link rel="stylesheet" href="{% static 'path/to/your/styles.css' %}">
+            </head>
+            <body>
+                <table style="width: 100%; border-collapse: collapse;">
+                    ${table.outerHTML}
+                </table>
+            </body>
+            </html>
+        `);
+
+        // Close the document to trigger rendering
+        printWindow.document.close();
+
+        // Wait for styles to load, then print
+        printWindow.onload = () => {
+            printWindow.print();
+            printWindow.close();
+        };
+    }
+
+</script> -->
+<script>
+    function printTable() {
+        // Select the table rows
+        const rows = document.querySelectorAll('#raw_materials_table tr');
+
+        // Create a new table for printing
+        let printContent = `
+            <table style="width: 100%; border-collapse: collapse; border: 1px solid black;">
+                <thead>
+                    <tr style="background-color: #007bff; color: white; text-align: left;">
+                        <th style="padding: 8px; border: 1px solid black;">Name</th>
+                        <th style="padding: 8px; border: 1px solid black;">Cost per unit</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        // Loop through rows and extract only Name and Cost per unit
+        rows.forEach((row, index) => {
+            if (index > 0) { // Skip the header row
+                const cells = row.querySelectorAll('td');
+                if (cells.length > 0) {
+                    const name = cells[0].innerText.trim(); // Name column
+                    const cost = cells[1].innerText.trim(); // Cost per unit column
+                    printContent += `
+                        <tr>
+                            <td style="padding: 8px; border: 1px solid black;">${name}</td>
+                            <td style="padding: 8px; border: 1px solid black;">${cost}</td>
+                        </tr>
+                    `;
+                }
+            }
+        });
+
+        // Close the table
+        printContent += `
+                </tbody>
+            </table>
+        `;
+
+        // Open a new window for printing
+        const printWindow = window.open('', '_blank');
+
+        // Write the table content to the new window
+        printWindow.document.write(`
+            <html>
+            <head>
+                <title>Print Name and Cost</title>
+                <style>
+                    table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        font-family: Arial, sans-serif;
+                    }
+                    th, td {
+                        border: 1px solid black;
+                        padding: 8px;
+                        text-align: left;
+                    }
+                    th {
+                        background-color: #007bff;
+                        color: white;
+                    }
+                </style>
+            </head>
+            <body>
+                ${printContent}
+            </body>
+            </html>
+        `);
+
+        // Close the document to trigger rendering
+        printWindow.document.close();
+
+        // Wait for styles to load, then print
+        printWindow.onload = () => {
+            printWindow.print();
+            printWindow.close();
+        };
+    }
 </script>
+
 {% endblock content %}
