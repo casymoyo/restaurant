@@ -156,7 +156,7 @@
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         new DataTable('#plan_item_table');
-        new DataTable('#minor');
+        new DataTable('#minor',{paging:false});
     
         document.querySelectorAll('#minor input[type="number"]').forEach(function (input) {
             input.addEventListener('keydown', function (event) {
