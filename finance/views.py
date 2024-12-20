@@ -44,11 +44,11 @@ def sale(request):
  
 @login_required   
 def finance(request):
-    sales = Sale.objects.filter(date__month = get_current_month()).order_by('-date')[:8]
+    sales = Sale.objects.filter(date__month = get_current_month(), void=False).order_by('-date')[:8]
     expenses = Expense.objects.filter(date__month = get_current_month()).order_by('-date')[:8]
     current_month = get_current_month()
 
-    sales = Sale.objects.filter(date__month = current_month, staff=False)
+    sales = Sale.objects.filter(date__month = current_month, staff=False, void=False)
     cogs = COGS.objects.filter(date__month = current_month)
     
     return render(request, 'finance/finance.html', 
@@ -291,7 +291,7 @@ def cashbook(request):
 
     total_balance = balance_bf + (total_debit - total_credit)
     
-    sales = SaleItem.objects.all()
+    sales = SaleItem.objects.filter(sale__void=False)
 
     return render(request, 'finance/cashbook.html', {
         'filter_option': filter_option,
@@ -465,9 +465,9 @@ def income_json(request):
     day = request.GET.get('day', today.day)
     
     if request.GET.get('filter') == 'today':
-        sales_total = Sale.objects.filter(date=today).aggregate(Sum('total_amount'))
+        sales_total = Sale.objects.filter(date=today, void=False).aggregate(Sum('total_amount'))
     else:
-        sales_total = Sale.objects.filter(date__month=month).aggregate(Sum('total_amount'))
+        sales_total = Sale.objects.filter(date__month=month, void=False).aggregate(Sum('total_amount'))
     
     logger.info(f'Sales: {sales_total}')
     return JsonResponse({'sales_total': sales_total['total_amount__sum'] or 0})
@@ -493,7 +493,7 @@ def expense_json(request):
 @login_required
 def income_graph(request):
     current_year = get_current_year()
-    monthly_sales = Sale.objects.filter(date__year=current_year).values('date__month').annotate(total=Sum('total_amount')).order_by('date__month')
+    monthly_sales = Sale.objects.filter(date__year=current_year, void=False).values('date__month').annotate(total=Sum('total_amount')).order_by('date__month')
     data = {month['date__month']: month['total'] for month in monthly_sales}
     return JsonResponse(data)
 
@@ -543,19 +543,19 @@ def pl_overview(request):
         date_filter = (datetime.date(current_year, current_month, 1), today)
 
     if filter_option == 'today':
-        current_month_sales = Sale.objects.filter(date=date_filter).aggregate(total_sales=Sum('total_amount'))['total_sales'] or 0
+        current_month_sales = Sale.objects.filter(date=date_filter, void=False).aggregate(total_sales=Sum('total_amount'))['total_sales'] or 0
         current_month_expenses = Expense.objects.filter(date=date_filter, cancel=False).aggregate(total_expenses=Sum('amount'))['total_expenses'] or 0
         cogs_total = COGS.objects.filter(date=date_filter).aggregate(total_cogs=Sum('amount'))['total_cogs'] or 0
     elif filter_option == 'last_week':
-        current_month_sales = Sale.objects.filter(date__range=date_filter).aggregate(total_sales=Sum('total_amount'))['total_sales'] or 0
+        current_month_sales = Sale.objects.filter(date__range=date_filter, void=False).aggregate(total_sales=Sum('total_amount'))['total_sales'] or 0
         current_month_expenses = Expense.objects.filter(date__range=date_filter, cancel=False).aggregate(total_expenses=Sum('amount'))['total_expenses'] or 0
         cogs_total = COGS.objects.filter(date__range=date_filter).aggregate(total_cogs=Sum('amount'))['total_cogs'] or 0
     else:
-        current_month_sales = Sale.objects.filter(date__range=date_filter).aggregate(total_sales=Sum('total_amount'))['total_sales'] or 0
+        current_month_sales = Sale.objects.filter(date__range=date_filter, void=False).aggregate(total_sales=Sum('total_amount'))['total_sales'] or 0
         current_month_expenses = Expense.objects.filter(date__range=date_filter, cancel=False).aggregate(total_expenses=Sum('amount'))['total_expenses'] or 0
         cogs_total = COGS.objects.filter(date__range=date_filter).aggregate(total_cogs=Sum('amount'))['total_cogs'] or 0
 
-    previous_month_sales = Sale.objects.filter(date__year=current_year, date__month=previous_month).aggregate(total_sales=Sum('total_amount'))['total_sales'] or 0
+    previous_month_sales = Sale.objects.filter(date__year=current_year, date__month=previous_month, void=False).aggregate(total_sales=Sum('total_amount'))['total_sales'] or 0
     previous_month_expenses = Expense.objects.filter(date__year=current_year, date__month=previous_month, cancel=False).aggregate(total_expenses=Sum('amount'))['total_expenses'] or 0
     previous_cogs =  COGS.objects.filter(date__year=current_year, date__month=previous_month).aggregate(total_cogs=Sum('amount'))['total_cogs'] or 0
     
@@ -615,7 +615,7 @@ def generate_report(request):
         start_date = datetime.datetime.strptime(request.GET.get('startDate'), '%Y-%m-%d')
         end_date = datetime.datetime.strptime(request.GET.get('endDate'), '%Y-%m-%d')
 
-    sales_total = Sale.objects.filter(date__range=(start_date, end_date)).aggregate(total_sales=Sum('total_amount'))['total_sales'] or 0
+    sales_total = Sale.objects.filter(date__range=(start_date, end_date), void=False).aggregate(total_sales=Sum('total_amount'))['total_sales'] or 0
     expenses_total = Expense.objects.filter(date__range=(start_date, end_date), cancel=False).aggregate(total_expenses=Sum('amount'))['total_expenses'] or 0
     cogs_total = COGS.objects.filter(date__range=(start_date, end_date)).aggregate(total_cogs=Sum('amount'))['total_cogs'] or 0
     net_profit = sales_total - expenses_total - cogs_total
@@ -720,7 +720,7 @@ def cash_up(request):
             if cashed_amount < 0:
                 return JsonResponse({'success':False, 'message':f'Cashed amount cannot be less than zero.'}, status=400)
             
-            total_sales = Sale.objects.filter(date=datetime.datetime.today()).aggregate(total_sales=Sum('total_amount'))['total_sales'] or 0
+            total_sales = Sale.objects.filter(date=datetime.datetime.today(), void=False).aggregate(total_sales=Sum('total_amount'))['total_sales'] or 0
             
             CashUp.objects.create(
                 cashier = User.objects.get(id=cashier),
@@ -880,7 +880,7 @@ def update_expense_status(request):
 def days_data(request):
     current_month = get_current_month()
 
-    sales = Sale.objects.filter(date__month=current_month, staff=False)
+    sales = Sale.objects.filter(date__month=current_month, staff=False, void=False)
     cogs = COGS.objects.filter(date__month=current_month)
 
     first_day = min(sales.first().date, cogs.first().date)

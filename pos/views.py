@@ -7,7 +7,7 @@ from loguru import logger
 from decimal import Decimal
 from datetime import timedelta
 from django.db.models import Sum
-from finance.models import Change
+from finance.models import Change, Sale, SaleItem
 from django.db import transaction
 from reportlab.lib.units import cm
 from reportlab.pdfgen import canvas
@@ -29,8 +29,9 @@ import requests
 import tempfile
 import logging
 from django.db.models import Q
+from django.contrib.auth import authenticate as django_authenticate, login
 
-logger = logging.getLogger('restaurant')  
+# logger = logging.getLogger('restaurant')  
 
 # @cache_page(60*50)
 def pos(request):
@@ -143,7 +144,7 @@ def process_sale(request):
                 received_amount = total_amount
 
             with transaction.atomic():
-                
+                product = None
                 sale = Sale.objects.create(
                     total_amount=total_amount,
                     tax=tax,
@@ -160,31 +161,54 @@ def process_sale(request):
 
                 daily_productions = Production.objects.filter(date_created=today).order_by('time_created')
 
-                logger.info(f'sale: {sale}')
+                logger.info(f'daily productions: {daily_productions}')
                 
                 for item in items:
                     if not item['type']:
-                        logger.info('product')
+                        
                         try:
                             kylite = ProductionRawMaterials.objects.get(
-                                Q(product__name__iexact='Kylites') | Q(product__name__iexact='kylites')
+                                Q(product__name__iexact='Kylites #25') | Q(product__name__iexact='kylites #25')
                             )
-                        except ProductionRawMaterials.DoesNotExist:
-                            return JsonResponse({'success': False, 'message': 'Please refill the stocks for kaolites'})
+                            logger.info(f'{kylite.product.name}')
+                        except:
+                            return JsonResponse({'success': False, 'message': 'Please refill the stocks for kylites'})
                         
                         try:
-                            salts = ProductionRawMaterials.objects.get(product__name='salt sachets')
-                        except ProductionRawMaterials.DoesNotExist:
+                            logger.info('salts.product.name')
+                            salts = ProductionRawMaterials.objects.get(product__name='Salt sachets')
+                            logger.info(f'{salts.product.name}')
+                        except:
                             return JsonResponse({'success': False, 'message': 'Please refill the stocks for salt sachets'})
+
+                        logger.info('Processing meal or dish')
                         
-                        meal = get_object_or_404(Meal, id=item['meal_id'])
-                        
+                        meal = None
+                        dish = None
+
+                        logger.info(f'Looking for meal with id {item['meal_id']} or dishes with id {item['meal_id']}')
+
+                        try:
+                            meal = get_object_or_404(Meal, id=item['meal_id'])
+                            logger.info(f'Sale for meal: {meal}')
+                        except Exception as e:
+                            dish = get_object_or_404(Dish, id=item['meal_id'])
+                            logger.info(f'Sale for dish: {dish}')
+
                         sale_item = SaleItem.objects.create(
                             sale=sale,
-                            meal=meal,
                             quantity=item['quantity'],
-                            price=meal.price,
+                            price=meal.price if meal else dish.price,
                         )
+
+                        if meal:
+                            sale_item.meal=meal
+                        elif dish:
+                            sale_item.dish=dish
+                        
+                        sale_item.save()
+
+                        logger.info(f'Sale item saved: {sale_item}')
                         
                         def log(products, sale_item):
                             for product in products:
@@ -195,10 +219,13 @@ def process_sale(request):
                                     quantity=sale_item.quantity,
                                     total_quantity=product.quantity,
                                 )
-                                
+                                logger.info(f'Log for {sale_item}')
+                        
+
                         if order_type == 'sitting':
                             salts.quantity -= item['quantity']
                             log([salts], sale_item)
+
                         else:
                             salts.quantity -= item['quantity']
                             
@@ -209,24 +236,51 @@ def process_sale(request):
                         salts.save()
                         kylite.save()
                         
+                        logger.info(f'Checking for production existance')
+
+                        pp_item = None
 
                         for production in daily_productions:
+                            logger.info(f'Production: {production}')
                             try:
-                                pp_item = ProductionItems.objects.get(production=production, dish__in=meal.dish.all())
-                                
-                                if pp_item.portions == pp_item.portions_sold:
-                                    continue  # Move to the next production plan if portions are exhausted
+                                if meal:
+                                    pp_items = ProductionItems.objects.filter(production=production, dish__in=meal.dish.all())
+                                    logger.info(f'Production dish in meal: {pp_items}')
 
-                                if staff:
-                                    pp_item.staff_portions += sale_item.quantity
-                                    logger.info('staff')
+                                    for item in pp_items:
+                                        logger.info(f'Item saved: {item}')
+                                        if staff:
+                                            item.staff_portions += sale_item.quantity
+                                            logger.info('Staff meal')
+                                        else:
+                                            item.portions_sold += sale_item.quantity
+                                            logger.info('Normal sale')
+                                        item.save()
+
+                                elif dish:
+                                    pp_item = ProductionItems.objects.get(production=production, dish=dish)
+                                    logger.info(f'Production dish in meal: {pp_item}')
+
+                                        
+                                    if staff:
+                                        pp_item.staff_portions += sale_item.quantity
+                                        logger.info('Staff meal')
+                                    else:
+                                        pp_item.portions_sold += sale_item.quantity
+                                        logger.info('Normal sale')
+
+                                if pp_item:
+                                    if pp_item.portions == pp_item.portions_sold:
+                                        continue  # Move to the next production plan if portions are exhausted:
                                 else:
-                                    pp_item.portions_sold += sale_item.quantity
-                                    logger.info('sale')
-                                    
-                                pp_item.left_overs -= sale_item.quantity
-                                pp_item.save()
-                                
+                                    if item.portions == item.portions_sold:
+                                        continue  # Move to the next production plan if portions are exhausted:
+
+                                if pp_item:
+                                    pp_item.left_overs -= sale_item.quantity
+                                    pp_item.save()
+                                    logger.info(f'Production item saved with new quantity: {pp_item}')
+
                                 break  # Stop checking further productions for this dish
                             
                             except ProductionItems.DoesNotExist:
@@ -234,11 +288,11 @@ def process_sale(request):
                                 continue  # Move to the next production plan if not found
                             
                     else:
-                        logger.info('other')
+                        logger.info('Finished goods')
                         product = get_object_or_404(Product, id=item['meal_id'])
                         product.quantity -= item['quantity']
 
-                        logger.info(product)
+                        logger.info(f'finished product {product}')
                         
                         sale_item = SaleItem.objects.create(
                             sale=sale,
@@ -247,7 +301,7 @@ def process_sale(request):
                             price=product.price,
                         )
 
-                        logger.info(sale_item)
+                        logger.info(f'Saved sale item: {sale_item}')
                         
                         Logs.objects.create(
                             user=request.user, 
@@ -256,9 +310,12 @@ def process_sale(request):
                             quantity=sale_item.quantity,
                             total_quantity=product.quantity,
                         )
-                        
+
+                        logger.info(f'log sale item: {sale_item}')
+
                         product.save()
-                        
+                        logger.info(f'Saved product: {sale_item}')
+
                 CashBook.objects.create(
                     sale=sale, 
                     amount=sale.total_amount,
@@ -266,15 +323,17 @@ def process_sale(request):
                     description=f'Sale (Receipt number: {sale.receipt_number})'
                 )
 
+                logger.info('Cash book object created.')
+
                 # create change
-                logger.info('change')
                 if change_data:
-                    logger.info('Creating Change object')
+                    logger.info(f'creating change object if change data exists')
+                    
                     create_client_change(change_data, sale.receipt_number, sale.cashier, sale)
 
                 logger.info(f'Now generating invoice: _ _ _ _ _')
-                    
-                generate_receipt(request, sale, received_amount)
+                logger.info(f'Product: {product}')
+                generate_receipt(request, sale, received_amount, product)
 
                 Logs.objects.create(
                     user=request.user, 
@@ -292,7 +351,7 @@ def process_sale(request):
             return JsonResponse({'success': False, 'message': str(e)}, status=400)
      
 @login_required
-def generate_receipt(request, sale, received_amount):
+def generate_receipt(request, sale, received_amount, product):
     
     change = received_amount - sale.total_amount
     logger.info(f'change:  {change}')
@@ -324,7 +383,7 @@ def generate_receipt(request, sale, received_amount):
     y_position = PAGE_HEIGHT - 1 * cm
 
     # title and company info
-    draw_centered_text("Pars Sales Investments", y_position, bold=True)
+    draw_centered_text("Parsales Investments (Urban Eats)", y_position, bold=True)
     y_position -= 0.5 * cm
     draw_centered_text("65 Speke Ave", y_position)
     y_position -= 0.5 * cm
@@ -342,29 +401,39 @@ def generate_receipt(request, sale, received_amount):
 
     # item and price details
     for s in SaleItem.objects.filter(sale=sale):
+        name = None
+        
+        # assign name checking meal, dish, product existance
+        if s.meal:
+            name=s.meal
+        elif s.dish:
+            name=s.dish.name
+        else:
+            name = product
+
         y_position -= 0.7 * cm
-        p.drawString(1 * cm, y_position, f"{s.meal}")
+        p.drawString(1 * cm, y_position, f"{name}")
         p.drawString(4.5 * cm, y_position, f"{s.quantity} @")
-        p.drawString(6 * cm, y_position, f"${s.price}")
+        p.drawString(6 * cm, y_position, f"${s.price:.2f}")
 
     # totals
     y_position -= 0.7 * cm
     p.drawString(1 * cm, y_position, "TAX :")
-    p.drawString(6 * cm, y_position, f"{sale.tax}")
+    p.drawString(6 * cm, y_position, f"${sale.tax:.2f}")
 
     y_position -= 0.5 * cm
     p.drawString(1 * cm, y_position, "TOTAL :")
     p.setFont("Helvetica-Bold", font_size)
-    p.drawString(6 * cm, y_position, f"{sale.total_amount}")
+    p.drawString(6 * cm, y_position, f"${sale.total_amount:.2f}")
 
     y_position -= 0.5 * cm
-    p.setFont("Helvetica", font_size)
     p.drawString(1 * cm, y_position, "Cash :")
-    p.drawString(6 * cm, y_position, f"{received_amount}")
+    p.drawString(6 * cm, y_position, f"{received_amount:.2f}")
 
     y_position -= 0.5 * cm
+    p.setFont("Helvetica-Bold", font_size)
     p.drawString(1 * cm, y_position, "Change :")
-    p.drawString(6 * cm, y_position, f'${change}')
+    p.drawString(6 * cm, y_position, f'${change:.2f}')
 
     # cashier and transaction info
     y_position -= 0.7 * cm
@@ -383,13 +452,10 @@ def generate_receipt(request, sale, received_amount):
     p.drawString(6 * cm, y_position, f'{sale.receipt_number}')
 
     y_position -= 0.5 * cm
-    p.drawString(1 * cm, y_position, "Sales Channel :")
-    p.drawString(6 * cm, y_position, "USD")
-
     draw_centered_text("Thank You Call Again", y_position, bold=True)
 
-    y_position -= 0.5 * cm
-    draw_centered_text("www.techcity.co.zw", y_position)
+    # y_position += 0.5 * cm
+    # draw_centered_text("www.techcity.co.zw", y_position)
 
     p.showPage()
     p.save()
@@ -403,7 +469,7 @@ def generate_receipt(request, sale, received_amount):
         printer_name = "EPSON TM-T88V"  
        
         subprocess.run([
-            r"C:\Users\PC\AppData\Local\SumatraPDF\SumatraPDF.exe", 
+            r"C:\Users\user\AppData\Local\SumatraPDF\SumatraPDF.exe", 
             "-print-to",
             printer_name,
             pdf_path
@@ -560,3 +626,104 @@ def collect_change(request):
         except Exception as e:
             return JsonResponse({'success':False, 'message':f'{e}'}, status=400)
     return JsonResponse({'success':False, 'message':'Invalid request'}, status=405)
+
+@login_required
+def void_sales(request):
+    if request.method == 'GET':
+        sales = Sale.objects.all().order_by('-date')
+        sale_items = SaleItem.objects.all().order_by('-time')
+        return render (request, 'pos/void_sales.html', {
+            'sales':sales,
+            'sale_items':sale_items
+        })
+    
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+
+            logger.info(f'Sales data for voiding: {data}')
+
+            sale_id = data['sale_id']
+            sale = get_object_or_404(Sale, id=sale_id)
+            items = SaleItem.objects.filter(sale=sale)
+
+            if sale.void:
+                return JsonResponse({'success': False, 'message': 'Sale is already voided'}, status=400)
+
+            with transaction.atomic():
+                sale.void = True
+                sale.save()
+
+                logger.info(f'Sale marked as voided: {sale}')
+
+                for item in items:
+                    product = item.product or item.meal or item.dish
+
+                    if product:
+                        if isinstance(product, Product):
+
+                            product.quantity += item.quantity
+                            product.save()
+
+                            logger.info(f'Reverted product stock: {product}')
+
+                        elif isinstance(product, ProductionItems):
+                            product.portions_sold -= item.quantity
+                            product.left_overs += item.quantity
+                            product.save()
+
+                            logger.info(f'Reverted production item: {product}')
+
+                    item.delete()
+
+                    logger.info(f'Deleted sale item: {item}')
+                
+                change = CashBook.objects.filter(sale=sale).first()
+                if change:
+                    change.delete()
+                    logger.info(f'Reverted cashbook entry: {change}')
+
+                # Reverse the logs related to the sale
+                logs = ProductionLogs.objects.filter(sale=sale)
+                logs.delete()
+                logger.info(f'Reverted production logs for sale: {sale.id}')
+
+                # Revert cash book entry if it exists
+                cashbook_entry = CashBook.objects.filter(sale=sale).first()
+                if cashbook_entry:
+                    cashbook_entry.delete()
+                    logger.info(f'Reverted cashbook entry for sale: {sale.id}')
+
+                # Return the response indicating success
+                return JsonResponse({'success': True, 'message': 'Sale has been voided successfully'}, status=200)
+
+        except Exception as e:
+            logger.error(f'Error processing void transaction: {str(e)}')
+            return JsonResponse({'success': False, 'message': f'Error: {str(e)}'}, status=400)
+
+@login_required
+def authenticate(request):
+    if request.method == "POST":
+        try:
+            logger.info('here')
+            data = json.loads(request.body)
+
+            username = data.get("username")
+            password = data.get("password")
+
+            if not username or not password:
+                return JsonResponse({"success": False, "message": "Username and password are required."}, status=400)
+
+            user = django_authenticate(request, username=username, password=password)
+
+            if user is not None and user.role in ['admin', 'accountant', 'superviser', 'manager', 'owner']:
+                logger.info('success')
+                return JsonResponse({"success": True, "message": "Authentication successful."}, status=200)
+            else:
+                return JsonResponse({"success": False, "message": "Invalid username or password."}, status=401)
+        except json.JSONDecodeError:
+            return JsonResponse({"success": False, "message": "Invalid JSON format."}, status=400)
+        except Exception as e:
+            return JsonResponse({"success": False, "message": f"An error occurred: {str(e)}"}, status=500)
+    else:
+        return JsonResponse({"success": False, "message": "Invalid request method."}, status=405)

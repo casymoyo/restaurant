@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+{% block title %}
+Sales
+{% endblock title %}
+{% block content %}
+<div class="Finance">
+    <nav class="d-flex align-items-center rounded mb-2 py-2 border-bottom">
+            <a href='/' class='bx bx-home btn border fs-5 mx-2'></a>
+            <span class='aria-labelledby'>Sales</span>
+        </div>
+    </nav>
+    <table class="table table-hover table-bordered table-striped table-hover" id="sale" style="width: 100%;">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Receipt Number</th>
+                <th>Product(s)</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for sale in sales %}
+                {% if sale %}
+                    <tr>
+                        <td class="{% if sale.void %}text-decoration-line-through text-red{% endif %}"><small>{{ sale.date }}</small></td>
+                        <td>
+                            <small>
+                                {{ sale.receipt_number }}
+                            </small>
+                        </td>
+                        <td>
+                            <small>
+                                {% for item in sale_items %}
+                                    {% if item.sale == sale %}
+                                        <ul class="list-unstyled">
+                                            <li>
+                                                {% if item.meal %}
+                                                    {{ item.meal }} x {{ item.quantity  }}
+                                                {% elif item.dish %}
+                                                    {{ item.dish }} x {{ item.quantity  }}
+                                                {% else %}
+                                                    {{ item.product }} x {{ item.quantity  }}
+                                                {% endif %}
+                                            </li>
+                                        </ul>
+                                    {% endif %}
+                                {% endfor %}
+                            </small>
+                        </td>
+                        <td>
+                            <small>
+                                <button class="btn btn-outline-dark bx bx-checkbox-minus" onclick="confirmVoidTransaction({{ sale.id }})"></button>
+                            </small>
+                        </td>
+                </tr>
+                {% endif %}
+            {% endfor %}
+        </tbody>
+    </table>
+    
+   <script>
+        new DataTable('#sale',{
+            paging:false
+        })
+    
+        function confirmVoidTransaction(transactionId) {
+            Swal.fire({
+                title: 'Are you sure?',
+                text: 'Do you really want to void this transaction? This action cannot be undone.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Yes, void it!',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch('{% url "pos:sales" %}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCSRFToken()
+                        },
+                        body: JSON.stringify({ sale_id: transactionId })
+                    })
+                    .then(response => {
+                        if (response.ok) {
+                            return response.json();
+                        } else {
+                            throw new Error('Failed to void the transaction');
+                        }
+                    })
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire(
+                                'Voided!',
+                                'The transaction has been voided successfully.',
+                                'success'
+                            );
+                            location.href='{% url "pos:pos"%}'
+                        } else {
+                            Swal.fire(
+                                'Error!',
+                                data.message || 'Something went wrong while voiding the transaction.',
+                                'error'
+                            );
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        Swal.fire(
+                            'Error!',
+                            'Unable to void the transaction. Please try again later.',
+                            'error'
+                        );
+                    });
+                }
+            });
+        }
+
+        function getCSRFToken() {
+            const cookies = document.cookie.split(';');
+            for (let cookie of cookies) {
+                const [name, value] = cookie.trim().split('=');
+                if (name === 'csrftoken') {
+                    return decodeURIComponent(value);
+                }
+            }
+            return '';
+        }
+   </script>    
+</div>
+{% endblock content %}

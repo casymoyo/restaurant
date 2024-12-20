@@ -14,5 +14,11 @@ urlpatterns = [
     path('change_list/', change_list, name='change_list'),
     path('create_change/', create_change, name='create_change'),
     path('report/', download_change_report, name='download_cashbook_report'),
-    path('collect_change/', collect_change, name='collect_change')
+    path('collect_change/', collect_change, name='collect_change'),
+
+    # sales
+    path('sales/', void_sales, name='sales'),
+
+    #authenticate
+    path('authenticate/', authenticate, name='authenticate')
 ]
