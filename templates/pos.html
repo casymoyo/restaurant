@@ -424,14 +424,12 @@
             const amountGiven = parseFloat(document.getElementById('change_given').value);
             const balance = parseFloat(document.getElementById('balance').value);
 
-            if (!clientName || !amount || !amountGiven || !balance) {
+            if (!clientName || !amount || !balance) {
 
                 if (!clientName) {
                     document.getElementById('client_name').focus();
                 } else if (!amount) {
                     document.getElementById('change_amount').focus();
-                } else if (!amountGiven) {
-                    document.getElementById('change_given').focus();
                 } else if (!balance) {
                     document.getElementById('balance').focus();
                 }
@@ -456,13 +454,13 @@
         });
 
         // f3 key binding for create change modal
-        document.addEventListener('keydown', function(event) {
-            if (event.key === 'Shift') {
-                event.preventDefault(); 
-                chargeModal.hide()
-                $('#customModal').modal('show');
-            }
-        });
+        // document.addEventListener('keydown', function(event) {
+        //     if (event.key === 'Shift') {
+        //         event.preventDefault(); 
+        //         chargeModal.hide()
+        //         $('#customModal').modal('show');
+        //     }
+        // });
 
         // back button to the charge modal
         backButton.addEventListener('click', ()=>{
@@ -578,6 +576,10 @@
             });
         
             window.finalizeSale = function(staff) {
+                const amountField = document.getElementById('totalAmountInput');
+                const changeDisplay = document.getElementById('changeDisplay');
+                const orderTypeInput = document.getElementById('order-type-input');
+
                 setTimeout(() => {
                     totalAmountInput.focus();
                     totalAmountInput.select();
@@ -650,7 +652,7 @@
                 .then(data => {
                     Swal.close(); // Close the "Processing..." Swal
                     if (data.success) {
-                        console.log('Sale processed successfully:', data);
+                        console.log('Sale processed successfully:', data.data);
                         Swal.fire({
                             title: "Success",
                             text: "Processing Receipt",
@@ -658,7 +660,15 @@
                         }).then(() => {
                             cart = [];
                             updateOrderDetails();
-                            window.location.reload();
+                            chargeModal.hide();
+
+                            const receiptContent = generateReceiptContent(data.data);
+                            printReceiptSilently(receiptContent);
+                            
+                            amountField.value = '';
+                            changeDisplay.value = '';
+                            orderTypeInput.value = '';
+                            
                         });
                     } else {
                         Swal.fire({
@@ -901,6 +911,9 @@
 
     function finalizeSale(staff) {
         const amountField = document.getElementById('totalAmountInput');
+        const changeDisplay = document.getElementById('changeDisplay');
+        const orderTypeInput = document.getElementById('order-type-input');
+
         setTimeout(() => {
             amountField.focus();
             amountField.select();
@@ -926,7 +939,7 @@
             allowOutsideClick: false,
             allowEscapeKey: false,
             didOpen: () => {
-                Swal.showLoading(); 
+                Swal.showLoading();
             }
         });
 
@@ -953,38 +966,214 @@
             },
             body: JSON.stringify(saleData)
         })
-        .then(response => response.json())
-        .then(data => {
-            Swal.close(); 
-            if (data.success) {
-                console.log('Sale processed successfully:', data);
-                Swal.fire({
-                    title: "Success",
-                    text: "Processing Receipt",
-                    icon: "success"
-                });
-                cart = [];
-                updateOrderDetails();
-                chargeModal.hide();
-            } else {
+            .then(response => response.json())
+            .then(data => {
+                Swal.close();
+                if (data.success) {
+                    console.log('Sale processed successfully:', data);
+                    Swal.fire({
+                        title: "Success",
+                        text: "Processing Receipt",
+                        icon: "success"
+                    });
+
+                    // Clear the cart and reset UI
+                    cart = [];
+                    updateOrderDetails();
+                    chargeModal.hide();
+
+                    // Generate and print receipt
+                    const receiptContent = generateReceiptContent(data.data);
+                    printReceiptSilently(receiptContent);
+
+                    // Clear the inputs
+                    amountField.value = '';
+                    changeDisplay.value = '';
+                    orderTypeInput.value = '';
+
+                } else {
+                    Swal.fire({
+                        title: "Error",
+                        text: data.message,
+                        icon: "error"
+                    });
+                    chargeModal.hide();
+                }
+            })
+            .catch(error => {
+                Swal.close();
+                console.error('Error:', error);
                 Swal.fire({
                     title: "Error",
-                    text: data.message,
+                    text: "An error occurred while processing the sale.",
                     icon: "error"
                 });
-                chargeModal.hide();
-            }
-        })
-        .catch(error => {
-            Swal.close(); 
-            console.error('Error:', error);
-            Swal.fire({
-                title: "Error",
-                text: "An error occurred while processing the sale.",
-                icon: "error"
             });
-        });
     }
+
+    function generateReceiptContent(saleData) {
+        const { received_amount, items, order_type, cashier } = saleData;
+        const sub_total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+        const tax = sub_total * (0.15 / (1 + 0.15));
+        const total_amount = sub_total;
+        const change = received_amount - total_amount;
+
+        return `
+            <style>
+                .totals {
+                    width: 100%;
+                    font-size: 14px;
+                }
+
+                .line {
+                    display: flex;
+                    justify-content: space-between;
+                    margin: 5px 0;
+                }
+
+                .line span {
+                    display: inline-block;
+                }
+            </style>
+
+            <div style="width: 80mm; font-family: Arial, sans-serif; font-size: 12px;">
+                <h3 style="text-align: center;">Parsles Investments (Urban Eats)</h3>
+                <p style="text-align: center;">65 Speke Ave, Harare</p>
+                <hr>
+                <div class='line'>
+                    <span><strong>TAX NR:</strong> 220356643</span>
+                    <span><strong>TIN No:</strong> 2001020099</span>
+                </div>
+                <hr>
+                <p>Date: ${new Date().toLocaleDateString()}</p>
+                <p>Time: ${new Date().toLocaleTimeString()}</p>
+                <p>Order Type: ${orderType}</p>
+                <hr>
+                ${items.map(item =>`
+                    <p class='line'>
+                        <span>
+                            ${item.dish__name 
+                                ? item.dish__name 
+                                : item.meal__name 
+                                ? item.meal__name 
+                                : item.product__name} 
+                            ${item.quantity.toFixed(2)} x $${item.price}
+                            </span>
+                        <span>$${(item.quantity * item.price)}</span>
+                    </p>
+                `).join('')}
+                <hr>
+                <div class="totals">
+                    <div class="line">
+                        <span>Subtotal:</span>
+                        <span>$${sub_total.toFixed(2)}</span>
+                    </div>
+                    <div class="line">
+                        <span>Tax (15%):</span>
+                        <span>$${tax.toFixed(2)}</span>
+                    </div>
+                    <div class="line">
+                        <span>Total:</span>
+                        <span>$${total_amount.toFixed(2)}</span>
+                    </div>
+                    <div class="line">
+                        <span>Received:</span>
+                        <span>$${received_amount.toFixed(2)}</span>
+                    </div>
+                    <div class="line">
+                        <span>Change:</span>
+                        <span>$${change.toFixed(2)}</span>
+                    </div>
+                    <div class="line">
+                        <span>Cashier:</span>
+                        <span>${cashier}</span>
+                    </div>
+                </div>
+                <hr>
+                <p style="text-align: center;">Thank you for your purchase!</p>
+            </div>
+        `;
+    }
+
+    function printReceiptSilently(content) {
+        console.log(content)
+        let printFrame = document.getElementById("print-frame");
+
+        if (!printFrame) {
+            printFrame = document.createElement("iframe");
+            printFrame.id = "print-frame";
+            // printFrame.style.width = "100%"; // Make the iframe visible
+            // printFrame.style.height = "400px"; // Set a reasonable height for viewing
+            iframe.style.display = "none"
+            document.body.appendChild(printFrame);
+        }
+        const frameDoc = printFrame.contentWindow || 
+                        printFrame.contentDocument.document || 
+                        printFrame.contentDocument;
+
+        frameDoc.document.open();
+        frameDoc.document.write(`
+            <html>
+            <head>
+                <title>Receipt</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        font-size: 12px;
+                        margin: 0;
+                        padding: 10px;
+                    }
+                    h3 {
+                        text-align: center;
+                    }
+                    hr {
+                        border: none;
+                        border-top: 1px solid #000;
+                    }
+                    p {
+                        margin: 5px 0;
+                    }
+                </style>
+            </head>
+            <body>
+                ${content}
+            </body>
+            </html>
+        `);
+        frameDoc.document.close();
+}
+
+
+    // function printReceiptSilently(content) {
+    //     const printFrame = document.getElementById("print-frame");
+
+    //     if (!printFrame) {
+    //         const iframe = document.createElement("iframe");
+    //         iframe.id = "print-frame";
+    //         iframe.style.display = "none";
+    //         document.body.appendChild(iframe);
+    //     }
+
+    //     const frameDoc = document.getElementById("print-frame").contentWindow || 
+    //                     document.getElementById("print-frame").contentDocument.document || 
+    //                     document.getElementById("print-frame").contentDocument;
+
+    //     frameDoc.document.open();
+    //     frameDoc.document.write(`
+    //         <html>
+    //         <head>
+    //             <title>Receipt</title>
+    //         </head>
+    //         <body onload="window.print();">
+    //             ${content}
+    //         </body>
+    //         </html>
+    //     `);
+    //     frameDoc.document.close();
+    // }
+
+
+    
     // calulate the change amount on input 
     document.getElementById('totalAmountInput').addEventListener('input', () => {
         const totalAmountInput = parseFloat(document.getElementById('totalAmountInput').value);

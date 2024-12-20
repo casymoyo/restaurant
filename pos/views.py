@@ -30,6 +30,7 @@ import tempfile
 import logging
 from django.db.models import Q
 from django.contrib.auth import authenticate as django_authenticate, login
+from django.utils import timezone
 
 # logger = logging.getLogger('restaurant')  
 
@@ -126,9 +127,6 @@ def process_sale(request):
 
             logger.info('here ---------------------------------------------------------------------')
 
-            # access the change data object
-            print(change_data)
-
             sub_total = sum(item['price'] * item['quantity'] for item in items)
             
             tax = sub_total * 0.15 
@@ -165,21 +163,6 @@ def process_sale(request):
                 
                 for item in items:
                     if not item['type']:
-                        
-                        try:
-                            kylite = ProductionRawMaterials.objects.get(
-                                Q(product__name__iexact='Kylites #25') | Q(product__name__iexact='kylites #25')
-                            )
-                            logger.info(f'{kylite.product.name}')
-                        except:
-                            return JsonResponse({'success': False, 'message': 'Please refill the stocks for kylites'})
-                        
-                        try:
-                            logger.info('salts.product.name')
-                            salts = ProductionRawMaterials.objects.get(product__name='Salt sachets')
-                            logger.info(f'{salts.product.name}')
-                        except:
-                            return JsonResponse({'success': False, 'message': 'Please refill the stocks for salt sachets'})
 
                         logger.info('Processing meal or dish')
                         
@@ -187,7 +170,6 @@ def process_sale(request):
                         dish = None
 
                         logger.info(f'Looking for meal with id {item['meal_id']} or dishes with id {item['meal_id']}')
-
                         try:
                             meal = get_object_or_404(Meal, id=item['meal_id'])
                             logger.info(f'Sale for meal: {meal}')
@@ -220,72 +202,6 @@ def process_sale(request):
                                     total_quantity=product.quantity,
                                 )
                                 logger.info(f'Log for {sale_item}')
-                        
-
-                        if order_type == 'sitting':
-                            salts.quantity -= item['quantity']
-                            log([salts], sale_item)
-
-                        else:
-                            salts.quantity -= item['quantity']
-                            
-                            kylite.quantity -= item['quantity']
-                            
-                            log([salts, kylite], sale_item)
-                        
-                        salts.save()
-                        kylite.save()
-                        
-                        logger.info(f'Checking for production existance')
-
-                        pp_item = None
-
-                        for production in daily_productions:
-                            logger.info(f'Production: {production}')
-                            try:
-                                if meal:
-                                    pp_items = ProductionItems.objects.filter(production=production, dish__in=meal.dish.all())
-                                    logger.info(f'Production dish in meal: {pp_items}')
-
-                                    for item in pp_items:
-                                        logger.info(f'Item saved: {item}')
-                                        if staff:
-                                            item.staff_portions += sale_item.quantity
-                                            logger.info('Staff meal')
-                                        else:
-                                            item.portions_sold += sale_item.quantity
-                                            logger.info('Normal sale')
-                                        item.save()
-
-                                elif dish:
-                                    pp_item = ProductionItems.objects.get(production=production, dish=dish)
-                                    logger.info(f'Production dish in meal: {pp_item}')
-
-                                        
-                                    if staff:
-                                        pp_item.staff_portions += sale_item.quantity
-                                        logger.info('Staff meal')
-                                    else:
-                                        pp_item.portions_sold += sale_item.quantity
-                                        logger.info('Normal sale')
-
-                                if pp_item:
-                                    if pp_item.portions == pp_item.portions_sold:
-                                        continue  # Move to the next production plan if portions are exhausted:
-                                else:
-                                    if item.portions == item.portions_sold:
-                                        continue  # Move to the next production plan if portions are exhausted:
-
-                                if pp_item:
-                                    pp_item.left_overs -= sale_item.quantity
-                                    pp_item.save()
-                                    logger.info(f'Production item saved with new quantity: {pp_item}')
-
-                                break  # Stop checking further productions for this dish
-                            
-                            except ProductionItems.DoesNotExist:
-                                logger.info('Production item not found for dish.')
-                                continue  # Move to the next production plan if not found
                             
                     else:
                         logger.info('Finished goods')
@@ -331,10 +247,7 @@ def process_sale(request):
                     
                     create_client_change(change_data, sale.receipt_number, sale.cashier, sale)
 
-                logger.info(f'Now generating invoice: _ _ _ _ _')
-                logger.info(f'Product: {product}')
-                generate_receipt(request, sale, received_amount, product)
-
+    
                 Logs.objects.create(
                     user=request.user, 
                     action='sale',
@@ -344,8 +257,20 @@ def process_sale(request):
                 )
                 
                 logger.info(f'Sale: {sale.id} Processed')
-                return JsonResponse({'success': True, 'sale_id': sale.id}, status=201)
 
+                data = {
+                    'receipt_number': sale.receipt_number,
+                    'date': str(localdate()),
+                    'time': timezone.localtime().strftime("%H:%M:%S"),
+                    'cashier': f'{request.user.first_name} {request.user.last_name}',
+                    'total_amount': sale.total_amount,
+                    'tax': sale.tax,
+                    'sub_total': sale.sub_total,
+                    'received_amount': received_amount,
+                    'change': received_amount - sale.total_amount,
+                    'items': list(SaleItem.objects.filter(sale=sale).values('quantity', 'price', 'meal__name', 'dish__name', 'product__name'))
+                }
+                return JsonResponse({'success': True, 'data': data}, status=201)
         except Exception as e:
             logger.error(f'Error processing sale: {str(e)}')
             return JsonResponse({'success': False, 'message': str(e)}, status=400)
