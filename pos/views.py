@@ -44,6 +44,14 @@ def pos(request):
 
     combined_items = list(meals) + list(dishes)
 
+    # for m in Meal.objects.all():
+    #     m.meal = True
+    #     m.save()
+
+    # for m in Dish.objects.all():
+    #     m.dish = True
+    #     m.save()
+
     return render(request, 'pos.html', 
         {
             'combined_items': meals,
@@ -273,6 +281,7 @@ def process_sale(request):
                     'time': timezone.localtime().strftime("%H:%M:%S"),
                     'cashier': f'{request.user.first_name} {request.user.last_name}',
                     'total_amount': sale.total_amount,
+                    'receipt_number':sale.receipt_number,
                     'tax': sale.tax,
                     'sub_total': sale.sub_total,
                     'received_amount': received_amount,
@@ -280,15 +289,15 @@ def process_sale(request):
                     'items': list(SaleItem.objects.filter(sale=sale).values('quantity', 'price', 'meal__name', 'dish__name', 'product__name'))
                 }
 
-                total_sales = Sale.objects.aggregate(total=Sum('total_amount'))['total'] or 0
-                channel_layer = get_channel_layer()
-                async_to_sync(channel_layer.group_send)(
-                    "sales_group",
-                    {
-                        "type": "send_sales_update",
-                        "data": {"total_sales": total_sales},
-                    }
-                )
+                # total_sales = Sale.objects.aggregate(total=Sum('total_amount'))['total'] or 0
+                # channel_layer = get_channel_layer()
+                # async_to_sync(channel_layer.group_send)(
+                #     "sales_group",
+                #     {
+                #         "type": "send_sales_update",
+                #         "data": {"total_sales": total_sales},
+                #     }
+                # )
                 return JsonResponse({'success': True, 'data': data}, status=201)
         except Exception as e:
             logger.error(f'Error processing sale: {str(e)}')
