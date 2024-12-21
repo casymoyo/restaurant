@@ -1104,7 +1104,7 @@
             printFrame.id = "print-frame";
             // printFrame.style.width = "100%"; // Make the iframe visible
             // printFrame.style.height = "400px"; // Set a reasonable height for viewing
-            iframe.style.display = "none"
+            printFrame.style.display = "none"
             document.body.appendChild(printFrame);
         }
         const frameDoc = printFrame.contentWindow || 
@@ -1141,6 +1141,13 @@
             </html>
         `);
         frameDoc.document.close();
+        setTimeout(()=>{
+            const frameWindow = printFrame.contentWindow;
+            if(frameWindow){
+                frameWindow.focus()
+                frameWindow.print(false)
+            }
+        }, 100)
 }
 
 
