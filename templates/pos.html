@@ -582,6 +582,14 @@
                 const changeDisplay = document.getElementById('changeDisplay');
                 const orderTypeInput = document.getElementById('order-type-input');
 
+                const name = document.getElementById('client_name')
+                const phonenumber = document.getElementById('phonenumber')
+                const amount = document.getElementById('change_amount')
+                const receipt_number = document.getElementById('receipt_number')
+
+                const amountGiven = document.getElementById('change_given');
+                const balance = document.getElementById('balance');
+
                 setTimeout(() => {
                     totalAmountInput.focus();
                     totalAmountInput.select();
@@ -639,10 +647,10 @@
                 Swal.fire({
                     title: "Processing...",
                     text: "Please wait while the sale is being processed.",
-                    allowOutsideClick: false, // Lock the page
-                    allowEscapeKey: false,   // Prevent closing with Escape key
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,   
                     didOpen: () => {
-                        Swal.showLoading(); // Show loading spinner
+                        Swal.showLoading();
                     }
                 });
 
@@ -668,6 +676,7 @@
                         updateOrderDetails();
                         chargeModal.hide();
 
+<<<<<<< HEAD
                         const receiptContent = generateReceiptContent(data.data);
                         printReceiptSilently(receiptContent);
                         
@@ -675,6 +684,24 @@
                         changeDisplay.value = '';
 
                         Swal.close();
+=======
+                            const receiptContent = generateReceiptContent(data.data);
+                            printReceiptSilently(receiptContent);
+                            
+                            amountField.value = '';
+                            changeDisplay.value = '';
+                            orderTypeInput.value = '';
+
+                            // clear change data
+                            name.value='';
+                            phonenumber.value='';
+                            amount.value='';
+                            receipt_number.value='';
+                            amountGiven.value='';
+                            balance.value='';
+                            
+                        });
+>>>>>>> 9c633542501eb532da56c6aebe996f0b1102c922
                     } else {
                         Swal.fire({
                             title: "Error",
@@ -698,7 +725,6 @@
 
         });
         
-
         document.addEventListener('keydown', function(event) {
             switch (event.code) {
                 case 'F2': // Hotkey for searching
@@ -949,6 +975,15 @@
         const changeDisplay = document.getElementById('changeDisplay');
         const orderTypeInput = document.getElementById('order-type-input');
 
+        const name = document.getElementById('client_name')
+        const phonenumber = document.getElementById('phonenumber')
+        const amount = document.getElementById('change_amount')
+        const receipt_number = document.getElementById('receipt_number')
+
+        const amountGiven = document.getElementById('change_given');
+        const balance = document.getElementById('balance');
+
+
         setTimeout(() => {
             amountField.focus();
             amountField.select();
@@ -1028,6 +1063,15 @@
                     changeDisplay.value = '';
                     // orderTypeInput.value = '';
 
+                    // clear change data
+
+                    name.value='';
+                    phonenumber.value='';
+                    amount.value='';
+                    receipt_number.value='';
+                    amountGiven.value='';
+                    balance.value='';
+
                 } else {
                     Swal.fire({
                         title: "Error",
@@ -1049,7 +1093,7 @@
     }
 
     function generateReceiptContent(saleData) {
-        const { received_amount, items, order_type, cashier } = saleData;
+        const { received_amount, items, order_type, cashier, receipt_number } = saleData;
         const sub_total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
         const tax = sub_total * (0.15 / (1 + 0.15));
         const total_amount = sub_total;
@@ -1077,7 +1121,7 @@
                 height:120mm; 
                 font-family: Arial, 
                 sans-serif; 
-                font-size: 13px;
+                font-size: 14px;
                 "
                 >
                 <h3 style="text-align: center;">Parsles Investments (Urban Eats)</h3>
@@ -1112,10 +1156,6 @@
                         <span>$${sub_total.toFixed(2)}</span>
                     </div>
                     <div class="line">
-                        <span>Tax (15%):</span>
-                        <span>$${tax.toFixed(2)}</span>
-                    </div>
-                    <div class="line">
                         <span>Total:</span>
                         <span>$${total_amount.toFixed(2)}</span>
                     </div>
@@ -1133,7 +1173,11 @@
                     </div>
                     <div class="line">
                         <span>Receipt Number:</span>
+<<<<<<< HEAD
                         <span>${cashier}</span>
+=======
+                        <span style='font-size:13.5px'>#${receipt_number}</span>
+>>>>>>> 9c633542501eb532da56c6aebe996f0b1102c922
                     </div>
                 </div>
                 <hr>
@@ -1149,8 +1193,6 @@
         if (!printFrame) {
             printFrame = document.createElement("iframe");
             printFrame.id = "print-frame";
-            // printFrame.style.width = "100%"; // Make the iframe visible
-            // printFrame.style.height = "400px"; // Set a reasonable height for viewing
             printFrame.style.display = "none"
             document.body.appendChild(printFrame);
         }

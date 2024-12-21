@@ -44,6 +44,14 @@ def pos(request):
 
     combined_items = list(meals) + list(dishes)
 
+    # for m in Meal.objects.all():
+    #     m.meal = True
+    #     m.save()
+
+    # for m in Dish.objects.all():
+    #     m.dish = True
+    #     m.save()
+
     return render(request, 'pos.html', 
         {
             'combined_items': meals,
@@ -273,6 +281,7 @@ def process_sale(request):
                     'cashier': f'{request.user.first_name} {request.user.last_name}',
                     'receipt_number': sale.receipt_number,
                     'total_amount': sale.total_amount,
+                    'receipt_number':sale.receipt_number,
                     'tax': sale.tax,
                     'sub_total': sale.sub_total,
                     'received_amount': received_amount,
