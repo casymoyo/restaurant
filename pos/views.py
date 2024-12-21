@@ -256,7 +256,6 @@ def process_sale(request):
                     
                     create_client_change(change_data, sale.receipt_number, sale.cashier, sale)
 
-    
                 Logs.objects.create(
                     user=request.user, 
                     action='sale',
@@ -272,6 +271,7 @@ def process_sale(request):
                     'date': str(localdate()),
                     'time': timezone.localtime().strftime("%H:%M:%S"),
                     'cashier': f'{request.user.first_name} {request.user.last_name}',
+                    'receipt_number': sale.receipt_number,
                     'total_amount': sale.total_amount,
                     'tax': sale.tax,
                     'sub_total': sale.sub_total,
@@ -280,146 +280,20 @@ def process_sale(request):
                     'items': list(SaleItem.objects.filter(sale=sale).values('quantity', 'price', 'meal__name', 'dish__name', 'product__name'))
                 }
 
-                total_sales = Sale.objects.aggregate(total=Sum('total_amount'))['total'] or 0
+                total_sales = Sale.objects.filter(date=today).aggregate(total=Sum('total_amount'))['total'] or 0
                 channel_layer = get_channel_layer()
                 async_to_sync(channel_layer.group_send)(
                     "sales_group",
                     {
                         "type": "send_sales_update",
-                        "data": {"total_sales": total_sales},
+                        "data": {"total_sales": str(total_sales)},
                     }
                 )
                 return JsonResponse({'success': True, 'data': data}, status=201)
         except Exception as e:
             logger.error(f'Error processing sale: {str(e)}')
             return JsonResponse({'success': False, 'message': str(e)}, status=400)
-     
-@login_required
-def generate_receipt(request, sale, received_amount, product):
-    
-    change = received_amount - sale.total_amount
-    logger.info(f'change:  {change}')
-    
-    #  page size to 8 cm by 9 cm
-    PAGE_WIDTH = 8 * cm
-    PAGE_HEIGHT = 29.7 * cm 
-
-    # temporary file to store the PDF
-    temp_pdf = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
-    pdf_path = temp_pdf.name
-
-    p = canvas.Canvas(pdf_path, pagesize=(PAGE_WIDTH, PAGE_HEIGHT))
-
-    # font size (12 px is roughly equivalent to 9 pt in ReportLab)
-    font_size = 9  # points
-    p.setFont("Helvetica", font_size)
-
-    def draw_centered_text(text, y_position, bold=False):
-        if bold:
-            p.setFont("Helvetica-Bold", font_size)
-        else:
-            p.setFont("Helvetica", font_size)
-        text_width = p.stringWidth(text)
-        x_position = (PAGE_WIDTH - text_width) / 2
-        p.drawString(x_position, y_position, text)
-
-    # starting positions
-    y_position = PAGE_HEIGHT - 1 * cm
-
-    # title and company info
-    draw_centered_text("Parsales Investments (Urban Eats)", y_position, bold=True)
-    y_position -= 0.5 * cm
-    draw_centered_text("65 Speke Ave", y_position)
-    y_position -= 0.5 * cm
-    draw_centered_text("Harare", y_position)
-
-    # "TAX INVOICE" header
-    y_position -= 0.7 * cm
-    draw_centered_text("**TAX INVOICE**", y_position, bold=True)
-
-    # tax and TIN numbers
-    y_position -= 0.5 * cm
-    p.drawString(1 * cm, y_position, "TAX NR : 220356643")
-    y_position -= 0.5 * cm
-    p.drawString(1 * cm, y_position, "TIN No: 2001020099")
-
-    # item and price details
-    for s in SaleItem.objects.filter(sale=sale):
-        name = None
-        
-        # assign name checking meal, dish, product existance
-        if s.meal:
-            name=s.meal
-        elif s.dish:
-            name=s.dish.name
-        else:
-            name = product
-
-        y_position -= 0.7 * cm
-        p.drawString(1 * cm, y_position, f"{name}")
-        p.drawString(4.5 * cm, y_position, f"{s.quantity} @")
-        p.drawString(6 * cm, y_position, f"${s.price:.2f}")
-
-    # totals
-    y_position -= 0.7 * cm
-    p.drawString(1 * cm, y_position, "TAX :")
-    p.drawString(6 * cm, y_position, f"${sale.tax:.2f}")
-
-    y_position -= 0.5 * cm
-    p.drawString(1 * cm, y_position, "TOTAL :")
-    p.setFont("Helvetica-Bold", font_size)
-    p.drawString(6 * cm, y_position, f"${sale.total_amount:.2f}")
-
-    y_position -= 0.5 * cm
-    p.drawString(1 * cm, y_position, "Cash :")
-    p.drawString(6 * cm, y_position, f"{received_amount:.2f}")
-
-    y_position -= 0.5 * cm
-    p.setFont("Helvetica-Bold", font_size)
-    p.drawString(1 * cm, y_position, "Change :")
-    p.drawString(6 * cm, y_position, f'${change:.2f}')
-
-    # cashier and transaction info
-    y_position -= 0.7 * cm
-    p.drawString(1 * cm, y_position, "Cashier :")
-    p.drawString(6 * cm, y_position, f"{request.user.first_name}")
-
-    # date and time
-    y_position -= 0.5 * cm
-    now = datetime.datetime.now().strftime("%a %d %m, %Y %H:%M")
-    p.drawString(1 * cm, y_position, "Date :")
-    p.drawString(6 * cm, y_position, now)
-
-    # transaction number
-    y_position -= 0.5 * cm
-    p.drawString(1 * cm, y_position, "Transaction :")
-    p.drawString(6 * cm, y_position, f'{sale.receipt_number}')
-
-    y_position -= 0.5 * cm
-    draw_centered_text("Thank You Call Again", y_position, bold=True)
-
-    # y_position += 0.5 * cm
-    # draw_centered_text("www.techcity.co.zw", y_position)
-
-    p.showPage()
-    p.save()
-    
-    # Close the temporary file
-    temp_pdf.close()
-    
-    logger.info(pdf_path)
-    
-    try:
-        printer_name = "EPSON TM-T88V"  
-       
-        subprocess.run([
-            r"C:\Users\user\AppData\Local\SumatraPDF\SumatraPDF.exe", 
-            "-print-to",
-            printer_name,
-            pdf_path
-        ], check=True)
-    except Exception as e:
-        logger.error(f"Error printing the file: {e}")
+    return JsonResponse({'success': False, 'message': 'Invalid request'}, status=405)
 
 @login_required
 def change_list(request):
@@ -575,10 +449,11 @@ def collect_change(request):
 def void_sales(request, user_id):
     if request.method == 'GET':
         sales = Sale.objects.all().order_by('-date')
-        sale_items = SaleItem.objects.all().order_by('-time')
+        sale_items = SaleItem.objects.all().order_by('-sale__date')
         return render (request, 'pos/void_sales.html', {
             'sales':sales,
-            'sale_items':sale_items
+            'sale_items':sale_items,
+            'user_id':user_id
         })
     
     if request.method == 'POST':
@@ -600,37 +475,42 @@ def void_sales(request, user_id):
 
                 logger.info(f'Sale marked as voided: {sale}')
 
-                for item in items:
-                    product = item.product or item.meal or item.dish
+                # for item in items:
+                #     product = item.product or item.meal or item.dish
 
-                    if product:
-                        if isinstance(product, Product):
+                #     if product:
+                #         if isinstance(product, Product):
 
-                            product.quantity += item.quantity
-                            product.save()
+                #             product.quantity += item.quantity
+                #             product.save()
 
-                            logger.info(f'Reverted product stock: {product}')
+                #             logger.info(f'Reverted product stock: {product}')
 
-                        elif isinstance(product, ProductionItems):
-                            product.portions_sold -= item.quantity
-                            product.left_overs += item.quantity
-                            product.save()
+                #         elif isinstance(product, ProductionItems):
+                #             product.portions_sold -= item.quantity
+                #             product.left_overs += item.quantity
+                #             product.save()
 
-                            logger.info(f'Reverted production item: {product}')
+                #             logger.info(f'Reverted production item: {product}')
 
-                    item.delete()
+                #     item.delete()
 
-                    logger.info(f'Deleted sale item: {item}')
+                #     logger.info(f'Deleted sale item: {item}')
                 
-                change = CashBook.objects.filter(sale=sale).first()
+                change = Change.objects.filter(sale=sale).first()
                 if change:
                     change.delete()
                     logger.info(f'Reverted cashbook entry: {change}')
 
                 # Reverse the logs related to the sale
-                logs = ProductionLogs.objects.filter(sale=sale)
-                logs.delete()
-                logger.info(f'Reverted production logs for sale: {sale.id}')
+                try:
+                    logs = ProductionLogs.objects.filter(sale=sale)
+                    logs.delete()
+                    logger.info(f'Reverted production logs for sale: {sale.id}')
+                except:
+                    logs = Logs.objects.filter(sale=sale)
+                    logs.delete()
+                    logger.info(f'Reverted Sale log: {sale.id}')
 
                 # Revert cash book entry if it exists
                 cashbook_entry = CashBook.objects.filter(sale=sale).first()
@@ -643,6 +523,7 @@ def void_sales(request, user_id):
 
         except Exception as e:
             logger.error(f'Error processing void transaction: {str(e)}')
+            return JsonResponse({'success': True, 'message': f'{e}'}, status=400)
 
 from django.views.decorators.csrf import csrf_exempt
 

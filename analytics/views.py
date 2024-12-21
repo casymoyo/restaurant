@@ -22,7 +22,7 @@ def analytics_view(request):
 
     if filter_by == 'hour':
 
-        sales_by_hour = SaleItem.objects.filter(sale__date=today) \
+        sales_by_hour = SaleItem.objects.filter(sale__date=today, void=False) \
             .annotate(hour=ExtractHour('time')) \
             .values('hour') \
             .annotate(total_sales=Sum('price')) \
@@ -33,7 +33,7 @@ def analytics_view(request):
 
     elif filter_by == 'day':
 
-        today_sales = Sale.objects.filter(date=today).aggregate(total=Sum('total_amount'))
+        today_sales = Sale.objects.filter(date=today, void=False).aggregate(total=Sum('total_amount'))
         yesterday_sales = Sale.objects.filter(date=yesterday).aggregate(total=Sum('total_amount'))
 
         data['today_sales'] = today_sales['total'] or 0
@@ -41,32 +41,49 @@ def analytics_view(request):
 
     elif filter_by == 'month':
 
-        month_sales = Sale.objects.filter(date__gte=start_of_month).aggregate(total=Sum('total_amount'))
+        month_sales = Sale.objects.filter(date__gte=start_of_month, void=False).aggregate(total=Sum('total_amount'))
         data['month_sales'] = month_sales['total'] or 0
 
     elif filter_by == 'year':
         
-        year_sales = Sale.objects.filter(date__gte=start_of_year).aggregate(total=Sum('total_amount'))
+        year_sales = Sale.objects.filter(date__gte=start_of_year, void=False).aggregate(total=Sum('total_amount'))
         data['year_sales'] = year_sales['total'] or 0
 
-    # Best-selling meal
-    best_selling_meal = SaleItem.objects.values('meal__name') \
-        .annotate(total_sold=Sum('quantity')) \
-        .order_by('-total_sold') \
-        .first()
-    
-    data['best_selling_meal'] = best_selling_meal
+    # Best-selling dish
+    best_selling_meal = SaleItem.objects.filter(meal__isnull=False).values('meal__name') \
+    .annotate(total_sold=Sum('quantity')) \
+    .order_by('-total_sold') \
+    .first()
 
-    meal_sales = SaleItem.objects.filter(meal__meal=True, sale__date=today)
-    logger.info(f'today meal sales: {meal_sales}')
+    best_selling_dish = SaleItem.objects.filter(dish__isnull=False).values('dish__name') \
+    .annotate(total_sold=Sum('quantity')) \
+    .order_by('-total_sold') \
+    .first()
 
-    dish_sales = SaleItem.objects.filter(dish__dish=True, sale__date=today)
-    logger.info(f'today dish sales: {dish_sales}')\
+
+    combined_best_selling = []
+
+    logger.info(best_selling_dish['dish__name'])
+    logger.info(best_selling_meal['meal__name'])
+
+    if best_selling_meal['meal__name']  == best_selling_dish['dish__name']:
+        combined_best_selling.append(
+            {
+                'name': best_selling_meal['meal__name'], 
+                'total_sold': best_selling_meal['total_sold'] + best_selling_dish['total_sold']
+            }
+        )
+        data['combined_best_selling'] = combined_best_selling
+    else:
+        data['best_selling_meal'] = best_selling_meal
+        data['best_selling_dish'] = best_selling_dish
+
+    logger.info(f'best selling meal: {combined_best_selling}')
     
     grouped_meals = defaultdict(lambda: {})
     grouped_dishes = defaultdict(lambda: {})
 
-    sales = SaleItem.objects.select_related('sale', 'meal', 'dish').all()
+    sales = SaleItem.objects.filter(sale__void=False).select_related('sale', 'meal', 'dish', 'product').all()
 
     if not sales:
         logger.warning("No sales data found.")
@@ -101,6 +118,18 @@ def analytics_view(request):
                 else:
                     grouped_dishes[category][dish_name] = {
                         'name': dish_name,
+                        'quantity': sale.quantity,
+                        'price': sale.price * sale.quantity,
+                    }
+                    
+            elif sale.product:
+                product_name = sale.product.name
+                if product_name in grouped_dishes[category]:
+                    grouped_dishes[category][product_name]['quantity'] += sale.quantity
+                    grouped_dishes[category][product_name]['price'] += sale.price * sale.quantity
+                else:
+                    grouped_dishes[category][product_name] = {
+                        'name': product_name,
                         'quantity': sale.quantity,
                         'price': sale.price * sale.quantity,
                     }

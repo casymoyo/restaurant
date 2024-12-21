@@ -2,22 +2,27 @@
 {% block title %} Analytics Overview {% endblock %}
 {% block content %}
     <div>
-        <div class="d-flex justify-content-between align-items-center mt-2 mb-2">
+        <div class="d-flex justify-content-between border-bottom p-2 align-items-center mt-2 mb-2">
             <div>
                 <a href='/' class='bx bx-home btn border fs-5'></a>
                 <span class='mt-2 fs-5 mx-2 fw-bold'>Analytics</span>
             </div>
-            <div>
+            <!-- <div>
                 <li class="">
                     <a href="{% url 'inventory:production_sales' %}" class='btn btn-outline-dark mx-2'>Sales in portions</a>
                 </li>
-            </div>
+            </div> -->
         </div>
-        <div class="row mt-4">
-            <div class="d-flex align-items-center justify-content-between">
+
+        <div class="row mt-4" id="analyticsData">
+            <!-- Data will be populated here by JavaScript -->
+        </div>
+
+        <div class="row mt-4 border p-1">
+            <div class="d-flex align-items-center justify-content-between w-100">
                 <h5>Sales</h5>
                 <div class="d-flex align-items-center">
-                    <h6 class="card-title">Filter By</h6>
+                    <h6>Filter</h6>
                     <select id="filterBy" class="form-control mx-2">
                         <option value="day">Day</option>
                         <option value="hour">Hour</option>
@@ -28,13 +33,9 @@
             </div>
         </div>
 
-        <div class="row mt-4" id="analyticsData">
-            <!-- Data will be populated here by JavaScript -->
-        </div>
-
         <div class="row mt-4">
             <div class="col-md-12">
-                <ul class="nav nav-tabs" id="myTab" role="tablist">
+                <ul class="nav nav-tabs sticky-top bg-light" id="myTab" role="tablist">
                     <li class="nav-item" role="presentation">
                         <button class="nav-link active" id="meals-tab" data-bs-toggle="tab" data-bs-target="#meals" type="button" role="tab" aria-controls="meals" aria-selected="true">Meals</button>
                     </li>
@@ -75,15 +76,15 @@
                     if (filterBy === 'day') {
                         analyticsData.innerHTML += `
                             <div class="col-md-3">
-                                <div class="card" style='border:none;'>
+                                <div class="card shadow" style='border:none;'>
                                     <div class="card-body">
                                         <h5 class="card-title text-muted">Today's Sales</h5>
-                                        <p class="card-text text-center fs-3">${data.today_sales || "0.00"}</p>
+                                        <p class="card-text text-center fs-3" id='total-sales'>${data.today_sales || "0.00"}</p>
                                     </div>
                                 </div>
                             </div>
                             <div class="col-md-3">
-                                <div class="card" style='border:none;'>
+                                <div class="card shadow" style='border:none;'>
                                     <div class="card-body">
                                         <h5 class="card-title text-muted">Yesterday's Sales</h5>
                                         <p class="card-text text-center fs-3">${data.yesterday_sales || "0.00"}</p>
@@ -94,7 +95,7 @@
                     } else if (filterBy === 'month') {
                         analyticsData.innerHTML += `
                             <div class="col-md-3">
-                                <div class="card" style='border:none;'>
+                                <div class="card shadow" style='border:none;'>
                                     <div class="card-body">
                                         <h5 class="card-title text-muted">This Month's Sales</h5>
                                         <p class="card-text text-center fs-3">${data.month_sales || "0.00"}</p>
@@ -105,7 +106,7 @@
                     } else if (filterBy === 'year') {
                         analyticsData.innerHTML += `
                             <div class="col-md-4">
-                                <div class="card" style='border:none;'>
+                                <div class="card shadow" style='border:none;'>
                                     <div class="card-body">
                                         <h5 class="card-title text-muted">This Year's Sales</h5>
                                         <p class="card-text text-center fs-3">${data.year_sales || "0.00"}</p>
@@ -119,7 +120,7 @@
     
                         analyticsData.innerHTML += `
                             <div class="col-md-6">
-                                <div class="card">
+                                <div class="card shadow">
                                     <div class="card-body">
                                         <h5 class="card-title">Sales by Hour</h5>
                                         <canvas id="salesByHourChart"></canvas>
@@ -160,7 +161,7 @@
                     if (data.best_selling_meal) {
                         analyticsData.innerHTML += `
                             <div class="col-md-6">
-                                <div class="card" style='border:none;'>
+                                <div class="card shadow" style='border:none;'>
                                     <div class="card-body" >
                                         <h5 class="card-title text-muted">Best Selling Meal</h5>
                                         <p class="card-text text-center fs-3">${data.best_selling_meal.meal__name} - ${data.best_selling_meal.total_sold} sold</p>
@@ -178,7 +179,7 @@
             const sortedCategories = ['Today', 'Yesterday', ...Object.keys(data.grouped_meals).filter(cat => cat !== 'Today' && cat !== 'Yesterday')];
 
             // Function to calculate total sales for a category
-            const calculateTotalSales = (items) => items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            const calculateTotalSales = (items) => items.reduce((sum, item) => parseFloat(sum)+ parseFloat(item.price), 0);
 
             // Populate meals table
             sortedCategories.forEach(category => {
@@ -193,8 +194,8 @@
                         <tr>
                             <th>Meal</th>
                             <th>Quantity</th>
-                            <th>Selling Price</th>
-                            <th>Total Selling Price</th>
+                            <th>Selling Price Per Unit</th>
+                            <th>Total Selling Amnt</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -203,8 +204,8 @@
                                 <tr>
                                     <td>${meal.name}</td>
                                     <td>${meal.quantity}</td>
+                                    <td>${(meal.price / meal.quantity).toFixed(2)}</td>
                                     <td>${meal.price}</td>
-                                    <td>${meal.price * meal.quantity}</td>
                                 </tr>
                             `)
                             .join('')}
@@ -234,8 +235,8 @@
                                 <tr>
                                     <td>${dish.name}</td>
                                     <td>${dish.quantity}</td>
+                                    <td>${(dish.price / dish.quantity).toFixed(2)}</td>
                                     <td>${dish.price}</td>
-                                    <td>${dish.price * dish.quantity}</td>
                                 </tr>
                             `)
                             .join('')}

@@ -197,6 +197,29 @@
 
             playNotificationSound();
         }
+
+        // totals sales websocket
+        const socket = new WebSocket('ws://' + window.location.host + '/ws/sales/');
+
+        socket.onopen = function() {
+            console.log('WebSocket connection established');
+        };
+
+        socket.onerror = function(error) {
+            console.error('WebSocket error:', error);
+        };
+
+        socket.onmessage = function(e) {
+            const message = JSON.parse(e.data);
+            console.log(message['data'], 'web socket data');
+            
+            const totalSalesElement = document.getElementById('total-sales');
+            if (totalSalesElement) {
+                totalSalesElement.innerText = `$${message['data']['total_sales']}`;
+            }
+
+        };
+
     </script>
 </body>
 </html>

@@ -168,15 +168,15 @@
                             <span>Total</span>
                             <span id="total">$0.00</span>
                         </div>
-                        <div class="mt-3">
-                            <button class="btn btn-outline-danger w-100" id="cancelBtn">Cancel</button>
-                        </div>
                         <div class="d-flex justify-content-center mt-3">
                             <button class="btn btn-warning w-100 " id="chargeButton">Charge $0.00
                                 <span class="text-light mx-2">
                                     Enter
                                 </span>
                             </button>
+                        </div>
+                        <div class="mt-3">
+                            <button class="btn btn-outline-danger w-100" id="cancelBtn">Cancel</button>
                         </div>
                     </div>
                 </div>
@@ -225,7 +225,8 @@
             <div class="modal-dialog bg modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="chargeModalLabel">Finalize Sale</h5>
+                        <!-- <h5 class="modal-title" id="chargeModalLabel">Finalize Sale</h5> -->
+                        <h5 id="payModal"></h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     
@@ -256,7 +257,8 @@
             <div class="modal-dialog bg modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="chargeModalLabel">Finalize Sale</h5>
+                        <h5 class="modal-title" id="chargeModalLabel">Finalize Sale</h5> 
+                        <div id="payModal"></div>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
@@ -379,15 +381,6 @@
         const authenticateModal = new bootstrap.Modal(document.getElementById('authModal'));
 
         // to remove the absolute create customer change function it have been overide
-
-        const socket = new WebSocket('ws://' + window.location.host + '/ws/sales/');
-
-        socket.onmessage = function(e) {
-            const data = JSON.parse(e.data);
-            console.log(data);
-            document.getElementById('total-sales').innerText = `Total Sales: $${data.total_sales}`;
-        };
-
 
         authenticateBtn.addEventListener('click', ()=>{
             authenticateModal.show()
@@ -603,6 +596,7 @@
                 const totalAmount = parseFloat(totalAmountInput.value);
                 const total = parseFloat(document.getElementById('total').innerText.slice(1));
                 const change = totalAmount - total;
+
                 document.getElementById('changeDisplay').value = `$${change.toFixed(2)}`;
 
                 if (!totalAmount) {
@@ -669,19 +663,18 @@
                             title: "Success",
                             text: "Processing Receipt",
                             icon: "success"
-                        }).then(() => {
-                            cart = [];
-                            updateOrderDetails();
-                            chargeModal.hide();
+                        })
+                        cart = [];
+                        updateOrderDetails();
+                        chargeModal.hide();
 
-                            const receiptContent = generateReceiptContent(data.data);
-                            printReceiptSilently(receiptContent);
-                            
-                            amountField.value = '';
-                            changeDisplay.value = '';
-                            orderTypeInput.value = '';
-                            
-                        });
+                        const receiptContent = generateReceiptContent(data.data);
+                        printReceiptSilently(receiptContent);
+                        
+                        amountField.value = '';
+                        changeDisplay.value = '';
+
+                        Swal.close();
                     } else {
                         Swal.fire({
                             title: "Error",
@@ -806,6 +799,7 @@
             fetch('{% url "pos:product_meal_json" %}')
                 .then(response => response.json())
                 .then(data => {
+                    console.log(data)
                     items = data.items;
                     mealsData.push(data)
                     displayItems(items);
@@ -874,33 +868,45 @@
             let subTotal = 0;
           
             cart.forEach(meal => {
-              const mealRow = document.createElement('div');
-              mealRow.className = 'd-flex justify-content-between align-items-center';
+              const mealRow = document.createElement('tr');
           
+              const removeCell = document.createElement('td');
               const removeIcon = document.createElement('i');
               removeIcon.classList.add('bx', 'bx-trash'); 
               removeIcon.addEventListener('click', () => {
                 removeFromCart(meal.id);
               });
+              removeCell.appendChild(removeIcon);
+              mealRow.appendChild(removeCell);
           
-              mealRow.appendChild(removeIcon);
+              const nameCell = document.createElement('td');
+              nameCell.innerText = meal.name;
+              mealRow.appendChild(nameCell);
+
+              const quantityCell = document.createElement('td');
+              const input = document.createElement('input');
+              input.classList.add('form-control', 'form-control-sm');
+              input.style.width = '50px';
+              input.value = meal.quantity;
+              input.addEventListener('change', () => {
+                meal.quantity = parseInt(input.value);
+                updateCart(meal.id
+                    , meal.quantity
+                );
+              });
+
+              quantityCell.appendChild(input);
+              mealRow.appendChild(quantityCell);
           
-              const nameQuantityContainer = document.createElement('div');
-              nameQuantityContainer.className = 'meal-details';
+              const priceCell = document.createElement('td');
+              priceCell.innerText = `$${(meal.price * meal.quantity).toFixed(2)}`;
+              mealRow.appendChild(priceCell);
           
-              const mealName = document.createElement('span');
-              mealName.innerText = meal.name;
-              nameQuantityContainer.appendChild(mealName);
+              orderDetails.appendChild(mealRow);
           
-              const mealQuantity = document.createElement('span');
-              mealQuantity.innerText = ` (x${meal.quantity})`;
-              nameQuantityContainer.appendChild(mealQuantity);
-          
-              mealRow.appendChild(nameQuantityContainer);
-          
-              const mealPrice = document.createElement('span');
-              mealPrice.innerText = `$${(meal.price * meal.quantity).toFixed(2)}`;
-              mealRow.appendChild(mealPrice);
+            //   const mealPrice = document.createElement('span');
+            //   mealPrice.innerText = `$${(meal.price * meal.quantity).toFixed(2)}`;
+            //   mealRow.appendChild(mealPrice);
           
               orderDetails.appendChild(mealRow);
               subTotal += meal.price * meal.quantity;
@@ -914,7 +920,20 @@
             document.getElementById('tax').innerText = `$${tax.toFixed(2)}`;
             document.getElementById('total').innerText = `$${total.toFixed(2)}`;
             document.getElementById('chargeButton').innerText = `Charge $${total.toFixed(2)}`;
+
+            // pay modal
+            document.getElementById('totalAmountInput').value = total.toFixed(2);
+            
+            document.getElementById('payModal').innerHTML = `Total Order Amount: <span class'text-bold'>${total.toFixed(2)}</span>`;
           }
+
+    function updateCart(mealId, quantity) {
+        const meal = cart.findIndex(meal => meal.id === mealId);
+        if (meal){
+            cart[meal].quantity = quantity;
+        }
+        updateOrderDetails();
+    }
 
     function removeFromCart(mealId) {
         const mealIndex = cart.findIndex(meal => meal.id === mealId);
@@ -1007,7 +1026,7 @@
                     // Clear the inputs
                     amountField.value = '';
                     changeDisplay.value = '';
-                    orderTypeInput.value = '';
+                    // orderTypeInput.value = '';
 
                 } else {
                     Swal.fire({
@@ -1110,6 +1129,10 @@
                     </div>
                     <div class="line">
                         <span>Cashier:</span>
+                        <span>${cashier}</span>
+                    </div>
+                    <div class="line">
+                        <span>Receipt Number:</span>
                         <span>${cashier}</span>
                     </div>
                 </div>
