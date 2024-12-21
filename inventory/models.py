@@ -138,6 +138,7 @@ class Dish(models.Model):
         ('Starch', 'Starch'),
         ('Salad', 'Salad')
     ])
+    dish = models.BooleanField(default=True)
 
     def __str__(self) -> str:
         return self.name
@@ -163,6 +164,7 @@ class Meal(models.Model):
     dish = models.ManyToManyField(Dish, related_name='dishes')
     category = models.ForeignKey(MealCategory, on_delete=models.CASCADE, null=True)
     deactivate = models.BooleanField(default=False)
+    meal = models.BooleanField(default=True)
     
     def __str__(self) -> str:
         return self.name

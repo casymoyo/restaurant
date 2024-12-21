@@ -1022,7 +1022,6 @@
             <style>
                 .totals {
                     width: 100%;
-                    font-size: 14px;
                 }
 
                 .line {
@@ -1036,7 +1035,14 @@
                 }
             </style>
 
-            <div style="width: 80mm; font-family: Arial, sans-serif; font-size: 12px;">
+            <div style="
+                width: 80mm; 
+                height:120mm; 
+                font-family: Arial, 
+                sans-serif; 
+                font-size: 13px;
+                "
+                >
                 <h3 style="text-align: center;">Parsles Investments (Urban Eats)</h3>
                 <p style="text-align: center;">65 Speke Ave, Harare</p>
                 <hr>
@@ -1058,7 +1064,7 @@
                                 ? item.meal__name 
                                 : item.product__name} 
                             ${item.quantity.toFixed(2)} x $${item.price}
-                            </span>
+                        </span>
                         <span>$${(item.quantity * item.price)}</span>
                     </p>
                 `).join('')}

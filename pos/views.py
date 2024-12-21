@@ -170,12 +170,14 @@ def process_sale(request):
                         dish = None
 
                         logger.info(f'Looking for meal with id {item['meal_id']} or dishes with id {item['meal_id']}')
-                        try:
+                        if item.get('meal'):
                             meal = get_object_or_404(Meal, id=item['meal_id'])
                             logger.info(f'Sale for meal: {meal}')
-                        except Exception as e:
+                        elif item.get('dish'):
                             dish = get_object_or_404(Dish, id=item['meal_id'])
                             logger.info(f'Sale for dish: {dish}')
+                        else:
+                            raise ValueError('Invalid item type: Neither meal nor dish specified')
 
                         sale_item = SaleItem.objects.create(
                             sale=sale,
