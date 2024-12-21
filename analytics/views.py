@@ -2,7 +2,7 @@ from django.http import JsonResponse
 from django.shortcuts import render
 from django.db.models import Sum, Count
 from datetime import date, timedelta, datetime
-from finance.models import Sale, SaleItem
+from finance.models import Sale, SaleItem, Change
 from loguru import logger
 from django.http import JsonResponse
 from django.db.models import Sum
@@ -33,12 +33,23 @@ def analytics_view(request):
 
     elif filter_by == 'day':
 
-        today_sales = Sale.objects.filter(date=today, void=False).aggregate(total=Sum('total_amount'))
-        yesterday_sales = Sale.objects.filter(date=yesterday).aggregate(total=Sum('total_amount'))
+        today_sales = Sale.objects.filter(date=today).aggregate(total=Sum('total_amount'))
+        yesterday_sales = Sale.objects.filter(date=yesterday, void=False).aggregate(total=Sum('total_amount'))
+        
+        today_void_sales = Sale.objects.filter(date=today, void=True).aggregate(total=Sum('total_amount'))
+        yesterday_void_sales = Sale.objects.filter(date=yesterday, void=True).aggregate(total=Sum('total_amount'))
+        
+        change_amount = Change.objects.filter(timestamp__date=today, collected=False).aggregate(total=Sum('amount'))
+        yesterday_change_amount = Change.objects.filter(timestamp__date=yesterday, collected=False).aggregate(total=Sum('amount'))
+
+        data['total_void_sales'] = today_void_sales['total'] or 0
+        data['change_amount'] = change_amount['total'] or 0
+        data['yesterday_change_amount'] = yesterday_change_amount['total'] or 0
 
         data['today_sales'] = today_sales['total'] or 0
         data['yesterday_sales'] = yesterday_sales['total'] or 0
-
+        data['yesterday_void_sales'] = yesterday_void_sales['total'] or 0
+        
     elif filter_by == 'month':
 
         month_sales = Sale.objects.filter(date__gte=start_of_month, void=False).aggregate(total=Sum('total_amount'))
@@ -84,6 +95,31 @@ def analytics_view(request):
     grouped_dishes = defaultdict(lambda: {})
 
     sales = SaleItem.objects.filter(sale__void=False).select_related('sale', 'meal', 'dish', 'product').all()
+
+    sales_dishes = SaleItem.objects.filter(sale__void=False)
+
+    dishes = defaultdict(lambda: {})
+
+    for sale in sales_dishes:
+        if sale.meal:
+            sale_date = sale.sale.date
+            category = (
+                'Today' if sale_date == today
+                else 'Yesterday' if sale_date == yesterday
+                else sale_date.strftime('%A, %d %B %Y')
+            )
+            for dish in sale.meal.dish.all():
+                if dish.name in dishes[category]:
+                    dishes[category][dish.name]['quantity'] += sale.quantity
+                    dishes[category][dish.name]['price'] += sale.price * sale.quantity
+                else:
+                    dishes[category][dish.name] = {
+                        'name': dish.name,
+                        'quantity': sale.quantity,
+                        'price': sale.price * sale.quantity,
+                    }
+
+    logger.info(dishes) 
 
     if not sales:
         logger.warning("No sales data found.")
@@ -136,7 +172,30 @@ def analytics_view(request):
 
     formatted_meals = {category: list(items.values()) for category, items in grouped_meals.items()}
     formatted_dishes = {category: list(items.values()) for category, items in grouped_dishes.items()}
+    f_dishes = {category: list(items.values()) for category, items in dishes.items()}
 
+    combined_dishes = defaultdict(lambda: {})
+
+    for category, items in grouped_dishes.items():
+        for dish_name, dish_data in items.items():
+            if dish_name in combined_dishes[category]:
+                combined_dishes[category][dish_name]['quantity'] += dish_data['quantity']
+                combined_dishes[category][dish_name]['price'] += dish_data['price']
+            else:
+                combined_dishes[category][dish_name] = dish_data.copy()
+
+    for category, items in dishes.items():
+        for dish_name, dish_data in items.items():
+            if dish_name in combined_dishes[category]:
+                combined_dishes[category][dish_name]['quantity'] += dish_data['quantity']
+                combined_dishes[category][dish_name]['price'] += dish_data['price']
+            else:
+                combined_dishes[category][dish_name] = dish_data.copy()
+
+    # Convert combined_dishes to the desired format
+    f_dishes = {category: list(items.values()) for category, items in combined_dishes.items()}
+
+    data['dishes'] = dict(f_dishes)
     data['grouped_meals'] = dict(formatted_meals)
     data['grouped_dishes'] = dict(formatted_dishes)
 

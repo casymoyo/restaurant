@@ -37,9 +37,9 @@
             <div class="col-md-12">
                 <ul class="nav nav-tabs sticky-top bg-light" id="myTab" role="tablist">
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="meals-tab" data-bs-toggle="tab" data-bs-target="#meals" type="button" role="tab" aria-controls="meals" aria-selected="true">Meals</button>
+                        <button class="nav-link active" id="meals-tab" data-bs-toggle="tab" data-bs-target="#meals" type="button" role="tab" aria-controls="meals" aria-selected="true">Combined Dishes</button>
                     </li>
-                    <li class="nav-item" role="presentation">
+                    <li class="nav-item" role="presentation"></li>
                         <button class="nav-link" id="dishes-tab" data-bs-toggle="tab" data-bs-target="#dishes" type="button" role="tab" aria-controls="dishes" aria-selected="false">Dishes</button>
                     </li>
                 </ul>
@@ -79,15 +79,17 @@
                                 <div class="card shadow" style='border:none;'>
                                     <div class="card-body">
                                         <h5 class="card-title text-muted">Today's Sales</h5>
-                                        <p class="card-text text-center fs-3" id='total-sales'>${data.today_sales || "0.00"}</p>
+                                        <p class="card-text text-center fs-5" id='total-sales'>Sales: $${data.today_sales || "0.00"}</p>
+                                        <p class="card-text text-center fs-5">Voids $${data.todays_void_sales || "0.00"}</p>
                                     </div>
                                 </div>
                             </div>
                             <div class="col-md-3">
                                 <div class="card shadow" style='border:none;'>
                                     <div class="card-body">
-                                        <h5 class="card-title text-muted">Yesterday's Sales</h5>
-                                        <p class="card-text text-center fs-3">${data.yesterday_sales || "0.00"}</p>
+                                        <h5 class="card-title text-muted">Yesterday's</h5>
+                                        <p class="card-text text-center fs-5">Sales $${data.yesterday_sales || "0.00"}</p>
+                                        <p class="card-text text-center fs-5">Voids $${data.yesterday_void_sales || "0.00"}</p>
                                     </div>
                                 </div>
                             </div>
@@ -179,17 +181,19 @@
             const sortedCategories = ['Today', 'Yesterday', ...Object.keys(data.grouped_meals).filter(cat => cat !== 'Today' && cat !== 'Yesterday')];
 
             // Function to calculate total sales for a category
-            const calculateTotalSales = (items) => items.reduce((sum, item) => parseFloat(sum)+ parseFloat(item.price), 0);
+            // const calculateTotalSales = (items) => items.reduce((sum, item) => parseFloat(sum)+ parseFloat(item.price), 0);
 
             // Populate meals table
             sortedCategories.forEach(category => {
                 const meals = data.grouped_meals[category] || [];
-                const totalSales = calculateTotalSales(meals);
+                const dishes = data.grouped_dishes[category] || [];
+                // let totalSales = calculateTotalSales(meals);
+                // totalSales += calculateTotalSales(dishes);
 
                 mealsTable.innerHTML += `
                     <thead>
                         <tr>
-                            <th colspan="3">${category} (Total: $${totalSales})</th>
+                            <th colspan="3">${category}s</th>
                         </tr>
                         <tr>
                             <th>Meal</th>
@@ -199,6 +203,16 @@
                         </tr>
                     </thead>
                     <tbody>
+                        ${dishes
+                            .map(dish => `
+                                <tr>
+                                    <td>${dish.name}</td>
+                                    <td>${dish.quantity}</td>
+                                    <td>${(dish.price / dish.quantity).toFixed(2)}</td>
+                                    <td>${dish.price}</td>
+                                </tr>
+                            `)
+                            .join('')}
                         ${meals
                             .map(meal => `
                                 <tr>
@@ -215,18 +229,19 @@
 
             // Populate dishes table
             sortedCategories.forEach(category => {
-                const dishes = data.grouped_dishes[category] || [];
-                const totalSales = calculateTotalSales(dishes);
+                const dishes = data.dishes[category] || [];
+                // const totalSales = calculateTotalSales(dishes);
 
                 dishesTable.innerHTML += `
                     <thead>
                         <tr>
-                            <th colspan="3">${category} (Total: $${totalSales})</th>
+                            <th colspan="3">${category}</th>
                         </tr>
                         <tr>
                             <th>Dish</th>
                             <th>Quantity</th>
                             <th>Price</th>
+                            <th>Total Selling Amnt</th>
                         </tr>
                     </thead>
                     <tbody>
