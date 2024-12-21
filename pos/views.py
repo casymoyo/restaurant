@@ -29,7 +29,7 @@ import requests
 import tempfile
 import logging
 from django.db.models import Q
-from django.contrib.auth import authenticate as django_authenticate, login
+from django.contrib.auth import authenticate 
 from django.utils import timezone
 
 # logger = logging.getLogger('restaurant')  
@@ -553,7 +553,7 @@ def collect_change(request):
     return JsonResponse({'success':False, 'message':'Invalid request'}, status=405)
 
 @login_required
-def void_sales(request):
+def void_sales(request, user_id):
     if request.method == 'GET':
         sales = Sale.objects.all().order_by('-date')
         sale_items = SaleItem.objects.all().order_by('-time')
@@ -624,10 +624,14 @@ def void_sales(request):
 
         except Exception as e:
             logger.error(f'Error processing void transaction: {str(e)}')
-            return JsonResponse({'success': False, 'message': f'Error: {str(e)}'}, status=400)
 
+from django.views.decorators.csrf import csrf_exempt
+
+@csrf_exempt
 @login_required
-def authenticate(request):
+def void_authenticate(request):
+    from users.models import User
+
     if request.method == "POST":
         try:
             logger.info('here')
@@ -636,19 +640,21 @@ def authenticate(request):
             username = data.get("username")
             password = data.get("password")
 
+            logger.info(username)
+            logger.info(password)
+
             if not username or not password:
                 return JsonResponse({"success": False, "message": "Username and password are required."}, status=400)
 
-            user = django_authenticate(request, username=username, password=password)
+            user = User.objects.get(username=username)
 
-            if user is not None and user.role in ['admin', 'accountant', 'superviser', 'manager', 'owner']:
+            logger.info(user.role)
+
+            if user.role in ['admin', 'accountant', 'superviser', 'manager', 'oswner']:
                 logger.info('success')
-                return JsonResponse({"success": True, "message": "Authentication successful."}, status=200)
+                return JsonResponse({"success": True, "message": "Authentication successful.", "user_id":user.id}, status=200)
             else:
                 return JsonResponse({"success": False, "message": "Invalid username or password."}, status=401)
-        except json.JSONDecodeError:
-            return JsonResponse({"success": False, "message": "Invalid JSON format."}, status=400)
+
         except Exception as e:
             return JsonResponse({"success": False, "message": f"An error occurred: {str(e)}"}, status=500)
-    else:
-        return JsonResponse({"success": False, "message": "Invalid request method."}, status=405)
