@@ -1,7 +1,5 @@
 {% extends "base.html" %}
-
 {% block title %} Analytics Overview {% endblock %}
-
 {% block content %}
     <div>
         <div class="d-flex justify-content-between align-items-center mt-2 mb-2">
@@ -33,6 +31,34 @@
         <div class="row mt-4" id="analyticsData">
             <!-- Data will be populated here by JavaScript -->
         </div>
+
+        <div class="row mt-4">
+            <div class="col-md-12">
+                <ul class="nav nav-tabs" id="myTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="meals-tab" data-bs-toggle="tab" data-bs-target="#meals" type="button" role="tab" aria-controls="meals" aria-selected="true">Meals</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="dishes-tab" data-bs-toggle="tab" data-bs-target="#dishes" type="button" role="tab" aria-controls="dishes" aria-selected="false">Dishes</button>
+                    </li>
+                </ul>
+
+                <div class="tab-content" id="myTabContent">
+
+                    <div class="tab-pane fade show active" id="meals" role="tabpanel" aria-labelledby="meals-tab">
+                    <table id="mealsTable" class="table mt-2 table-hover table-bordered table-striped table-hover">
+                        <!-- Meals data will be populated here -->
+                    </table>
+                    </div>
+
+                    <div class="tab-pane fade" id="dishes" role="tabpanel" aria-labelledby="dishes-tab">
+                    <table id="dishesTable" class="table mt-2 table-hover table-bordered table-striped table-hover">
+                        <!-- Dishes data will be populated here -->
+                    </table>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -42,9 +68,10 @@
             fetch(`/analytics/analytics/?filter_by=${filterBy}`)
                 .then(response => response.json())
                 .then(data => {
+                    console.log(data)
                     const analyticsData = document.getElementById('analyticsData');
                     analyticsData.innerHTML = '';
-
+    
                     if (filterBy === 'day') {
                         analyticsData.innerHTML += `
                             <div class="col-md-3">
@@ -89,7 +116,7 @@
                     } else if (filterBy === 'hour') {
                         const labels = data.sales_by_hour.map(item => item.hour);
                         const salesData = data.sales_by_hour.map(item => item.total_sales);
-
+    
                         analyticsData.innerHTML += `
                             <div class="col-md-6">
                                 <div class="card">
@@ -100,7 +127,7 @@
                                 </div>
                             </div>
                         `;
-
+    
                         const salesByHourData = {
                             labels: labels,
                             datasets: [{
@@ -111,7 +138,7 @@
                                 borderWidth: 1
                             }]
                         };
-
+    
                         const salesByHourConfig = {
                             type: 'bar',
                             data: salesByHourData,
@@ -123,13 +150,13 @@
                                 }
                             }
                         };
-
+    
                         const salesByHourChart = new Chart(
                             document.getElementById('salesByHourChart'),
                             salesByHourConfig
                         );
                     }
-
+    
                     if (data.best_selling_meal) {
                         analyticsData.innerHTML += `
                             <div class="col-md-6">
@@ -142,9 +169,83 @@
                             </div>
                         `;
                     }
-                });
-        });
+    
+            const mealsTable = document.getElementById('mealsTable');
+            const dishesTable = document.getElementById('dishesTable');
+            mealsTable.innerHTML = '';
+            dishesTable.innerHTML = '';
 
+            const sortedCategories = ['Today', 'Yesterday', ...Object.keys(data.grouped_meals).filter(cat => cat !== 'Today' && cat !== 'Yesterday')];
+
+            // Function to calculate total sales for a category
+            const calculateTotalSales = (items) => items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+            // Populate meals table
+            sortedCategories.forEach(category => {
+                const meals = data.grouped_meals[category] || [];
+                const totalSales = calculateTotalSales(meals);
+
+                mealsTable.innerHTML += `
+                    <thead>
+                        <tr>
+                            <th colspan="3">${category} (Total: $${totalSales})</th>
+                        </tr>
+                        <tr>
+                            <th>Meal</th>
+                            <th>Quantity</th>
+                            <th>Selling Price</th>
+                            <th>Total Selling Price</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${meals
+                            .map(meal => `
+                                <tr>
+                                    <td>${meal.name}</td>
+                                    <td>${meal.quantity}</td>
+                                    <td>${meal.price}</td>
+                                    <td>${meal.price * meal.quantity}</td>
+                                </tr>
+                            `)
+                            .join('')}
+                    </tbody>
+                `;
+            });
+
+            // Populate dishes table
+            sortedCategories.forEach(category => {
+                const dishes = data.grouped_dishes[category] || [];
+                const totalSales = calculateTotalSales(dishes);
+
+                dishesTable.innerHTML += `
+                    <thead>
+                        <tr>
+                            <th colspan="3">${category} (Total: $${totalSales})</th>
+                        </tr>
+                        <tr>
+                            <th>Dish</th>
+                            <th>Quantity</th>
+                            <th>Price</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${dishes
+                            .map(dish => `
+                                <tr>
+                                    <td>${dish.name}</td>
+                                    <td>${dish.quantity}</td>
+                                    <td>${dish.price}</td>
+                                    <td>${dish.price * dish.quantity}</td>
+                                </tr>
+                            `)
+                            .join('')}
+                    </tbody>
+                `;
+            });
+        });
+    });
+    
         document.getElementById('filterBy').dispatchEvent(new Event('change'));
     </script>
 {% endblock %}
+

@@ -6,7 +6,7 @@ Sales
 <div class="Finance">
     <nav class="d-flex align-items-center rounded mb-2 py-2 border-bottom">
             <a href='/' class='bx bx-home btn border fs-5 mx-2'></a>
-            <span class='aria-labelledby'>Sales</span>
+            <span class='aria-labelledby'>Sale Voids</span>
         </div>
     </nav>
     <table class="table table-hover table-bordered table-striped table-hover" id="sale" style="width: 100%;">
@@ -22,13 +22,13 @@ Sales
             {% for sale in sales %}
                 {% if sale %}
                     <tr>
-                        <td class="{% if sale.void %}text-decoration-line-through text-red{% endif %}"><small>{{ sale.date }}</small></td>
-                        <td>
+                        <td class="{% if sale.void %}text-decoration-line-through text-danger{% endif %}"><small>{{ sale.date|date:"d/m/y" }}</small></td>
+                        <td class="{% if sale.void %}text-decoration-line-through text-danger{% endif %}">
                             <small>
                                 {{ sale.receipt_number }}
                             </small>
                         </td>
-                        <td>
+                        <td class="{% if sale.void %}text-decoration-line-through text-danger{% endif %}">
                             <small>
                                 {% for item in sale_items %}
                                     {% if item.sale == sale %}
@@ -47,9 +47,13 @@ Sales
                                 {% endfor %}
                             </small>
                         </td>
-                        <td>
+                        <td class="{% if sale.void %}text-decoration-line-through text-danger{% endif %}">
                             <small>
-                                <button class="btn btn-outline-dark bx bx-checkbox-minus" onclick="confirmVoidTransaction({{ sale.id }})"></button>
+                               {% if sale.void %}
+                                    <button class="btn btn-sm btn-danger" disabled>Voided</button>
+                                {% else %}
+                                    <button class="btn btn-sm btn-danger" onclick="confirmVoidTransaction({{ sale.id }})">Void</button>
+                                {% endif %}
                             </small>
                         </td>
                 </tr>
@@ -75,7 +79,7 @@ Sales
                 cancelButtonText: 'Cancel'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    fetch('{% url "pos:sales" %}', {
+                    fetch(`/pos/sales/{{user_id}}/`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -97,7 +101,7 @@ Sales
                                 'The transaction has been voided successfully.',
                                 'success'
                             );
-                            location.href='{% url "pos:pos"%}'
+                            location.href=`/pos/sales/{{user_id}}/`
                         } else {
                             Swal.fire(
                                 'Error!',
