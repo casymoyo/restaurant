@@ -380,6 +380,15 @@
 
         // to remove the absolute create customer change function it have been overide
 
+        const socket = new WebSocket('ws://' + window.location.host + '/ws/sales/');
+
+        socket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            console.log(data);
+            document.getElementById('total-sales').innerText = `Total Sales: $${data.total_sales}`;
+        };
+
+
         authenticateBtn.addEventListener('click', ()=>{
             authenticateModal.show()
         })
@@ -397,7 +406,7 @@
                 itemCard.className = 'col-md-3';
                 itemCard.innerHTML = `
                     <div class="card mb-4 box-shadow">
-                        <div class="card-body rounded p-3 d-flex align-items-center bg-warning" style='height:50px;' onclick="addToCart(${item.id}, '${item.name}', ${item.price}, ${item.finished_product})">
+                        <div class="card-body rounded p-3 d-flex align-items-center bg-warning" style='height:50px;' onclick="addToCart(${item.id}, '${item.name}', ${item.price}, ${item.finished_product}, ${item.meal}, ${item.dish})">
                             <p class="card-text text">${item.name}</p>
                         </div>
                     </div>
@@ -623,11 +632,14 @@
                         quantity: meal.quantity,
                         price: meal.price,
                         type: meal.type,
+                        meal: meal.meal,
+                        dish: meal.dish
                     })),
                     change_data: changeData
                 };
 
                 console.log(saleData);
+                console.logcart
 
                 // Show "Processing..." Swal
                 Swal.fire({
@@ -772,13 +784,16 @@
         function displayItems(itemsToDisplay) {
             const itemsContainer = document.getElementById('itemsContainer');
             itemsContainer.innerHTML = '';
+
+            console.log(itemsToDisplay)
     
             itemsToDisplay.forEach(item => {
+                console.log(item.meal, item.dish)
                 const itemCard = document.createElement('div');
                 itemCard.className = 'col-md-3';
                 itemCard.innerHTML = `
                     <div class="card mb-4 box-shadow">
-                        <div class="card-body rounded p-3 d-flex align-items-center bg-warning" style='height:50px;' onclick="addToCart(${item.id}, '${item.name}', ${item.price}, ${item.finished_product})">
+                        <div class="card-body rounded p-3 d-flex align-items-center bg-warning" style='height:50px;' onclick="addToCart(${item.id}, '${item.name}', ${item.price}, ${item.finished_product}, ${item.meal}, ${item.dish})">
                             <p class="card-text text">${item.name}</p>
                         </div>
                     </div>
@@ -834,8 +849,8 @@
             }
         })
     
-        function addToCart(id, name, price, type) {
-          const existingMeal = cart.find(meal => meal.id === id);
+        function addToCart(id, name, price, type, meal, dish) {
+          const existingMeal = cart.find(m => m.id === id);
           if (existingMeal) {
             existingMeal.quantity += 1;
           } else {
@@ -844,8 +859,9 @@
             }else{
                 type=false
             }
-            const meal = { id, name, price, quantity: 1, type};
-            cart.push(meal);
+            
+            const item = { id, name, price, quantity: 1, type, meal, dish};
+            cart.push(item);
           }
           console.log(cart)
           updateOrderDetails();
@@ -952,6 +968,8 @@
                 quantity: meal.quantity,
                 price: meal.price,
                 type: meal.type,
+                meal: meal.meal,
+                meal: meal.dish
             })),
             change_data: changeData
         };

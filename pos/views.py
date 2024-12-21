@@ -31,6 +31,9 @@ import logging
 from django.db.models import Q
 from django.contrib.auth import authenticate 
 from django.utils import timezone
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
+
 
 # logger = logging.getLogger('restaurant')  
 
@@ -53,9 +56,9 @@ def process_promo_meal(request):
 
 @login_required
 def product_meal_json(request):
-    meals = Meal.objects.filter(deactivate=False).values('id', 'name', 'price')
-    products = Product.objects.filter(raw_material=False).values('id', 'name', 'price', 'finished_product')
-    dishes = Dish.objects.all().values('id', 'name', 'price')
+    meals = Meal.objects.filter(deactivate=False).values('id', 'name', 'price', 'meal')
+    products = Product.objects.filter(raw_material=False).values('id', 'name', 'price', 'finished_product',)
+    dishes = Dish.objects.all().values('id', 'name', 'price', 'dish')
 
     combined_items = list(meals) + list(products) + list(dishes)
     
@@ -124,6 +127,9 @@ def process_sale(request):
             change_data = data.get('change_data')
             order_type = data['order_type']
             received_amount = data.get('received_amount')
+            meal_bool = data.get('meal')
+
+            logger.info(items)
 
             logger.info('here ---------------------------------------------------------------------')
 
@@ -170,12 +176,15 @@ def process_sale(request):
                         dish = None
 
                         logger.info(f'Looking for meal with id {item['meal_id']} or dishes with id {item['meal_id']}')
-                        try:
+
+                        if item.get('meal'): 
                             meal = get_object_or_404(Meal, id=item['meal_id'])
                             logger.info(f'Sale for meal: {meal}')
-                        except Exception as e:
+                        elif item.get('dish'):  
                             dish = get_object_or_404(Dish, id=item['meal_id'])
                             logger.info(f'Sale for dish: {dish}')
+                        else:
+                            raise ValueError('Invalid item type: Neither meal nor dish specified.')
 
                         sale_item = SaleItem.objects.create(
                             sale=sale,
@@ -270,6 +279,16 @@ def process_sale(request):
                     'change': received_amount - sale.total_amount,
                     'items': list(SaleItem.objects.filter(sale=sale).values('quantity', 'price', 'meal__name', 'dish__name', 'product__name'))
                 }
+
+                total_sales = Sale.objects.aggregate(total=Sum('total_amount'))['total'] or 0
+                channel_layer = get_channel_layer()
+                async_to_sync(channel_layer.group_send)(
+                    "sales_group",
+                    {
+                        "type": "send_sales_update",
+                        "data": {"total_sales": total_sales},
+                    }
+                )
                 return JsonResponse({'success': True, 'data': data}, status=201)
         except Exception as e:
             logger.error(f'Error processing sale: {str(e)}')
