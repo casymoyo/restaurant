@@ -17,8 +17,8 @@ urlpatterns = [
     path('collect_change/', collect_change, name='collect_change'),
 
     # sales
-    path('sales/', void_sales, name='sales'),
+    path('sales/<int:user_id>/', void_sales, name='sales'),
 
     #authenticate
-    path('authenticate/', authenticate, name='authenticate')
+    path('void/authenticate/', void_authenticate, name='void_authenticate'),
 ]

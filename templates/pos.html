@@ -1141,14 +1141,10 @@
             </html>
         `);
         frameDoc.document.close();
-        setTimeout(()=>{
-            const frameWindow = printFrame.contentWindow;
-            if(frameWindow){
-                frameWindow.focus()
-                frameWindow.print(false)
-            }
-        }, 100)
-}
+        setTimeout(() => {
+            printFrame.contentWindow.print(false);
+        }, 100);
+    }
 
 
     // function printReceiptSilently(content) {
@@ -1199,46 +1195,37 @@
     })
 
     //authenticate function
-    const authenticate = async (username, password) => {
-        console.log(username, password)
-        try {
-            const response = await fetch('{% url "pos:authenticate" %}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken')
-                },
-                body: JSON.stringify({ username, password })
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                if (data.success) {
-                    Swal.fire({
-                        title: 'Success!',
-                        text: 'Authentication successful!',
-                        icon: 'success',
-                    }).then(() => {
-                        Swal.close
-                        window.location.href = '{% url "pos:sales" %}';
-                    });
-                } else {
-                    Swal.fire({
-                        title: 'Authentication Failed',
-                        text: data.message || 'Invalid username or password.',
-                        icon: 'error',
-                        confirmButtonText: 'Try Again'
-                    });
-                }
+    const authenticate = (username, password) => {
+        console.log(username, password);
+        fetch('{% url "pos:void_authenticate" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({ username, password })
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log(data)
+            if (data.success) {
+                Swal.fire({
+                    title: 'Success!',
+                    text: 'Authentication successful!',
+                    icon: 'success',
+                }).then(() => {
+                    window.location.href =  `/pos/sales/${data.user_id}`;
+                });
             } else {
                 Swal.fire({
-                    title: 'Error!',
-                    text: 'Unable to reach the server. Please try again later.',
+                    title: 'Authentication Failed',
+                    text: data.message || 'Invalid username or password.',
                     icon: 'error',
-                    confirmButtonText: 'OK'
+                    confirmButtonText: 'Try Again'
                 });
             }
-        } catch (error) {
+        })
+        .catch(error => {
             console.error('Error during authentication:', error);
             Swal.fire({
                 title: 'Oops!',
@@ -1246,7 +1233,7 @@
                 icon: 'error',
                 confirmButtonText: 'OK'
             });
-        }
+        });
     };
 
     const form = document.querySelector('#authForm');
