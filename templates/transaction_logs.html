@@ -34,7 +34,15 @@
                             {% for sale in sale_items %}
                                 {% if log.sale == sale.sale %}
                                     <ul class="list-unstyled">
-                                        <li>{{ sale.meal }} x {{ sale.quantity  }}</li>
+                                        {% if sale.meal %}
+                                            <li>{{ sale.meal }} x {{ sale.quantity }}</li>
+                                        {% endif %}
+                                        {% if sale.dish %}
+                                            <li>{{ sale.dish }} x {{ sale.quantity }}</li>
+                                        {% endif %}
+                                        {% if sale.product %}
+                                            <li>{{ sale.product.name }} x {{ sale.quantity }}</li>
+                                        {% endif %}
                                     </ul>
                                 {% endif %}
                             {% endfor %}

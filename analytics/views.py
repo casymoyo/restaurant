@@ -33,10 +33,11 @@ def analytics_view(request):
 
     elif filter_by == 'day':
 
-        today_sales = Sale.objects.filter(date=today).aggregate(total=Sum('total_amount'))
+        today_sales = Sale.objects.filter(date=today, void=False).aggregate(total=Sum('total_amount'))
         yesterday_sales = Sale.objects.filter(date=yesterday, void=False).aggregate(total=Sum('total_amount'))
         
         today_void_sales = Sale.objects.filter(date=today, void=True).aggregate(total=Sum('total_amount'))
+        logger.info(today_void_sales)
         yesterday_void_sales = Sale.objects.filter(date=yesterday, void=True).aggregate(total=Sum('total_amount'))
         
         change_amount = Change.objects.filter(timestamp__date=today, collected=False).aggregate(total=Sum('amount'))
@@ -70,7 +71,6 @@ def analytics_view(request):
     .annotate(total_sold=Sum('quantity')) \
     .order_by('-total_sold') \
     .first()
-
 
     combined_best_selling = []
 

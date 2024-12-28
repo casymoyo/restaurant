@@ -289,15 +289,15 @@ def process_sale(request):
                     'items': list(SaleItem.objects.filter(sale=sale).values('quantity', 'price', 'meal__name', 'dish__name', 'product__name'))
                 }
 
-                total_sales = Sale.objects.filter(date=today).aggregate(total=Sum('total_amount'))['total'] or 0
-                channel_layer = get_channel_layer()
-                async_to_sync(channel_layer.group_send)(
-                    "sales_group",
-                    {
-                        "type": "send_sales_update",
-                        "data": {"total_sales": str(total_sales)},
-                    }
-                )
+                # total_sales = Sale.objects.filter(date=today).aggregate(total=Sum('total_amount'))['total'] or 0
+                # channel_layer = get_channel_layer()
+                # async_to_sync(channel_layer.group_send)(
+                #     "sales_group",
+                #     {
+                #         "type": "send_sales_update",
+                #         "data": {"total_sales": str(total_sales)},
+                #     }
+                # )
                 return JsonResponse({'success': True, 'data': data}, status=201)
         except Exception as e:
             logger.error(f'Error processing sale: {str(e)}')
@@ -534,9 +534,7 @@ def void_sales(request, user_id):
             logger.error(f'Error processing void transaction: {str(e)}')
             return JsonResponse({'success': True, 'message': f'{e}'}, status=400)
 
-from django.views.decorators.csrf import csrf_exempt
 
-@csrf_exempt
 @login_required
 def void_authenticate(request):
     from users.models import User
