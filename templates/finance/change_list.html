@@ -55,17 +55,40 @@
                                      Collected
                                 </small>
                                 {% else %}
-                                    <button onclick='collectChange({{ change.id }})' class='btn btn-outline-dark btn-sm w-100'>collect</button>
+                                    <button onclick='displayAmount({{ change.id }})' class='btn btn-outline-dark btn-sm w-100'>collect</button>
                             {% endif %}
                         </td>
                   </tr>
                 {% endfor %}
             </tbody>
         </table>
+
+        <div class="modal fade" id="amountModal" tabindex="-1" aria-labelledby="chargeModalLabel" aria-hidden="true">
+            <div class="modal-dialog bg modal-dialog-centered">
+                <div class="modal-content p-5">
+                    <h5 class="fw-bold">Enter amount collected</h5>
+                    <div>
+                        <input type="number" id="id_amount" placeholder="Enter amount" class="form-control">
+                    </div>
+                    <div class="d-flex justify-content-end mt-2">
+                        <button class="btn btn-danger btn-sm mx-2" data-bs-dismiss="modal">Cancel</button>
+                        <button class="btn btn-secondary btn-sm" onclick="collectChange()">Collect</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
     
    <script>
         new DataTable('#change_table')
+
+        let changeId = null;
+
+        const displayAmount = (id) => {
+            $('#amountModal').modal('show');
+            changeId = id;
+        }
 
         function filterCashBook() {
             const filter = document.getElementById('filterSelect').value;
@@ -100,10 +123,13 @@
             window.location.href = url;
         }
 
-        function collectChange(changeId) {
+        function collectChange() {
             const data = {
-                change_id: changeId
+                change_id: changeId,
+                amount:parseFloat(document.getElementById('id_amount').value)
             };
+
+            console.log(data)
         
             fetch('/pos/collect_change/', { 
                 method: 'POST',

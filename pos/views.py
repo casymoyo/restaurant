@@ -438,15 +438,25 @@ def create_change(request):
 def collect_change(request):
     # payload
     """
-        change_id:id
+        change_id:id,
+        amout:float
     """
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
             change_id = data.get('change_id')
+            amount = data.get('amount')
             
             change = Change.objects.get(id=change_id)
-            change.collected = True
+
+            if amount == change.amount:
+                change.collected = True
+                
+            elif amount < change.amount:
+                change.amount -= amount
+            else:
+                return JsonResponse({'success':False, 'message':'Amount collected is more than the change amount'}, status=400)
+            
             change.save()
             
             return JsonResponse({'success':True}, status=200)

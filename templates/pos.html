@@ -676,21 +676,22 @@
                         updateOrderDetails();
                         chargeModal.hide();
 
-                            const receiptContent = generateReceiptContent(data.data);
-                            printReceiptSilently(receiptContent);
-                            
-                            amountField.value = '';
-                            changeDisplay.value = '';
-                            orderTypeInput.value = '';
+                        const receiptContent = generateReceiptContent(data.data);
+                        printReceiptSilently(receiptContent);
+                        
+                        amountField.value = '';
+                        changeDisplay.value = '';
+                        orderTypeInput.value = '';
 
-                            // clear change data
-                            name.value='';
-                            phonenumber.value='';
-                            amount.value='';
-                            // receipt_number.value='';
-                            amountGiven.value='';
-                            balance.value='';
-                            
+                        // clear change data
+                        name.value='';
+                        phonenumber.value='';
+                        amount.value='';
+                        
+                        // receipt_number.value='';
+                        amountGiven.value='';
+                        balance.value='';
+                        
                     } else {
                         Swal.fire({
                             title: "Error",
