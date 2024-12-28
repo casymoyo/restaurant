@@ -39,6 +39,7 @@
                     <th>Name</th>
                     <th>Phone number</th>
                     <th>Amount</th>
+                    <th>Receipt Number</th>
                     <th>Status</th>
                 </tr>
             </thead>
@@ -49,6 +50,7 @@
                         <td><small>{{ change.name }}</small></td>
                         <td><small>{{ change.phonenumber}}</small></td>
                         <td><small>{{ change.amount }}</small></td>
+                        <td><small>{{ change.receipt_number }}</small></td>
                         <td>
                             {% if change.collected %}
                                 <small>

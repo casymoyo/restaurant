@@ -923,8 +923,9 @@ def cashier_expenses(request, cashier_id):
 
         if request.user.role in ['manager', 'superviser', 'admin' 'accountant']:
             expenses = CashierExpense.objects.all()
-
-        expenses = CashierExpense.objects.filter(id=cashier_id)
+        else:
+            expenses = CashierExpense.objects.filter(id=cashier_id)
+            
         total_expenses = expenses.aggregate(total=Sum('amount'))['total'] or 0
 
         return render(request, 'finance/cashier_expenses.html', {
