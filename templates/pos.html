@@ -139,7 +139,7 @@
                                 <a href='{% url "pos:change_list" %}' class="btn btn-outline-dark w-100">View Change</a>
                             </li>
                             <li class='mx-2'>
-                                <button class="btn btn-outline-dark w-100">Enter Charge</button>
+                                <a href="{% url 'finance:cashier_expenses' request.user.id %}" class="btn btn-outline-dark w-100">Expenses</a>
                             </li>
                         </div>
                         <div>
@@ -379,8 +379,12 @@
         const backButton = document.getElementById('btn_back');
         const authenticateBtn = document.getElementById('void')
         const authenticateModal = new bootstrap.Modal(document.getElementById('authModal'));
-
-        // to remove the absolute create customer change function it have been overide
+        const search = document.getElementById('searchInput')
+        
+        // clear search input
+        search.addEventListener('click', ()=>{
+            search.value = '';
+        })
 
         authenticateBtn.addEventListener('click', ()=>{
             authenticateModal.show()

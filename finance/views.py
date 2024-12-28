@@ -916,3 +916,85 @@ def transaction_logs(request):
         'sale_items':sale_items,
         'transactions':transactions
     })
+
+@login_required
+def cashier_expenses(request, cashier_id):
+    if request.method == 'GET':
+
+        if request.user.role in ['manager', 'superviser', 'admin' 'accountant']:
+            expenses = CashierExpense.objects.all()
+
+        expenses = CashierExpense.objects.filter(id=cashier_id)
+        total_expenses = expenses.aggregate(total=Sum('amount'))['total'] or 0
+
+        return render(request, 'finance/cashier_expenses.html', {
+            'expenses':expenses,
+            'total_expenses':total_expenses
+        })
+    
+    if request.method == 'POST':
+        """
+            name:str
+            amount:float,
+            description:str,
+        """
+        data = json.loads(request.body)
+        name = data.get('name')
+        amount = data.get('amount')
+        description = data.get('description')
+        
+        if not name:
+            return JsonResponse({'success':False, 'message':'Missing fields: namet.'})
+        
+        if not amount:
+            return JsonResponse({'success':False, 'message':'Missing fields: amount.'})
+        
+        CashierExpense.objects.create(
+            name=name,
+            amount=amount,
+            description=description,
+            cashier=request.user,
+            status = False
+        )
+        
+        return JsonResponse({'success':True, 'message':'Cashier expense successfully created.'}, status=201)
+    
+    if request.method == 'PUT':
+        """
+            expense_id:int
+        """
+        data = json.loads(request.body)
+        expense_id = data.get('expense_id')
+        name = data.get('name')
+        amount = data.get('amount')
+        description = data.get('description')
+        
+        try:
+            expense = CashierExpense.objects.get(id=expense_id)
+
+            expense.name = name,
+            expense.amount = amount,
+            expense.description = description,
+
+            expense.save()
+            return JsonResponse({'success':True, 'message':'Cashier expense successfully updated.'}, status=201)
+        except CashierExpense.DoesNotExist:
+            return JsonResponse({'success':False, 'message':'Cashier expense not found.'}, status=404)
+        
+
+    if request.method == 'DELETE':
+        """
+            expense_id:int
+        """
+        data = json.loads(request.body)
+        expense_id = data.get('expense_id')
+        
+        try:
+            expense = CashierExpense.objects.get(id=expense_id)
+            expense.delete()
+            return JsonResponse({'success':True, 'message':'Cashier expense successfully updated.'}, status=201)
+        except CashierExpense.DoesNotExist:
+            return JsonResponse({'success':False, 'message':'Cashier expense not found.'}, status=404)
+
+    
+    return JsonResponse({'success':False, 'message':'Invalid request method.'}, status=405)

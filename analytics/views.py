@@ -72,24 +72,11 @@ def analytics_view(request):
     .order_by('-total_sold') \
     .first()
 
-    combined_best_selling = []
-
     logger.info(best_selling_dish['dish__name'])
     logger.info(best_selling_meal['meal__name'])
-
-    if best_selling_meal['meal__name']  == best_selling_dish['dish__name']:
-        combined_best_selling.append(
-            {
-                'name': best_selling_meal['meal__name'], 
-                'total_sold': best_selling_meal['total_sold'] + best_selling_dish['total_sold']
-            }
-        )
-        data['combined_best_selling'] = combined_best_selling
-    else:
-        data['best_selling_meal'] = best_selling_meal
-        data['best_selling_dish'] = best_selling_dish
-
-    logger.info(f'best selling meal: {combined_best_selling}')
+   
+    data['best_selling_meal'] = best_selling_meal
+    data['best_selling_dish'] = best_selling_dish
     
     grouped_meals = defaultdict(lambda: {})
     grouped_dishes = defaultdict(lambda: {})

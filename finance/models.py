@@ -144,4 +144,15 @@ class Change(models.Model):
     
     def __str__(self) -> str:
         return f'{self.cashier.username} ({self.amount})'
+    
+class CashierExpense(models.Model):
+    name = models.CharField(max_length=255)
+    amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    cashier = models.ForeignKey(User, on_delete=models.CASCADE)
+    date = models.DateField(auto_now_add=True)
+    description = models.CharField(max_length=255)
+    status = models.BooleanField(default=False)
+
+    def __str__(self) -> str:
+        return f'{self.name} ({self.amount})'
 

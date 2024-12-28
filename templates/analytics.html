@@ -1,7 +1,12 @@
 {% extends "base.html" %}
 {% block title %} Analytics Overview {% endblock %}
 {% block content %}
-    <div>
+<style>
+    .analytics .card{
+        height: 150px !important;
+    }
+</style>
+    <div class="analytics">
         <div class="d-flex justify-content-between border-bottom p-2 align-items-center mt-2 mb-2">
             <div>
                 <a href='/' class='bx bx-home btn border fs-5'></a>
@@ -164,9 +169,17 @@
                         analyticsData.innerHTML += `
                             <div class="col-md-6">
                                 <div class="card shadow" style='border:none;'>
-                                    <div class="card-body" >
-                                        <h5 class="card-title text-muted">Best Selling Meal</h5>
-                                        <p class="card-text text-center fs-3">${data.best_selling_meal.meal__name} - ${data.best_selling_meal.total_sold} sold</p>
+                                    <div class="card-body">
+                                        <div class='d-flex justify-content-between'>
+                                            <div>
+                                                <h5 class="card-title text-muted">Best Selling Meal</h5>
+                                                <p class="card-text text-center fs-4">${data.best_selling_meal.meal__name} - ${data.best_selling_meal.total_sold} sold</p>
+                                            </div>
+                                            <div>
+                                                <h5 class="card-title text-muted">Best Selling Dish</h5>
+                                                <p class="card-text text-center fs-4">${data.best_selling_dish.dish__name} - ${data.best_selling_dish.total_sold} sold</p>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

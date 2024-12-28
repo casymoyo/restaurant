@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% load static%}
+{% load crispy_forms_tags %}
+{% block title%} Cashier Expense {% endblock%}
+{% block content %}
+<div class="Finance">
+    <nav class="d-flex justify-content-between align-items-center rounded mb-2 py-2 border-bottom">
+        <div>
+            <a href='{% url "finance:finance"%}' class='border btn bx bx-arrow-back fs-5'></a>
+            <a href='/' class='bx bx-home btn border fs-5 mx-2'></a>
+            <span class='mt-2 fs-5'>Expenses</span>
+        </div>
+    </nav>
+    <div class='mt-2'>
+        <table class="table table-hover table-bordered table-striped" id="cashiers_table" style="width: 100%;">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th>Amount</th>
+                    {% if request.user.role == 'admin' or request.user.role == 'supervisor' or request.user.role == 'accountant' or request.user.role == 'manager' %}
+                        <th>Cashier</th>
+                    {% endif %}
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for expense in expenses %}
+                  <tr>
+                        <td>
+                           <small>{{ expense.name }}</small>
+                        </td>
+                        <td>
+                            <small>{{ expense.description }}</small>
+                        </td>
+                        <td>
+                            <small>{{ expense.amount }}</small>
+                        </td>
+                        <td>
+                           <small>
+                                {% if request.user.role == 'admin' or request.user.role == 'supervisor' or request.user.role == 'accountant' or request.user.role == 'manager' %}
+                                    {{ expense.cashier.first_name }}
+                                {% endif %}
+                           </small>
+                        </td>
+                        <td>
+                            <small>
+                                <button class="btn btn-sm bx bx-edit mx-2"></button>
+                                <button class="btn btn-sm bx bx-trash"></button>
+                            </small>
+                        </td>
+                  </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <!-- Payment Modal -->
+        <div class="modal fade" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="paymentModalLabel">Pay Cashier</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="paymentForm">
+                            <div class="mb-3">
+                                <label for="paymentAmount" class="form-label">Amount</label>
+                                <input type="number" class="form-control" id="paymentAmount" placeholder="Enter amount" required min="0.01" step="0.01">
+                                <div class="invalid-feedback">
+                                    Please enter a valid amount.
+                                </div>
+                            </div>
+                            <input type="hidden" id="cashierId">
+                            <input type="hidden" id="cashupId">
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary" onclick="submitPayment()">Pay</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>  
+</div>
+{% endblock %}

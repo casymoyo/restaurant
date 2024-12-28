@@ -20,3 +20,8 @@ class ChangeForm(forms.ModelForm):
     class Meta:
         model : Change
         exclude = ['cacshier', 'collected', 'claimed']
+
+class CashierExpenseForm(forms.ModelForm):
+    class Meta:
+        model = CashierExpense
+        exclude = ['cashier', 'date']

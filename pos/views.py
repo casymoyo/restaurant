@@ -153,19 +153,31 @@ def process_sale(request):
                 balance = change_data['balance']
             
             if staff:
-                received_amount = total_amount
+                received_amount = 0.00
 
             with transaction.atomic():
                 product = None
-                sale = Sale.objects.create(
-                    total_amount=total_amount,
-                    tax=tax,
-                    sub_total=sub_total,
-                    cashier=request.user,
-                    staff=staff,
-                    change=balance,
-                    amount_paid=received_amount
-                )
+
+                if staff:
+                    sale = Sale.objects.create(
+                        total_amount=0.00,
+                        tax=0.00,
+                        sub_total=sub_total,
+                        cashier=request.user,
+                        staff=staff,
+                        change=0.00,
+                        amount_paid=received_amount
+                    )
+                else:
+                    sale = Sale.objects.create(
+                        total_amount=total_amount,
+                        tax=tax,
+                        sub_total=sub_total,
+                        cashier=request.user,
+                        staff=staff,
+                        change=balance,
+                        amount_paid=received_amount
+                    )
 
                 logger.info(sale)
 
@@ -193,16 +205,27 @@ def process_sale(request):
                             logger.info(f'Sale for dish: {dish}')
                         else:
                             raise ValueError('Invalid item type: Neither meal nor dish specified.')
+                        
 
-                        sale_item = SaleItem.objects.create(
-                            sale=sale,
-                            quantity=item['quantity'],
-                            price=meal.price if meal else dish.price,
-                        )
+                        if staff:
+                            sale_item = SaleItem.objects.create(
+                                sale=sale,
+                                quantity=item['quantity'],
+                                price=0.00
+                            )
+                        else:
+                             sale_item = SaleItem.objects.create(
+                                sale=sale,
+                                quantity=item['quantity'],
+                                price=meal.price if meal else dish.price,
+                            )
 
                         if meal:
+                            
                             sale_item.meal=meal
+
                         elif dish:
+
                             sale_item.dish=dish
                         
                         sale_item.save()
@@ -227,12 +250,20 @@ def process_sale(request):
 
                         logger.info(f'finished product {product}')
                         
-                        sale_item = SaleItem.objects.create(
-                            sale=sale,
-                            product=product,
-                            quantity=item['quantity'],
-                            price=product.price,
-                        )
+                        if staff:
+                            sale_item = SaleItem.objects.create(
+                                sale=sale,
+                                product=product,
+                                quantity=item['quantity'],
+                                price=0.00,
+                            )
+                        else:
+                            sale_item = SaleItem.objects.create(
+                                sale=sale,
+                                product=product,
+                                quantity=item['quantity'],
+                                price=product.price,
+                            )
 
                         logger.info(f'Saved sale item: {sale_item}')
                         
@@ -451,7 +482,7 @@ def collect_change(request):
 
             if amount == change.amount:
                 change.collected = True
-                
+
             elif amount < change.amount:
                 change.amount -= amount
             else:
@@ -557,18 +588,13 @@ def void_authenticate(request):
             username = data.get("username")
             password = data.get("password")
 
-            logger.info(username)
-            logger.info(password)
-
             if not username or not password:
                 return JsonResponse({"success": False, "message": "Username and password are required."}, status=400)
 
             user = User.objects.get(username=username)
 
-            logger.info(user.role)
+            if user.role in ['admin', 'accountant', 'supervisor', 'manager']:
 
-            if user.role in ['admin', 'accountant', 'superviser', 'manager', 'oswner']:
-                logger.info('success')
                 return JsonResponse({"success": True, "message": "Authentication successful.", "user_id":user.id}, status=200)
             else:
                 return JsonResponse({"success": False, "message": "Invalid username or password."}, status=401)

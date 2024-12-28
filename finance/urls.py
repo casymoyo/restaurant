@@ -44,5 +44,8 @@ urlpatterns = [
     path('days_data', days_data, name='days_data'),
 
     #transaction logs
-    path('transaction-logs', transaction_logs, name='logs')
+    path('transaction-logs', transaction_logs, name='logs'),
+
+    #cashier expenses
+    path('cashier-expenses/<int:cashier_id>/', cashier_expenses, name='cashier_expenses'),
 ]
