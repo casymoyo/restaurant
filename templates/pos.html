@@ -141,6 +141,9 @@
                             <li class='mx-2'>
                                 <a href="{% url 'finance:cashier_expenses' request.user.id %}" class="btn btn-outline-dark w-100">Expenses</a>
                             </li>
+                            <li class='mx-2'>
+                                <button onclick="cashUp()" class="btn btn-outline-dark w-100">Cash Up</a>
+                            </li>
                         </div>
                         <div>
                             <li>
@@ -1097,6 +1100,7 @@
             <style>
                 .totals {
                     width: 100%;
+                    font-weight: bold;
                 }
 
                 .line {
@@ -1111,8 +1115,6 @@
             </style>
 
             <div style="
-                width: 80mm; 
-                height:120mm; 
                 font-family: Arial, 
                 sans-serif; 
                 font-size: 14px;
@@ -1138,9 +1140,9 @@
                                 : item.meal__name 
                                 ? item.meal__name 
                                 : item.product__name} 
-                            ${item.quantity.toFixed(2)} x $${item.price}
+                            ${item.quantity} x $${item.price}
                         </span>
-                        <span>$${(item.quantity * item.price)}</span>
+                        <span>$${(item.quantity * item.price).toFixed(2)}</span>
                     </p>
                 `).join('')}
                 <hr>
@@ -1198,9 +1200,9 @@
                 <style>
                     body {
                         font-family: Arial, sans-serif;
-                        font-size: 12px;
+                        font-size: 13.5px;
                         margin: 0;
-                        padding: 10px;
+                        padding: 2px;
                     }
                     h3 {
                         text-align: center;
@@ -1325,6 +1327,134 @@
 
         authenticate(username, password); 
     });
+
+    // cahsup
+
+    const cashUp = () => {
+        fetch(`/pos/cash_up/{{ request.user.id }}/`,{
+            method:'GET'
+        })
+        .then(response => response.json())
+        .then(data=>{
+            console.log(data)
+            if(data.success){
+                let cashupContent = generateCashUpContent(data.data)
+                printCashUpSilently(cashupContent)
+            }else{
+                Swal.fire({
+                    icon:'error',
+                    title:'Failed to process Cash Up'
+                })
+            }
+        })
+    }
+
+
+    function generateCashUpContent(cashUpData) {
+        const { total_sales, total_expenses, total_change, cash_in_hand } = cashUpData;
+
+        return `
+            <style>
+                .totals {
+                    width: 100%;
+                    margin-top:15px;
+                }
+
+                .line {
+                    display: flex;
+                    justify-content: space-between;
+                    margin: 5px 0;
+                }
+
+                .line span {
+                    display: inline-block;
+                }
+            </style>
+
+            <div style="
+                width: 80mm; 
+                height:120mm; 
+                font-family: Arial, 
+                sans-serif; 
+                font-size: 14px;
+                "
+                >
+                <h3 style="text-align: center;">Parsles Investments (Urban Eats)</h3>
+                <h4 style="text-align: center;">Cash Up</h4>
+                <hr>
+                <p>Cashier: {{ request.user.first_name }}</p>
+                <p>Date: ${new Date().toLocaleDateString()}</p>
+                <p>Time: ${new Date().toLocaleTimeString()}</p>
+                <div class="totals">
+                    <div class="line">
+                        <span>Total Sales:</span>
+                        <span>$${total_sales}</span>
+                    </div>
+                    <div class="line">
+                        <span>Total Expenses:</span>
+                        <span>$${total_expenses}</span>
+                    </div>
+                    <div class="line">
+                        <span>Change</span>
+                        <span>$${total_change}</span>
+                    </div>
+                    <div class="line">
+                        <span>Chash In Hand:</span>
+                        <span>$${cash_in_hand}</span>
+                    </div>
+            </div>
+        `;
+    }
+
+    function printCashUpSilently(content) {
+        console.log(content)
+        let printFrame = document.getElementById("print-frame-cash-up");
+
+        if (!printFrame) {
+            printFrame = document.createElement("iframe");
+            printFrame.id = "print-frame-cash-up";
+            printFrame.style.display = "none"
+            document.body.appendChild(printFrame);
+        }
+        const frameDoc = printFrame.contentWindow || 
+                        printFrame.contentDocument.document || 
+                        printFrame.contentDocument;
+
+        frameDoc.document.open();
+        frameDoc.document.write(`
+            <html>
+            <head>
+                <title>Cash Up</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        font-size: 14px;
+                        margin: 0;
+                        padding: 2px;
+                    }
+                    h3 {
+                        text-align: center;
+                    }
+                    hr {
+                        border: none;
+                        border-top: 1px solid #000;
+                    }
+                    p {
+                        margin: 5px 0;
+                    }
+                </style>
+            </head>
+            <body>
+                ${content}
+            </body>
+            </html>
+        `);
+        frameDoc.document.close();
+        setTimeout(() => {
+            printFrame.contentWindow.print(false);
+        }, 100);
+    }
+
 
     function getCookie(name) {
         let cookieValue = null;

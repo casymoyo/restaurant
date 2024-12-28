@@ -16,7 +16,7 @@ from asgiref.sync import sync_to_async
 from django.utils.timezone import localdate
 from django.http import JsonResponse, HttpResponse
 from django.shortcuts import render, get_object_or_404
-from finance.models import Sale, SaleItem, CashBook
+from finance.models import Sale, SaleItem, CashBook, CashierExpense
 from django.contrib.auth.decorators import login_required
 from inventory.models import ProductionRawMaterials, ProductionLogs
 from inventory.models import Meal, Production, ProductionItems, Product, Logs, Dish
@@ -601,3 +601,36 @@ def void_authenticate(request):
 
         except Exception as e:
             return JsonResponse({"success": False, "message": f"An error occurred: {str(e)}"}, status=500)
+        
+@login_required
+def cash_up(request, cashier_id):
+
+    cash_in_hand = 0
+
+    sales = Sale.objects.filter(cashier__id=cashier_id, date=datetime.datetime.today()).values('total_amount')
+    change = Change.objects.filter(cashier__id=cashier_id, timestamp__date=datetime.datetime.today()).values('amount')
+    expenses = CashierExpense.objects.filter(cashier__id=cashier_id, date=datetime.datetime.today()).values('amount')
+
+    total_sales = sales.aggregate(Sum('total_amount'))['total_amount__sum'] or 0
+    total_expenses = expenses.aggregate(Sum('amount'))['amount__sum'] or 0
+    total_change = change.aggregate(Sum('amount'))['amount__sum'] or 0 
+
+    logger.info(total_sales)
+    logger.info(total_expenses)
+    logger.info(total_change)
+
+    cash_in_hand = total_sales + total_change - total_expenses
+
+    logger.info(f'cash in hand: {cash_in_hand}')
+
+    data = {
+        "total_sales":total_sales,
+        'total_expenses':total_expenses,
+        'total_change':total_change,
+        'cash_in_hand':cash_in_hand
+    }
+
+    return JsonResponse({'success':True, 'data':data})
+    
+
+

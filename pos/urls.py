@@ -21,4 +21,7 @@ urlpatterns = [
 
     #authenticate
     path('void/authenticate/', void_authenticate, name='void_authenticate'),
+
+    # cash up
+    path('cash_up/<int:cashier_id>/', cash_up, name='cash_up')
 ]
