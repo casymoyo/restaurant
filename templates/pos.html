@@ -141,11 +141,9 @@
                             <li class='mx-2'>
                                 <a href="{% url 'finance:cashier_expenses' request.user.id %}" class="btn btn-outline-dark w-100">Expenses</a>
                             </li>
-                            {% if not request.user.role == 'sales'%}
-                                <li class='mx-2'>
-                                    <button onclick="cashUp()" class="btn btn-outline-dark w-100">Cash Up</a>
-                                </li>
-                            {% endif %}
+                            <li class='mx-2'>
+                                <button onclick="cashupAuth()" class="btn btn-outline-dark w-100">Cash Up</a>
+                            </li>
                         </div>
                         <div>
                             <li>
@@ -219,6 +217,42 @@
                                 required>
                         </div>
                         <button type="button" id="authForm" class="btn btn-primary w-100">Authenticate</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="authCashModal" tabindex="-1" aria-labelledby="chargeModalLabel" aria-hidden="true">
+            <div class="modal-dialog bg modal-dialog-centered">
+                <div class="modal-content p-2">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="chargeModalLabel">Authenticate to Cash Up</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <form action="" method="POST" autocomplete="off" >
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Username</label>
+                            <input 
+                                type="text" 
+                                id="c_username" 
+                                name="username" 
+                                class="form-control" 
+                                placeholder="Enter username" 
+                                autocomplete="off"
+                                required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Password</label>
+                            <input 
+                                type="password" 
+                                id="c_password" 
+                                name="password" 
+                                class="form-control" 
+                                placeholder="Enter password" 
+                                autocomplete="new-password"
+                                required>
+                        </div>
+                        <button type="button" onclick="cashUp()" class="btn btn-primary w-100">Authenticate</button>
                     </form>
                 </div>
             </div>
@@ -811,7 +845,7 @@
                 itemCard.className = 'col-md-3';
                 itemCard.innerHTML = `
                     <div class="card mb-4 box-shadow">
-                        <div class="card-body rounded p-3 d-flex align-items-center bg-warning" style='height:50px;' onclick="addToCart(${item.id}, '${item.name}', ${item.price}, ${item.finished_product}, ${item.meal}, ${item.dish})">
+                        <div class="card-body rounded p-3 d-flex align-items-center bg-warning" style='height:50px;' onclick="addToCart('${item.id}', '${item.name}', ${item.price}, ${item.finished_product}, ${item.meal}, ${item.dish})">
                             <p class="card-text text">${item.name}</p>
                         </div>
                     </div>
@@ -869,6 +903,7 @@
         })
     
         function addToCart(id, name, price, type, meal, dish) {
+            console.log(id)
           const existingMeal = cart.find(m => m.id === id);
           if (existingMeal) {
             existingMeal.quantity += 1;
@@ -878,7 +913,6 @@
             }else{
                 type=false
             }
-            
             const item = { id, name, price, quantity: 1, type, meal, dish};
             cart.push(item);
           }
@@ -1332,25 +1366,85 @@
 
     // cahsup
 
+    const cashupAuth = () =>{
+        $(document).ready(function() {
+            $('#authCashModal').modal('show');
+        });
+    }
+
     const cashUp = () => {
-        fetch(`/pos/cash_up/{{ request.user.id }}/`,{
-            method:'GET'
+        const username = document.querySelector('#c_username').value;
+        const password = document.querySelector('#c_password').value;
+
+        fetch('{% url "pos:void_authenticate" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({ username, password })
         })
         .then(response => response.json())
-        .then(data=>{
+        .then(data => {
             console.log(data)
-            if(data.success){
-                let cashupContent = generateCashUpContent(data.data)
-                printCashUpSilently(cashupContent)
-            }else{
+            if (data.success) {
                 Swal.fire({
-                    icon:'error',
-                    title:'Failed to process Cash Up'
-                })
+                    title: 'Success!',
+                    text: 'Authentication successful!',
+                    icon: 'success',
+                }).then(() => {
+                    processsCashUp()
+                });
+            } else {
+                Swal.fire({
+                    title: 'Authentication Failed',
+                    text: data.message || 'Invalid username or password.',
+                    icon: 'error',
+                    confirmButtonText: 'Try Again'
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error during authentication:', error);
+            Swal.fire({
+                title: 'Oops!',
+                text: 'Something went wrong. Please try again later.',
+                icon: 'error',
+                confirmButtonText: 'OK'
+            });
+        });
+    }
+
+    const processsCashUp = () => {
+        fetch(`/pos/cash_up/{{ request.user.id }}/`, {
+            method: 'GET'
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log(data)
+            if (data.success) {
+                let cashupContent = generateCashUpContent(data.data);
+                Swal.fire({
+                    title: "Processing...",
+                    text: "Please wait while printing the cash up.",
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+                setTimeout(() => {
+                    Swal.close();
+                    printCashUpSilently(cashupContent);
+                }, 2000); 
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Failed to process Cash Up'
+                });
             }
         })
     }
-
 
     function generateCashUpContent(cashUpData) {
         const { total_sales, total_expenses, total_change, cash_in_hand } = cashUpData;
@@ -1455,6 +1549,12 @@
         setTimeout(() => {
             printFrame.contentWindow.print(false);
         }, 100);
+
+        Swal.fire({
+            title: "Success",
+            text: "Cash Up printed successfully.",
+            icon: "success"
+        });
     }
 
 
