@@ -194,7 +194,7 @@ def process_sale(request):
 
                         if item.get('meal'): 
                             meal_id = item['meal_id'].split('-')[1]
-                            
+
                             meal = get_object_or_404(Meal, id=meal_id)
                             logger.info(f'Sale for meal: {meal}')
                         elif item.get('dish'):  
@@ -585,10 +585,14 @@ def void_authenticate(request):
             username = data.get("username")
             password = data.get("password")
 
+            logger.info(username)
+
             if not username or not password:
                 return JsonResponse({"success": False, "message": "Username and password are required."}, status=400)
-
+            logger.info(username)
             user = User.objects.get(username=username)
+
+            logger.info(user)
 
             if user.role in ['admin', 'accountant', 'supervisor', 'manager']:
 
