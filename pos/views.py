@@ -608,8 +608,8 @@ def cash_up(request, cashier_id):
 
     cash_in_hand = 0
 
-    sales = Sale.objects.filter(cashier__id=cashier_id, date=datetime.datetime.today()).values('total_amount')
-    change = Change.objects.filter(cashier__id=cashier_id, timestamp__date=datetime.datetime.today()).values('amount')
+    sales = Sale.objects.filter(cashier__id=cashier_id, date=datetime.datetime.today(), void=False).values('total_amount')
+    change = Change.objects.filter(cashier__id=cashier_id, timestamp__date=datetime.datetime.today(), collected=False).values('amount')
     expenses = CashierExpense.objects.filter(cashier__id=cashier_id, date=datetime.datetime.today()).values('amount')
 
     total_sales = sales.aggregate(Sum('total_amount'))['total_amount__sum'] or 0
