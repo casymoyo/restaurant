@@ -39,24 +39,8 @@ from asgiref.sync import async_to_sync
 
 # @cache_page(60*50)
 def pos(request):
-    meals = Meal.objects.filter(deactivate=False)
-    dishes = Dish.objects.all()
-
-    combined_items = list(meals) + list(dishes)
-
-    # for m in Meal.objects.all():
-    #     m.meal = True
-    #     m.save()
-
-    # for m in Dish.objects.all():
-    #     m.dish = True
-    #     m.save()
-
-    return render(request, 'pos.html', 
-        {
-            'combined_items': meals,
-        }
-    )
+    return render(request, 'pos.html')
+       
 
 @login_required
 def process_promo_meal(request):
@@ -64,11 +48,23 @@ def process_promo_meal(request):
 
 @login_required
 def product_meal_json(request):
-    meals = Meal.objects.filter(deactivate=False).values('id', 'name', 'price', 'meal')
+    meals = Meal.objects.filter(deactivate=False)
     products = Product.objects.filter(raw_material=False).values('id', 'name', 'price', 'finished_product',)
     dishes = Dish.objects.all().values('id', 'name', 'price', 'dish')
 
-    combined_items = list(meals) + list(products) + list(dishes)
+    meal_data = [
+        {
+            'name':meal.name,
+            'price':meal.price,
+            'category':meal.category.name,
+            'meal':meal.meal,
+            'id':f'm-{meal.id}'
+        }
+        for meal in meals
+    ]
+
+
+    combined_items = meal_data + list(products) + list(dishes)
     
     data = {
         'items': combined_items

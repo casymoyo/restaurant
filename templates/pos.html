@@ -809,7 +809,7 @@
                 itemCard.className = 'col-md-3';
                 itemCard.innerHTML = `
                     <div class="card mb-4 box-shadow">
-                        <div class="card-body rounded p-3 d-flex align-items-center bg-warning" style='height:50px;' onclick="addToCart(${item.id}, '${item.name}', ${item.price}, ${item.finished_product}, ${item.meal}, ${item.dish})">
+                        <div class="card-body rounded p-3 d-flex align-items-center bg-warning" style='height:50px;' onclick="addToCart('${item.id}', '${item.name}', ${item.price}, ${item.finished_product}, ${item.meal}, ${item.dish})">
                             <p class="card-text text">${item.name}</p>
                         </div>
                     </div>
@@ -867,6 +867,7 @@
         })
     
         function addToCart(id, name, price, type, meal, dish) {
+            console.log(id)
           const existingMeal = cart.find(m => m.id === id);
           if (existingMeal) {
             existingMeal.quantity += 1;
@@ -876,7 +877,6 @@
             }else{
                 type=false
             }
-            
             const item = { id, name, price, quantity: 1, type, meal, dish};
             cart.push(item);
           }
