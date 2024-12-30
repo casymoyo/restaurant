@@ -20,7 +20,8 @@ ALLOWED_HOSTS = [
     'web-production-20d8.up.railway.app',
     '192.168.10.156',
     '192.168.10.173',
-    '192.168.10.38'
+    '192.168.10.38',
+    '192.168.10.181'
 ]
 
 CSRF_TRUSTED_ORIGINS = [
@@ -227,14 +228,14 @@ EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
 
 
 # channels
-CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels_redis.core.RedisChannelLayer',
-        'CONFIG': {
-            'hosts': [('127.0.0.1', 6379)],
-        },
-    },
-}
+# CHANNEL_LAYERS = {
+#     'default': {
+#         'BACKEND': 'channels_redis.core.RedisChannelLayer',
+#         'CONFIG': {
+#             'hosts': [('127.0.0.1', 6379)],
+#         },
+#     },
+# }
 
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 SESSION_COOKIE_AGE = 86400 #1day

@@ -141,9 +141,11 @@
                             <li class='mx-2'>
                                 <a href="{% url 'finance:cashier_expenses' request.user.id %}" class="btn btn-outline-dark w-100">Expenses</a>
                             </li>
-                            <li class='mx-2'>
-                                <button onclick="cashUp()" class="btn btn-outline-dark w-100">Cash Up</a>
-                            </li>
+                            {% if not request.user.role == 'sales'%}
+                                <li class='mx-2'>
+                                    <button onclick="cashUp()" class="btn btn-outline-dark w-100">Cash Up</a>
+                                </li>
+                            {% endif %}
                         </div>
                         <div>
                             <li>
