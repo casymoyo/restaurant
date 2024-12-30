@@ -38,39 +38,38 @@ from asgiref.sync import async_to_sync
 # logger = logging.getLogger('restaurant')  
 
 # @cache_page(60*50)
+@login_required
 def pos(request):
     return render(request, 'pos.html')
-       
-
-@login_required
-def process_promo_meal(request):
-    pass
 
 @login_required
 def product_meal_json(request):
-    meals = Meal.objects.filter(deactivate=False)
-    products = Product.objects.filter(raw_material=False).values('id', 'name', 'price', 'finished_product',)
-    dishes = Dish.objects.all().values('id', 'name', 'price', 'dish')
+    if request.method == 'GET':
+        
+        meals = Meal.objects.filter(deactivate=False)
+        products = Product.objects.filter(raw_material=False).values('id', 'name', 'price', 'finished_product',)
+        dishes = Dish.objects.all().values('id', 'name', 'price', 'dish')
 
-    meal_data = [
-        {
-            'name':meal.name,
-            'price':meal.price,
-            'category':meal.category.name,
-            'meal':meal.meal,
-            'id':f'm-{meal.id}'
+        meal_data = [
+            {
+                'name':meal.name,
+                'price':meal.price,
+                'category':meal.category.name,
+                'meal':meal.meal,
+                'id':f'm-{meal.id}'
+            }
+            for meal in meals
+        ]
+
+        combined_items = meal_data + list(products) + list(dishes)
+        
+        data = {
+            'items': combined_items
         }
-        for meal in meals
-    ]
-
-
-    combined_items = meal_data + list(products) + list(dishes)
     
-    data = {
-        'items': combined_items
-    }
+        return JsonResponse(data)
     
-    return JsonResponse(data)
+    return JsonResponse('Invalid requesnt', status=500)
 
 @login_required
 def sales_list(request):
@@ -194,7 +193,9 @@ def process_sale(request):
                         logger.info(f'Looking for meal with id {item['meal_id']} or dishes with id {item['meal_id']}')
 
                         if item.get('meal'): 
-                            meal = get_object_or_404(Meal, id=item['meal_id'])
+                            meal_id = item['meal_id'].split('-')[1]
+                            
+                            meal = get_object_or_404(Meal, id=meal_id)
                             logger.info(f'Sale for meal: {meal}')
                         elif item.get('dish'):  
                             dish = get_object_or_404(Dish, id=item['meal_id'])
