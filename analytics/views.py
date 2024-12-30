@@ -37,7 +37,7 @@ def analytics_view(request):
         yesterday_sales = Sale.objects.filter(date=yesterday, void=False).aggregate(total=Sum('total_amount'))
         
         today_void_sales = Sale.objects.filter(date=today, void=True).aggregate(total=Sum('total_amount'))
-        logger.info(today_void_sales)
+       
         yesterday_void_sales = Sale.objects.filter(date=yesterday, void=True).aggregate(total=Sum('total_amount'))
         
         change_amount = Change.objects.filter(timestamp__date=today, collected=False).aggregate(total=Sum('amount'))
@@ -62,30 +62,35 @@ def analytics_view(request):
         data['year_sales'] = year_sales['total'] or 0
 
     # Best-selling dish
-    best_selling_meal = SaleItem.objects.filter(meal__isnull=False).values('meal__name') \
+    best_selling_meal = SaleItem.objects.filter(meal__isnull=False, sale__date=today).values('meal__name') \
     .annotate(total_sold=Sum('quantity')) \
     .order_by('-total_sold') \
     .first()
 
-    best_selling_dish = SaleItem.objects.filter(dish__isnull=False).values('dish__name') \
+    best_selling_dish = SaleItem.objects.filter(dish__isnull=False, sale__date=today).values('dish__name') \
     .annotate(total_sold=Sum('quantity')) \
     .order_by('-total_sold') \
     .first()
 
-    logger.info(best_selling_dish['dish__name'])
-    logger.info(best_selling_meal['meal__name'])
+    # logger.info(best_selling_dish['dish__name'])
+    # logger.info(best_selling_meal['meal__name'])
    
-    data['best_selling_meal'] = best_selling_meal
-    data['best_selling_dish'] = best_selling_dish
+    data['best_selling_meal'] = best_selling_meal or ''
+    data['best_selling_dish'] = best_selling_dish or ''
+    
     
     grouped_meals = defaultdict(lambda: {})
     grouped_dishes = defaultdict(lambda: {})
+    staff_dishes = defaultdict(lambda: {})
 
-    sales = SaleItem.objects.filter(sale__void=False).select_related('sale', 'meal', 'dish', 'product').all()
+    sales = SaleItem.objects.filter(sale__void=False, sale__staff=False).select_related('sale', 'meal', 'dish', 'product').all()
 
-    sales_dishes = SaleItem.objects.filter(sale__void=False)
+    staff_sales = SaleItem.objects.filter(sale__void=False, sale__staff=True).select_related('sale', 'meal', 'dish', 'product').all()
+
+    sales_dishes = SaleItem.objects.filter(sale__void=False, sale__staff=False)
 
     dishes = defaultdict(lambda: {})
+
 
     for sale in sales_dishes:
         if sale.meal:
@@ -106,7 +111,29 @@ def analytics_view(request):
                         'price': sale.price * sale.quantity,
                     }
 
-    logger.info(dishes) 
+    for sale in staff_sales:
+        if sale.meal:
+            sale_date = sale.sale.date
+            category = (
+                'Today' if sale_date == today
+                else 'Yesterday' if sale_date == yesterday
+                else sale_date.strftime('%A, %d %B %Y')
+            )
+            for dish in sale.meal.dish.all():
+                if dish.name in staff_dishes[category]:
+                    staff_dishes[category][dish.name]['quantity'] += sale.quantity
+                    staff_dishes[category][dish.name]['price'] += sale.price * sale.quantity
+                else:
+                    staff_dishes[category][dish.name] = {
+                        'name': dish.name,
+                        'quantity': sale.quantity,
+                        'price': sale.price * sale.quantity,
+                    }
+
+    formatted_staff_dishes = {category: list(items.values()) for category, items in staff_dishes.items()}
+    data['staff_dishes'] = dict(formatted_staff_dishes)
+
+    logger.info(staff_dishes) 
 
     if not sales:
         logger.warning("No sales data found.")
