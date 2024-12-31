@@ -174,51 +174,51 @@
             dropdown.classList.toggle('show');
         });
         
-        const ws = new WebSocket('ws://' + window.location.host + '/ws/notifications/');
+        // const ws = new WebSocket('ws://' + window.location.host + '/ws/notifications/');
 
-        function playNotificationSound() {
-            const audio = new Audio('{% static "sounds/ding.mp3" %}'); 
-            audio.play();
-        }
+        // function playNotificationSound() {
+        //     const audio = new Audio('{% static "sounds/ding.mp3" %}'); 
+        //     audio.play();
+        // }
 
-        ws.onmessage = function(event) {
-            const data = JSON.parse(event.data);
-            const notificationBox = document.getElementById('notification-box');
-            const newNotification = document.createElement('li');
+        // ws.onmessage = function(event) {
+        //     const data = JSON.parse(event.data);
+        //     const notificationBox = document.getElementById('notification-box');
+        //     const newNotification = document.createElement('li');
 
-            newNotification.textContent = data.message + " - " + new Date().toLocaleTimeString();
-            notificationBox.appendChild(newNotification);
+        //     newNotification.textContent = data.message + " - " + new Date().toLocaleTimeString();
+        //     notificationBox.appendChild(newNotification);
 
-            const badge = document.getElementById('notification-badge');
-            let currentCount = parseInt(badge.textContent) || 0;
+        //     const badge = document.getElementById('notification-badge');
+        //     let currentCount = parseInt(badge.textContent) || 0;
 
-            badge.textContent = currentCount + 1;
-            badge.style.display = 'inline-block'; 
+        //     badge.textContent = currentCount + 1;
+        //     badge.style.display = 'inline-block'; 
 
-            playNotificationSound();
-        }
+        //     playNotificationSound();
+        // }
 
-        // totals sales websocket
-        const socket = new WebSocket('ws://' + window.location.host + '/ws/sales/');
+        // // totals sales websocket
+        // const socket = new WebSocket('ws://' + window.location.host + '/ws/sales/');
 
-        socket.onopen = function() {
-            console.log('WebSocket connection established');
-        };
+        // socket.onopen = function() {
+        //     console.log('WebSocket connection established');
+        // };
 
-        socket.onerror = function(error) {
-            console.error('WebSocket error:', error);
-        };
+        // socket.onerror = function(error) {
+        //     console.error('WebSocket error:', error);
+        // };
 
-        socket.onmessage = function(e) {
-            const message = JSON.parse(e.data);
-            console.log(message['data'], 'web socket data');
+        // socket.onmessage = function(e) {
+        //     const message = JSON.parse(e.data);
+        //     console.log(message['data'], 'web socket data');
             
-            const totalSalesElement = document.getElementById('total-sales');
-            if (totalSalesElement) {
-                totalSalesElement.innerText = `$${message['data']['total_sales']}`;
-            }
+        //     const totalSalesElement = document.getElementById('total-sales');
+        //     if (totalSalesElement) {
+        //         totalSalesElement.innerText = `$${message['data']['total_sales']}`;
+        //     }
 
-        };
+        // };
 
     </script>
 </body>
