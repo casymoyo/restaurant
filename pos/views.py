@@ -159,7 +159,7 @@ def process_sale(request):
                         tax=0.00,
                         sub_total=sub_total,
                         cashier=request.user,
-                        staff=staff,
+                        staff=True,
                         change=0.00,
                         amount_paid=received_amount
                     )
@@ -169,7 +169,7 @@ def process_sale(request):
                         tax=tax,
                         sub_total=sub_total,
                         cashier=request.user,
-                        staff=staff,
+                        staff=False,
                         change=balance,
                         amount_paid=received_amount
                     )
