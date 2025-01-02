@@ -719,9 +719,6 @@
                         updateOrderDetails();
                         chargeModal.hide();
 
-                        const receiptContent = generateReceiptContent(data.data);
-                        printReceiptSilently(receiptContent);
-                        
                         amountField.value = '';
                         changeDisplay.value = '';
                         orderTypeInput.value = '';
@@ -734,6 +731,10 @@
                         // receipt_number.value='';
                         amountGiven.value='';
                         balance.value='';
+
+                        const receiptContent = generateReceiptContent(data.data);
+                        printReceiptSilently(receiptContent);
+                        
                         
                     } else {
                         Swal.fire({
@@ -1087,10 +1088,6 @@
                     updateOrderDetails();
                     chargeModal.hide();
 
-                    // Generate and print receipt
-                    const receiptContent = generateReceiptContent(data.data);
-                    printReceiptSilently(receiptContent);
-
                     // Clear the inputs
                     amountField.value = '';
                     changeDisplay.value = '';
@@ -1104,6 +1101,11 @@
                     receipt_number.value='';
                     amountGiven.value='';
                     balance.value='';
+
+                    // Generate and print receipt
+                    const receiptContent = generateReceiptContent(data.data);
+                    printReceiptSilently(receiptContent);
+
 
                 } else {
                     Swal.fire({

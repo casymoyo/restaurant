@@ -112,13 +112,14 @@ def analytics_view(request):
                     }
 
     for sale in staff_sales:
+        sale_date = sale.sale.date
+        category = (
+            'Today' if sale_date == today
+            else 'Yesterday' if sale_date == yesterday
+            else sale_date.strftime('%A, %d %B %Y')
+        )
+        
         if sale.meal:
-            sale_date = sale.sale.date
-            category = (
-                'Today' if sale_date == today
-                else 'Yesterday' if sale_date == yesterday
-                else sale_date.strftime('%A, %d %B %Y')
-            )
             for dish in sale.meal.dish.all():
                 if dish.name in staff_dishes[category]:
                     staff_dishes[category][dish.name]['quantity'] += sale.quantity
@@ -129,6 +130,19 @@ def analytics_view(request):
                         'quantity': sale.quantity,
                         'price': sale.price * sale.quantity,
                     }
+        elif sale.dish:
+                dish_name = sale.dish.name
+                if dish_name in staff_dishes[category]:
+
+                    staff_dishes[category][dish_name]['quantity'] += sale.quantity
+                    staff_dishes[category][dish_name]['price'] += sale.price * sale.quantity
+                else:
+                    staff_dishes[category][dish_name] = {
+                        'name': dish_name,
+                        'quantity': sale.quantity,
+                        'price': sale.price * sale.quantity,
+                    }
+                    
 
     formatted_staff_dishes = {category: list(items.values()) for category, items in staff_dishes.items()}
     data['staff_dishes'] = dict(formatted_staff_dishes)
