@@ -495,8 +495,10 @@ def collect_change(request):
 @login_required
 def void_sales(request, user_id):
     if request.method == 'GET':
-        sales = Sale.objects.all().order_by('-date')
-        sale_items = SaleItem.objects.all().order_by('-sale__date')
+        sales = Sale.objects.filter(date=timezone.now()).order_by('-date')
+        
+        sale_items = SaleItem.objects.filter(sale__date=timezone.now())
+    
         return render (request, 'pos/void_sales.html', {
             'sales':sales,
             'sale_items':sale_items,
