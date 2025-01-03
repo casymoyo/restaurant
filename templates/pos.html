@@ -231,7 +231,7 @@
                     </div>
                     <form action="" method="POST" autocomplete="off" >
                         <div class="mb-3">
-                            <label for="username" class="form-label">Username</label>
+                            <label for="username" class="form-label">Usernafme</label>
                             <input 
                                 type="text" 
                                 id="c_username" 
@@ -419,8 +419,24 @@
         const authenticateBtn = document.getElementById('void')
         const authenticateModal = new bootstrap.Modal(document.getElementById('authModal'));
         const search = document.getElementById('searchInput')
+
         
         // clear search input
+
+        const clearChangeData = () => {
+            const name = document.getElementById('client_name')
+            const phonenumber = document.getElementById('phonenumber')
+            const amount = document.getElementById('change_amount')
+            const amountGiven = document.getElementById('change_given');
+            const balance = document.getElementById('balance');
+
+            name.value = '';
+            phonenumber.value = '';
+            amount.value='';
+            amountGiven.value='';
+            balance.value='';
+        }
+
         search.addEventListener('click', ()=>{
             search.value = '';
         })
@@ -625,14 +641,6 @@
                 const changeDisplay = document.getElementById('changeDisplay');
                 const orderTypeInput = document.getElementById('order-type-input');
 
-                const name = document.getElementById('client_name')
-                const phonenumber = document.getElementById('phonenumber')
-                const amount = document.getElementById('change_amount')
-                const receipt_number = document.getElementById('receipt_number')
-
-                const amountGiven = document.getElementById('change_given');
-                const balance = document.getElementById('balance');
-
                 setTimeout(() => {
                     totalAmountInput.focus();
                     totalAmountInput.select();
@@ -683,9 +691,6 @@
                     change_data: changeData
                 };
 
-                console.log(saleData);
-                console.logcart
-
                 // Show "Processing..." Swal
                 Swal.fire({
                     title: "Processing...",
@@ -718,22 +723,12 @@
                         cart = [];
                         updateOrderDetails();
                         chargeModal.hide();
+                        clearChangeData();
+
+                        console.log('cleared')
 
                         const receiptContent = generateReceiptContent(data.data);
                         printReceiptSilently(receiptContent);
-                        
-                        amountField.value = '';
-                        changeDisplay.value = '';
-                        orderTypeInput.value = '';
-
-                        // clear change data
-                        name.value='';
-                        phonenumber.value='';
-                        amount.value='';
-                        
-                        // receipt_number.value='';
-                        amountGiven.value='';
-                        balance.value='';
                         
                     } else {
                         Swal.fire({
@@ -1008,15 +1003,6 @@
         const changeDisplay = document.getElementById('changeDisplay');
         const orderTypeInput = document.getElementById('order-type-input');
 
-        const name = document.getElementById('client_name')
-        const phonenumber = document.getElementById('phonenumber')
-        const amount = document.getElementById('change_amount')
-        const receipt_number = document.getElementById('receipt_number')
-
-        const amountGiven = document.getElementById('change_given');
-        const balance = document.getElementById('balance');
-
-
         setTimeout(() => {
             amountField.focus();
             amountField.select();
@@ -1086,24 +1072,12 @@
                     cart = [];
                     updateOrderDetails();
                     chargeModal.hide();
+                    clearChangeData()
+                    console.log('cleared')
 
                     // Generate and print receipt
                     const receiptContent = generateReceiptContent(data.data);
                     printReceiptSilently(receiptContent);
-
-                    // Clear the inputs
-                    amountField.value = '';
-                    changeDisplay.value = '';
-                    // orderTypeInput.value = '';
-
-                    // clear change data
-
-                    name.value='';
-                    phonenumber.value='';
-                    amount.value='';
-                    receipt_number.value='';
-                    amountGiven.value='';
-                    balance.value='';
 
                 } else {
                     Swal.fire({
@@ -1326,13 +1300,14 @@
         .then(data => {
             console.log(data)
             if (data.success) {
-                Swal.fire({
+                {% comment %} Swal.fire({
                     title: 'Success!',
                     text: 'Authentication successful!',
                     icon: 'success',
                 }).then(() => {
                     window.location.href =  `/pos/sales/${data.user_id}`;
-                });
+                }); {% endcomment %}
+                window.location.href =  `/pos/sales/${data.user_id}`;
             } else {
                 Swal.fire({
                     title: 'Authentication Failed',
