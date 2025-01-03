@@ -31,7 +31,7 @@ class Sale(models.Model):
     cashier = models.ForeignKey(User, on_delete=models.CASCADE)
     total_amount= models.DecimalField(max_digits=10, decimal_places=2, default=0) 
     tax = models.DecimalField(max_digits=10, decimal_places=2, default=0) 
-    sub_total = models.DecimalField(max_digits=10, decimal_places=2, default=0) 
+    sub_total = models.DecimalField(max_digits=10, decimal_places=2, default=0, db_index=True) 
     date = models.DateField(auto_now_add=True)
     receipt_number = models.CharField(max_length=10, blank=True)
     staff = models.BooleanField(default=False)

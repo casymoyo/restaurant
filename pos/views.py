@@ -33,6 +33,7 @@ from django.contrib.auth import authenticate
 from django.utils import timezone
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
+from django.core.paginator import Paginator
 
 
 # logger = logging.getLogger('restaurant')  
@@ -343,7 +344,7 @@ def change_list(request):
     elif filter_option == 'this_week':
         start_date = now - timedelta(days=now.weekday())
     elif filter_option == 'yesterday':
-        start_date = (now - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+        start_date = (now - timedelta(days=1)).replace(hour=0, minute=0, microsecond=0)
     elif filter_option == 'this_month':
         start_date = now.replace(day=1)
     elif filter_option == 'last_month':
@@ -353,24 +354,35 @@ def change_list(request):
     elif filter_option == 'custom':
         start_date = request.GET.get('start_date')
         end_date = request.GET.get('end_date')
-        start_date = datetime.strptime(start_date, '%Y-%m-%d')
-        end_date = datetime.strptime(end_date, '%Y-%m-%d')
+        start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
+        end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d')
     else:
         start_date = now - timedelta(days=now.weekday())
         end_date = now
-        
-    changes = Change.objects.filter(timestamp__gte=start_date, timestamp__lte=end_date).order_by('timestamp')
-    total_change_amount = changes.filter(collected=False).aggregate(total=Sum('amount'))['total'] or 0
+
+    changes = Change.objects.filter(
+        timestamp__gte=start_date,
+        timestamp__lte=end_date
+    ).order_by('-timestamp')
     
-    return render(request, 'finance/change_list.html', 
+    paginator = Paginator(changes, 50) 
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    total_change_amount = changes.filter(collected=False).aggregate(total=Sum('amount'))['total'] or 0
+
+    return render(
+        request,
+        'finance/change_list.html',
         {
             'filter_option': filter_option,
-            'changes':changes,
-            'end_date':end_date,
-            'start_date':start_date,
-            'total':total_change_amount
+            'page_obj': page_obj,
+            'end_date': end_date,
+            'start_date': start_date,
+            'total': total_change_amount,
         }
     )
+
 
 @login_required
 def download_change_report(request):
