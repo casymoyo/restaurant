@@ -11,7 +11,7 @@ from finance.models import Change, Sale, SaleItem
 from django.db import transaction
 from reportlab.lib.units import cm
 from reportlab.pdfgen import canvas
-from finance.forms import ChangeForm
+from finance.forms import ChangeForm, CashUp
 from asgiref.sync import sync_to_async
 from django.utils.timezone import localdate
 from django.http import JsonResponse, HttpResponse
@@ -34,7 +34,7 @@ from django.utils import timezone
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from django.core.paginator import Paginator
-
+from users.models import User
 
 # logger = logging.getLogger('restaurant')  
 
@@ -625,10 +625,13 @@ def cash_up(request, cashier_id):
     sales = Sale.objects.filter(cashier__id=cashier_id, date=datetime.datetime.today(), void=False).values('total_amount')
     change = Change.objects.filter(cashier__id=cashier_id, timestamp__date=datetime.datetime.today(), collected=False).values('amount')
     expenses = CashierExpense.objects.filter(cashier__id=cashier_id, date=datetime.datetime.today()).values('amount')
+    void_sales = Sale.objects.filter(cashier__id=cashier_id, date=datetime.datetime.today(), void=True).values('total_amount')
 
     total_sales = sales.aggregate(Sum('total_amount'))['total_amount__sum'] or 0
     total_expenses = expenses.aggregate(Sum('amount'))['amount__sum'] or 0
     total_change = change.aggregate(Sum('amount'))['amount__sum'] or 0 
+    total_void_sales = void_sales.aggregate(Sum('total_amount'))['total_amount__sum'] or 0
+
 
     logger.info(total_sales)
     logger.info(total_expenses)
@@ -637,6 +640,17 @@ def cash_up(request, cashier_id):
     cash_in_hand = total_sales + total_change - total_expenses
 
     logger.info(f'cash in hand: {cash_in_hand}')
+
+    CashUp.objects.create(
+        cashier = User.objects.get(id=cashier_id),
+        # cashed_amount = cashed_amount,
+        void_amount = total_void_sales,
+        sales = total_sales,
+        change = total_change,
+        user = request.user, 
+        expenses = total_expenses,
+        status = True if cash_in_hand == total_sales else False
+    )
 
     data = {
         "total_sales":total_sales,

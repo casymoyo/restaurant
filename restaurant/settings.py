@@ -113,7 +113,7 @@ DATABASES = {
     # )
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'urban-eats',  
+        'NAME': 'trial',  
         'USER': 'postgres',
         'PASSWORD': 'neverfail',
         # 'HOST': '192.168.10.173',

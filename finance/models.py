@@ -102,11 +102,14 @@ class transactionLog(models.Model):
     
 class CashUp(models.Model):
     cashier = models.ForeignKey(User, on_delete=models.CASCADE, related_name='cashier')
-    cashed_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0) 
+    cashed_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0, null=True, blank=True) 
     sales = models.DecimalField(max_digits=10, decimal_places=2, default=0) 
     date = models.DateField(auto_now_add=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     status = models.BooleanField(default=False)
+    void_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0, null=True, blank=True)
+    change = models.DecimalField(max_digits=10, decimal_places=2, default=0, null=True, blank=True)
+    expenses = models.DecimalField(max_digits=10, decimal_places=2, default=0, null=True, blank=True)
     
     def __str__(self) -> str:
         return f'{self.date}'
@@ -138,7 +141,7 @@ class Change(models.Model):
     amount = models.DecimalField(max_digits=10, decimal_places=2, default=0) 
     receipt_number = models.CharField(max_length=100)
     collected = models.BooleanField(default=False)
-    timestamp = models.DateTimeField(auto_now_add=True)
+    timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
     cashier = models.ForeignKey(User, on_delete=models.CASCADE)
     claimed = models.BooleanField(default=False)
     

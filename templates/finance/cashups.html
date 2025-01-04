@@ -35,6 +35,9 @@
             <th>Cashier</th>
             <th>Done By</th>
             <th>Sales</th>
+            <th>Voided Sales</th>
+            <th>Change</th>
+            <th>Expenses</th>
             <th>Cashed Amount</th>
             <th>Status</th>
             <!-- <th>Action</th> -->
@@ -46,7 +49,17 @@
                     <td><small>{{ cashup.cashier }}</small></td>
                     <td><small>{{ cashup.user }}</small></td>
                     <td><small class="sales">{{ cashup.sales }}</small></td>
-                    <td><small class="cashed-amount">{{ cashup.cashed_amount}}</small></td>
+                    <td><small>{{ cashup.void_amount }}</small></td>
+                    <td><small>{{ cashup.change }}</small></td>
+                    <td><small>{{ cashup.expenses }}</small></td>
+                    <td>
+                        <input 
+                            type="number" 
+                            class="form-control form-control-sm cashed-amount-input" 
+                            value="{{ cashup.cashed_amount }}" 
+                            data-cashup-id="{{ cashup.id }}" 
+                        />
+                    </td>
                     <td>
                         <small class="status">
                             {% if cashup.status %}
