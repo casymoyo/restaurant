@@ -376,5 +376,25 @@ class CheckList(models.Model):
     def __str__(self):
         return self.product.name
     
+class Budget(models.Model):
+    name = models.CharField(max_length=255)
+    total_amount = models.DecimalField(max_digits=15, decimal_places=2)
+    start_date = models.DateField()
+    end_date = models.DateField()
+    description = models.TextField(null=True, blank=True)
+    confirmation =  models.BooleanField(default=True)
+    # user = models.ForeignKey('Users.user',)
+
+    def __str__(self) -> str:
+        return self.name
+
+class BudgetItem(models.Model):
+    budget = models.ForeignKey(Budget, on_delete=models.CASCADE, related_name='items')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    allocated_amount = models.DecimalField(max_digits=15, decimal_places=2)
+    spent_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0.00)
+
+    def __str__(self) -> str:
+        return f'{self.product.name} - {self.allocated_amount}'
 
     

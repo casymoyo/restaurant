@@ -107,9 +107,11 @@ class CashUp(models.Model):
     date = models.DateField(auto_now_add=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     status = models.BooleanField(default=False)
+    cashed = models.BooleanField(default=False)
     void_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0, null=True, blank=True)
     change = models.DecimalField(max_digits=10, decimal_places=2, default=0, null=True, blank=True)
     expenses = models.DecimalField(max_digits=10, decimal_places=2, default=0, null=True, blank=True)
+    difference = models.DecimalField(max_digits=10, decimal_places=2, default=0, null=True, blank=True)
     
     def __str__(self) -> str:
         return f'{self.date}'

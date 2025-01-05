@@ -720,15 +720,13 @@ def cash_up(request):
             if cashed_amount < 0:
                 return JsonResponse({'success':False, 'message':f'Cashed amount cannot be less than zero.'}, status=400)
             
-            total_sales = Sale.objects.filter(date=datetime.datetime.today(), void=False).aggregate(total_sales=Sum('total_amount'))['total_sales'] or 0
-            
-            CashUp.objects.create(
-                cashier = User.objects.get(id=cashier),
-                cashed_amount = cashed_amount,
-                sales = total_sales,
-                user = request.user, 
-                status = True if cashed_amount == total_sales else False
-            )
+            cash_up = CashUp.objects.get(cashier__id=cashier, cashed=False)
+            cash_up.cashed_amount = Decimal(cashed_amount)
+
+            cash_up.difference = cash_up.cashed_amount - (cash_up.sales - cash_up.void_amount - cash_up.expenses + cash_up.change)
+            cash_up.cashed = True
+            cash_up.save()
+
         except Exception as e:
             return JsonResponse({'success':False, 'message':f'{e}'}, status=400)
         return JsonResponse({'success':True, 'message':f'Cash Up successfully created'}, status=201)

@@ -29,79 +29,78 @@
             <button class="btn btn-secondary" onclick="downloadReport()">Download Report</button>
         </div>
     </nav>
-    <table class="table table-hover table-striped table-bordered" id="cash_up_table">
-        <thead>
-            <th>date</th>
-            <th>Cashier</th>
-            <th>Done By</th>
-            <th>Sales</th>
-            <th>Voided Sales</th>
-            <th>Change</th>
-            <th>Expenses</th>
-            <th>Cashed Amount</th>
-            <th>Status</th>
-            <!-- <th>Action</th> -->
-        </thead>
-        <tbody>
-            {% for cashup in cashups %}
-                <tr data-cashup-id="{{ cashup.id }}">
-                    <td><small>{{ cashup.date }}</small></td>
-                    <td><small>{{ cashup.cashier }}</small></td>
-                    <td><small>{{ cashup.user }}</small></td>
-                    <td><small class="sales">{{ cashup.sales }}</small></td>
-                    <td><small>{{ cashup.void_amount }}</small></td>
-                    <td><small>{{ cashup.change }}</small></td>
-                    <td><small>{{ cashup.expenses }}</small></td>
-                    <td>
-                        <small>
-                            {% if not cashup.cashed_amount %}
-                                <input 
-                                    type="number" 
-                                    class="form-control form-control-sm cashed-amount-input" 
-                                    value="{{ cashup.cashed_amount }}" 
-                                    data-cashup-id="{{ cashup.id }}" 
-                                />
-                            {% else %}
-                                {{ cashup.cashed_amount }}
-                            {% endif %}
-                        </small>
-                    </td>
-                    <td>
-                        <small class="status">
-                            {% if cashup.status %}
-                                Done
-                            {% else %}
-                                {% if cashup.cashed_amount > cashup.sales %}
-                                    <a href="" class="btn btn-outline-dark claim-amount w-100">claim</a>
+    
+    <div class="table-responsive">
+        <table class="table table-hover table-striped table-bordered" id="cash_up_table">
+            <thead>
+                <th>date</th>
+                <th>Cashier</th>
+                <th>Done By</th>
+                <th>Sales</th>
+                <th>Voided Sales</th>
+                <th>Change</th>
+                <th>Expenses</th>
+                <th>Cashed Amount</th>
+                <th>Cashed Amnt Diff</th>
+                <th>Status</th>
+                <!-- <th>Action</th> -->
+            </thead>
+            <tbody>
+                {% for cashup in cashups %}
+                    <tr data-cashup-id="{{ cashup.id }}">
+                        <td><small>{{ cashup.date }}</small></td>
+                        <td><small>{{ cashup.cashier }}</small></td>
+                        <td><small>{{ cashup.user }}</small></td>
+                        <td><small class="sales">{{ cashup.sales }}</small></td>
+                        <td><small>{{ cashup.void_amount }}</small></td>
+                        <td><small>{{ cashup.change }}</small></td>
+                        <td><small>{{ cashup.expenses }}</small></td>
+                        <td>
+                            <small>
+                                {% if not cashup.cashed_amount %}
+                                    <input 
+                                        type="number" 
+                                        class="form-control form-control-sm cashed-amount-input" 
+                                        value="{{ cashup.cashed_amount }}" 
+                                        data-cashup-id="{{ cashup.id }}" 
+                                    />
                                 {% else %}
-                                    <a href="" class="btn btn-outline-dark charge-cashier w-100">charge cashier</a>
+                                    {{ cashup.cashed_amount }}
                                 {% endif %}
-                            {% endif %}
-                        </small>
-                    </td>
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+                            </small>
+                        </td>
+                        <td><small>{{ cashup.difference }}</small></td>
+                        <td>
+                            <small class="status">
+                                {% if cashup.status %}
+                                    Done
+                                {% else %}
+                                    {% if cashup.difference > 0 %}
+                                        <a href="" class="btn btn-outline-dark claim-amount w-100">claim</a>
+                                    {% elif not cashup.cashed %}
+                                        <button class="btn btn-outline-dark charge-cashier w-100" onclick="chargeCashier({{ cashup.cashier.id }})">charge cashier</a>
+                                    {% else %}
+                                        Cashed
+                                    {% endif %}
+                                {% endif %}
+                            </small>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 
     <div class="modal fade" id="cashUpModal" tabindex="-1" aria-labelledby="cashUpModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="cashUpModalLabel">Create Cash Up</h5>
+                    <h5 class="modal-title" id="cashUpModalLabel">Enter Amount Received</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <form id="cashUpForm">
                         {% csrf_token %}
-                        <div class="mb-3">
-                            <label for="cashier" class="form-label">Cashier</label>
-                            <select id="cashier" class="form-select" required>
-                                {% for user in cashier_list %}
-                                    <option value="{{ user.id }}">{{ user.username }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
                         <div class="mb-3">
                             <label for="cashed_amount" class="form-label">Cashed Amount</label>
                             <input type="number" class="form-control" id="cashed_amount" required>
@@ -118,14 +117,22 @@
 </div>
 
 <script>
-    new DataTable('#cash_up_table')
+    let cashier = null;
 
-    function filterCashBook() {
+    new DataTable('#cash_up_table')
+    const cashierModal = new bootstrap.Modal(document.getElementById('cashUpModal'));
+
+    const chargeCashier = (cashier_id) =>{
+        cashierModal.show()
+        cashier = cashier_id
+    }
+
+    const filterCashBook = () => {
         const filter = document.getElementById('filterSelect').value;
         window.location.href = `?filter=${filter}`;
     }
 
-    function applyCustomFilter() {
+    const applyCustomFilter = () => {
         const startDate = document.getElementById('startDate').value;
         const endDate = document.getElementById('endDate').value;
         if (startDate && endDate) {
@@ -139,7 +146,7 @@
         }
     }
 
-    function downloadReport() {
+    const  downloadReport = () => {
         const filter = document.getElementById('filterSelect').value;
         let url = `?filter=${filter}&download=${true}/`;
 
@@ -182,7 +189,7 @@
         //     }
         // });
 
-    function claimCashupDifference(cashupId, claimAmount) {
+    const claimCashupDifference = (cashupId, claimAmount) => {
         fetch(`/finance/claim-cashup/${cashupId}/`, {
             method: 'POST',
             headers: {
@@ -225,7 +232,7 @@
         });
     }
 
-    function chargeCashupDifference(cashupId, chargeAmount) {
+    const chargeCashupDifference = (cashupId, chargeAmount) => {
         fetch(`/finance/charge_cashup_difference/`, {
             method: 'POST',
             headers: {
@@ -268,9 +275,7 @@
         });
     }
 
-
-    function submitCashUp() {
-        const cashier = document.getElementById('cashier').value;
+    const submitCashUp = () => {
         const cashed_amount = document.getElementById('cashed_amount').value;
 
         fetch("{% url 'finance:cash_up' %}", {
