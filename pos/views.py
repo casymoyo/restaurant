@@ -11,7 +11,7 @@ from finance.models import Change, Sale, SaleItem
 from django.db import transaction
 from reportlab.lib.units import cm
 from reportlab.pdfgen import canvas
-from finance.forms import ChangeForm
+from finance.forms import ChangeForm, CashUp
 from asgiref.sync import sync_to_async
 from django.utils.timezone import localdate
 from django.http import JsonResponse, HttpResponse
@@ -33,7 +33,12 @@ from django.contrib.auth import authenticate
 from django.utils import timezone
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
-
+from django.core.paginator import Paginator
+from users.models import User
+from users.models import User
+from django.core.mail import send_mail
+from django.conf import settings
+import threading
 
 # logger = logging.getLogger('restaurant')  
 
@@ -343,7 +348,7 @@ def change_list(request):
     elif filter_option == 'this_week':
         start_date = now - timedelta(days=now.weekday())
     elif filter_option == 'yesterday':
-        start_date = (now - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+        start_date = (now - timedelta(days=1)).replace(hour=0, minute=0, microsecond=0)
     elif filter_option == 'this_month':
         start_date = now.replace(day=1)
     elif filter_option == 'last_month':
@@ -353,24 +358,35 @@ def change_list(request):
     elif filter_option == 'custom':
         start_date = request.GET.get('start_date')
         end_date = request.GET.get('end_date')
-        start_date = datetime.strptime(start_date, '%Y-%m-%d')
-        end_date = datetime.strptime(end_date, '%Y-%m-%d')
+        start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
+        end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d')
     else:
         start_date = now - timedelta(days=now.weekday())
         end_date = now
-        
-    changes = Change.objects.filter(timestamp__gte=start_date, timestamp__lte=end_date).order_by('timestamp')
-    total_change_amount = changes.filter(collected=False).aggregate(total=Sum('amount'))['total'] or 0
+
+    changes = Change.objects.filter(
+        timestamp__gte=start_date,
+        timestamp__lte=end_date
+    ).order_by('-timestamp')
     
-    return render(request, 'finance/change_list.html', 
+    paginator = Paginator(changes, 50) 
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    total_change_amount = changes.filter(collected=False).aggregate(total=Sum('amount'))['total'] or 0
+
+    return render(
+        request,
+        'finance/change_list.html',
         {
             'filter_option': filter_option,
-            'changes':changes,
-            'end_date':end_date,
-            'start_date':start_date,
-            'total':total_change_amount
+            'page_obj': page_obj,
+            'end_date': end_date,
+            'start_date': start_date,
+            'total': total_change_amount,
         }
     )
+
 
 @login_required
 def download_change_report(request):
@@ -577,8 +593,6 @@ def void_sales(request, user_id):
 
 @login_required
 def void_authenticate(request):
-    from users.models import User
-
     if request.method == "POST":
         try:
             logger.info('here')
@@ -608,32 +622,103 @@ def void_authenticate(request):
 @login_required
 def cash_up(request, cashier_id):
 
-    cash_in_hand = 0
+    if request.method == 'GET':
+        cash_in_hand = 0
 
-    sales = Sale.objects.filter(cashier__id=cashier_id, date=datetime.datetime.today(), void=False).values('total_amount')
-    change = Change.objects.filter(cashier__id=cashier_id, timestamp__date=datetime.datetime.today(), collected=False).values('amount')
-    expenses = CashierExpense.objects.filter(cashier__id=cashier_id, date=datetime.datetime.today()).values('amount')
+        sales = Sale.objects.filter(cashier__id=cashier_id, date=datetime.datetime.today(), void=False).values('total_amount')
+        change = Change.objects.filter(cashier__id=cashier_id, timestamp__date=datetime.datetime.today(), collected=False).values('amount')
+        expenses = CashierExpense.objects.filter(cashier__id=cashier_id, date=datetime.datetime.today()).values('amount')
+        void_sales = Sale.objects.filter(cashier__id=cashier_id, date=datetime.datetime.today(), void=True).values('total_amount')
 
-    total_sales = sales.aggregate(Sum('total_amount'))['total_amount__sum'] or 0
-    total_expenses = expenses.aggregate(Sum('amount'))['amount__sum'] or 0
-    total_change = change.aggregate(Sum('amount'))['amount__sum'] or 0 
+        total_sales = sales.aggregate(Sum('total_amount'))['total_amount__sum'] or 0
+        total_expenses = expenses.aggregate(Sum('amount'))['amount__sum'] or 0
+        total_change = change.aggregate(Sum('amount'))['amount__sum'] or 0 
+        total_void_sales = void_sales.aggregate(Sum('total_amount'))['total_amount__sum'] or 0
 
-    logger.info(total_sales)
-    logger.info(total_expenses)
-    logger.info(total_change)
+        cash_in_hand = total_sales + total_change - total_expenses
 
-    cash_in_hand = total_sales + total_change - total_expenses
+        logger.info(f'cash in hand: {cash_in_hand}')
 
-    logger.info(f'cash in hand: {cash_in_hand}')
+        cashier = User.objects.get(id=cashier_id)
 
-    data = {
-        "total_sales":total_sales,
-        'total_expenses':total_expenses,
-        'total_change':total_change,
-        'cash_in_hand':cash_in_hand
-    }
+        CashUp.objects.create(
+            cashier = cashier,
+            # cashed_amount = cashed_amount,
+            void_amount = total_void_sales,
+            sales = total_sales,
+            change = total_change,
+            user = request.user, 
+            expenses = total_expenses,
+            status = False
+        )
 
-    return JsonResponse({'success':True, 'data':data})
-    
+        data = {
+            "total_sales":total_sales,
+            'total_expenses':total_expenses,
+            'total_change':total_change,
+            'cash_in_hand':cash_in_hand
+        }
 
+
+        # Send email notification in a separate thread
+        def send_email():
+            subject = 'Cash Up Report'
+            from_email = "admin@techcity.co.zw",
+            message = f"""
+            Cash Up Report for Cashier: {cashier.first_name}
+        
+            
+            Total Sales: {total_sales}
+            Total Expenses: {total_expenses}
+            Total Change: {total_change}
+            Cash in Hand: {cash_in_hand}
+            """
+
+            send_mail(
+                subject,
+                message,
+                from_email,
+                ['cassymyo@gmail.com'],
+                fail_silently=False,
+            )
+
+        email_thread = threading.Thread(target=send_email)
+        email_thread.start()
+
+        return JsonResponse({'success':True, 'data':data})
+
+    return JsonResponse({'success':False,'message':'Invalid request'}, status=500)
+
+
+@login_required
+def update_cashed_amount(request, cashup_id):
+
+    if request.method == 'POST':
+        """
+            payload:{
+                amount:float
+            }
+        """
+        try:
+            data = json.loads(request.body)
+            amount = data.get('cashed_amount', '')
+
+            if not amount:
+                return JsonResponse({'success':False, 'message':'Please fill in the amount field'})
+
+            with transaction.atomic():
+                cash_up = CashUp.objects.select_for_update().get(id=cashup_id)
+                cash_in_hand = cash_up.sales - cash_up.void_amount - cash_up.expenses + cash_up.change
+                cash_up.cashed_amount = amount
+                if cash_up.cashed_amount == cash_in_hand:
+                    cash_up.status = True
+                cash_up.save()
+
+            return JsonResponse({'success':True}, status=201)
+
+        except Exception as e:
+            return JsonResponse({'success':False,'message':f'{e}'}, status=400)
+        
+    return JsonResponse({'success':False,'message':'Invalid request'}, status=500)
+        
 
