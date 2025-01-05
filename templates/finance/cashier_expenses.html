@@ -10,6 +10,21 @@
             <a href='/' class='bx bx-home btn border fs-5 mx-2'></a>
             <span class='mt-2 fs-5'>Expenses</span>
         </div>
+        <div class="d-flex justify-content-between mt-1">
+            <button type="button" class="btn btn-outline-dark mx-2" id="id_add_expense">
+                Add Expense
+            </button>
+            <div>
+                <select class="form-select" id="filterSelect" onchange="filterCashBook()">
+                    <option value="today" {% if filter_option == 'today' %}selected{% endif %}>Today</option>
+                    <option value="this_week" {% if filter_option == 'this_week' %}selected{% endif %}>This Week</option>
+                    <option value="yesterday" {% if filter_option == 'yesterday' %}selected{% endif %}>Yesterday</option>
+                    <option value="this_month" {% if filter_option == 'this_month' %}selected{% endif %}>This Month</option>
+                    <option value="last_month" {% if filter_option == 'last_month' %}selected{% endif %}>Last Month</option>
+                    <option value="this_year" {% if filter_option == 'this_year' %}selected{% endif %}>This Year</option>
+                </select>
+            </div>
+        </div>
     </nav>
     <div class='mt-2'>
         <table class="table table-hover table-bordered table-striped" id="cashiers_table" style="width: 100%;">
@@ -81,6 +96,107 @@
                 </div>
             </div>
         </div>
-    </div>  
+    </div>
+    <div class="modal fade" id="AddExpenseModal" tabindex="-1" aria-labelledby="editExpenseModalLabel" aria-hidden="true">
+        <div class="modal-dialog-centered modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editExpenseModalLabel">Expense</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div id="div_id_category" class="mb-3">
+                            <label for="id_category" class="form-label requiredField">Category<span class="asteriskField">*</span></label>
+                            <div class="d-flex">
+                                <select name="category" class="select form-select" required="" id="id_category">
+                                    <option value="" selected="">---------</option>
+                                    {% for category in categories %}
+                                        <option value="{{ category.id }}">{{ category.name }}</option>
+                                    {% endfor %}
+                                </select>
+                                <button type="button" class="btn btn-outline-dark bx bx-plus ml-1" data-bs-toggle="modal" data-bs-target="#AddCategoryModal"></button>
+                            </div>
+                        </div>
+                        <div id="div_id_amount" class="mb-3">
+                            <label for="id_amount" class="form-label requiredField">Amount<span class="asteriskField">*</span></label>
+                            <input type="number" name="amount" value="0" step="0.01" class="numberinput form-control" required="" id="id_amount">
+                        </div>
+                        <div id="div_id_description" class="mb-3">
+                            <label for="id_description" class="form-label requiredField">Description<span class="asteriskField">*</span></label>
+                            <input type="text" name="description" maxlength="255" class="textinput form-control" required="" id="id_description">
+                        </div>
+                    </form>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="submitExpenseForm()">Submit</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+
+<script>
+    const addModal = new bootstrap.Modal(document.getElementById('AddExpenseModal'))
+
+    document.getElementById('id_add_expense').addEventListener('click', ()=>{
+        addModal.show()
+    })
+
+    function submitExpenseForm() {
+        const category = document.getElementById('id_category').value;
+        const amount = document.getElementById('id_amount').value;
+        const description = document.getElementById('id_description').value;
+
+        const data = {
+            category: category,
+            amount: amount,
+            description: description,
+        };
+
+        console.log(data)
+
+        const url = `finance/cashier-expenses/${category}/`;
+
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+            body: JSON.stringify(data),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                Swal.fire({
+                    title: 'Success!',
+                    text: 'Expense successfully saved.',
+                    icon: 'success',
+                    confirmButtonText: 'OK'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        location.reload();
+                    }
+                });
+            } else {
+                Swal.fire({
+                    title: 'Error!',
+                    text: data.message || 'An error occurred while adding the expense category.',
+                    icon: 'error',
+                    confirmButtonText: 'OK'
+                });
+            }
+        })
+        .catch(error => {
+            Swal.fire({
+                title: 'Error!',
+                text: 'An error occurred while processing your request.',
+                icon: 'error',
+                confirmButtonText: 'OK'
+            });
+        });
+    }
+</script>
 {% endblock %}
