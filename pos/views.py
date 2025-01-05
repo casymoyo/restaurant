@@ -35,6 +35,10 @@ from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from django.core.paginator import Paginator
 from users.models import User
+from users.models import User
+from django.core.mail import send_mail
+from django.conf import settings
+import threading
 
 # logger = logging.getLogger('restaurant')  
 
@@ -589,8 +593,6 @@ def void_sales(request, user_id):
 
 @login_required
 def void_authenticate(request):
-    from users.models import User
-
     if request.method == "POST":
         try:
             logger.info('here')
@@ -620,46 +622,103 @@ def void_authenticate(request):
 @login_required
 def cash_up(request, cashier_id):
 
-    cash_in_hand = 0
+    if request.method == 'GET':
+        cash_in_hand = 0
 
-    sales = Sale.objects.filter(cashier__id=cashier_id, date=datetime.datetime.today(), void=False).values('total_amount')
-    change = Change.objects.filter(cashier__id=cashier_id, timestamp__date=datetime.datetime.today(), collected=False).values('amount')
-    expenses = CashierExpense.objects.filter(cashier__id=cashier_id, date=datetime.datetime.today()).values('amount')
-    void_sales = Sale.objects.filter(cashier__id=cashier_id, date=datetime.datetime.today(), void=True).values('total_amount')
+        sales = Sale.objects.filter(cashier__id=cashier_id, date=datetime.datetime.today(), void=False).values('total_amount')
+        change = Change.objects.filter(cashier__id=cashier_id, timestamp__date=datetime.datetime.today(), collected=False).values('amount')
+        expenses = CashierExpense.objects.filter(cashier__id=cashier_id, date=datetime.datetime.today()).values('amount')
+        void_sales = Sale.objects.filter(cashier__id=cashier_id, date=datetime.datetime.today(), void=True).values('total_amount')
 
-    total_sales = sales.aggregate(Sum('total_amount'))['total_amount__sum'] or 0
-    total_expenses = expenses.aggregate(Sum('amount'))['amount__sum'] or 0
-    total_change = change.aggregate(Sum('amount'))['amount__sum'] or 0 
-    total_void_sales = void_sales.aggregate(Sum('total_amount'))['total_amount__sum'] or 0
+        total_sales = sales.aggregate(Sum('total_amount'))['total_amount__sum'] or 0
+        total_expenses = expenses.aggregate(Sum('amount'))['amount__sum'] or 0
+        total_change = change.aggregate(Sum('amount'))['amount__sum'] or 0 
+        total_void_sales = void_sales.aggregate(Sum('total_amount'))['total_amount__sum'] or 0
+
+        cash_in_hand = total_sales + total_change - total_expenses
+
+        logger.info(f'cash in hand: {cash_in_hand}')
+
+        cashier = User.objects.get(id=cashier_id)
+
+        CashUp.objects.create(
+            cashier = cashier,
+            # cashed_amount = cashed_amount,
+            void_amount = total_void_sales,
+            sales = total_sales,
+            change = total_change,
+            user = request.user, 
+            expenses = total_expenses,
+            status = False
+        )
+
+        data = {
+            "total_sales":total_sales,
+            'total_expenses':total_expenses,
+            'total_change':total_change,
+            'cash_in_hand':cash_in_hand
+        }
 
 
-    logger.info(total_sales)
-    logger.info(total_expenses)
-    logger.info(total_change)
+        # Send email notification in a separate thread
+        def send_email():
+            subject = 'Cash Up Report'
+            from_email = "admin@techcity.co.zw",
+            message = f"""
+            Cash Up Report for Cashier: {cashier.first_name}
+        
+            
+            Total Sales: {total_sales}
+            Total Expenses: {total_expenses}
+            Total Change: {total_change}
+            Cash in Hand: {cash_in_hand}
+            """
 
-    cash_in_hand = total_sales + total_change - total_expenses
+            send_mail(
+                subject,
+                message,
+                from_email,
+                ['cassymyo@gmail.com'],
+                fail_silently=False,
+            )
 
-    logger.info(f'cash in hand: {cash_in_hand}')
+        email_thread = threading.Thread(target=send_email)
+        email_thread.start()
 
-    CashUp.objects.create(
-        cashier = User.objects.get(id=cashier_id),
-        # cashed_amount = cashed_amount,
-        void_amount = total_void_sales,
-        sales = total_sales,
-        change = total_change,
-        user = request.user, 
-        expenses = total_expenses,
-        status = True if cash_in_hand == total_sales else False
-    )
+        return JsonResponse({'success':True, 'data':data})
 
-    data = {
-        "total_sales":total_sales,
-        'total_expenses':total_expenses,
-        'total_change':total_change,
-        'cash_in_hand':cash_in_hand
-    }
+    return JsonResponse({'success':False,'message':'Invalid request'}, status=500)
 
-    return JsonResponse({'success':True, 'data':data})
-    
 
+@login_required
+def update_cashed_amount(request, cashup_id):
+
+    if request.method == 'POST':
+        """
+            payload:{
+                amount:float
+            }
+        """
+        try:
+            data = json.loads(request.body)
+            amount = data.get('cashed_amount', '')
+
+            if not amount:
+                return JsonResponse({'success':False, 'message':'Please fill in the amount field'})
+
+            with transaction.atomic():
+                cash_up = CashUp.objects.select_for_update().get(id=cashup_id)
+                cash_in_hand = cash_up.sales - cash_up.void_amount - cash_up.expenses + cash_up.change
+                cash_up.cashed_amount = amount
+                if cash_up.cashed_amount == cash_in_hand:
+                    cash_up.status = True
+                cash_up.save()
+
+            return JsonResponse({'success':True}, status=201)
+
+        except Exception as e:
+            return JsonResponse({'success':False,'message':f'{e}'}, status=400)
+        
+    return JsonResponse({'success':False,'message':'Invalid request'}, status=500)
+        
 

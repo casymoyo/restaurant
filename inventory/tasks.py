@@ -34,7 +34,7 @@ def send_production_creation_notification(production_id):
         The email is to notify you on the creation of a Production Plan {production.production_plan_number}, and it requires your cornifimation.
         """,
         from_email='admin@techcity.co.zw',
-        to=['mirackletec@gmail.com'],
+        to=['cassymyo@gmail.com'],
     )
     
     EmailThread(email).start()

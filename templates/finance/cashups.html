@@ -53,12 +53,18 @@
                     <td><small>{{ cashup.change }}</small></td>
                     <td><small>{{ cashup.expenses }}</small></td>
                     <td>
-                        <input 
-                            type="number" 
-                            class="form-control form-control-sm cashed-amount-input" 
-                            value="{{ cashup.cashed_amount }}" 
-                            data-cashup-id="{{ cashup.id }}" 
-                        />
+                        <small>
+                            {% if not cashup.cashed_amount %}
+                                <input 
+                                    type="number" 
+                                    class="form-control form-control-sm cashed-amount-input" 
+                                    value="{{ cashup.cashed_amount }}" 
+                                    data-cashup-id="{{ cashup.id }}" 
+                                />
+                            {% else %}
+                                {{ cashup.cashed_amount }}
+                            {% endif %}
+                        </small>
                     </td>
                     <td>
                         <small class="status">
@@ -149,32 +155,32 @@
 
     const rows = document.querySelectorAll("#cash_up_table tbody tr");
 
-        rows.forEach(row => {
-            const sales = parseFloat(row.querySelector(".sales").textContent.trim());
-            const cashedAmount = parseFloat(row.querySelector(".cashed-amount").textContent.trim());
-            const cashupId = row.getAttribute('data-cashup-id');
+        // rows.forEach(row => {
+        //     const sales = parseFloat(row.querySelector(".sales").textContent.trim());
+        //     const cashedAmount = parseFloat(row.querySelector(".cashed-amount").textContent.trim());
+        //     const cashupId = row.getAttribute('data-cashup-id');
 
-            const difference = (cashedAmount - sales).toFixed(2);
+        //     const difference = (cashedAmount - sales).toFixed(2);
 
-            const claimButton = row.querySelector(".claim-amount");
-            const chargeButton = row.querySelector(".charge-cashier");
+        //     const claimButton = row.querySelector(".claim-amount");
+        //     const chargeButton = row.querySelector(".charge-cashier");
 
-            if (cashedAmount > sales && claimButton) {
-                claimButton.textContent = `claim ($${difference})`;
-                claimButton.addEventListener('click', function(event) {
-                    event.preventDefault();
-                    claimCashupDifference(cashupId, difference);
-                });
-            } else if (sales > cashedAmount && chargeButton) {
-                const chargeAmount = (sales - cashedAmount).toFixed(2)
+        //     if (cashedAmount > sales && claimButton) {
+        //         claimButton.textContent = `claim ($${difference})`;
+        //         claimButton.addEventListener('click', function(event) {
+        //             event.preventDefault();
+        //             claimCashupDifference(cashupId, difference);
+        //         });
+        //     } else if (sales > cashedAmount && chargeButton) {
+        //         const chargeAmount = (sales - cashedAmount).toFixed(2)
                 
-                chargeButton.textContent = `charge cashier ($${chargeAmount})`;
-                chargeButton.addEventListener('click', function(event) {
-                    event.preventDefault();
-                    chargeCashupDifference(cashupId, chargeAmount);
-                });
-            }
-        });
+        //         chargeButton.textContent = `charge cashier ($${chargeAmount})`;
+        //         chargeButton.addEventListener('click', function(event) {
+        //             event.preventDefault();
+        //             chargeCashupDifference(cashupId, chargeAmount);
+        //         });
+        //     }
+        // });
 
     function claimCashupDifference(cashupId, claimAmount) {
         fetch(`/finance/claim-cashup/${cashupId}/`, {
@@ -304,5 +310,47 @@
             });
         });
     }
+
+    document.querySelectorAll('.cashed-amount-input').forEach(input => {
+        input.addEventListener('change', function () {
+            const cashupId = this.dataset.cashupId;
+            const cashedAmount = this.value;
+
+            fetch(`/pos/update-cashed-amount/${cashupId}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}',
+                },
+                body: JSON.stringify({
+                    cashed_amount: cashedAmount,
+                }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Updated!',
+                        text: data.message,
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error!',
+                        text: data.message,
+                    });
+                }
+            })
+            .catch(error => {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: 'Something went wrong!',
+                });
+            });
+        });
+    });
+
 </script>
 {% endblock content %}
