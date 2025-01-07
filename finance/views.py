@@ -169,15 +169,27 @@ def expenses(request):
                 category = category,
                 user = User.objects.get(id=1),
                 cancel = False,
-                description = description
+                description = description,
+                status = True
             )
-            
-            CashBook.objects.create(
-                amount = amount,
-                expense = expense,
-                credit = True,
-                description=f'Expense ({expense.description[:20]})'
-            )
+            if data.get('debit') == 'True':
+                cashier_expenses_update = CashierExpense.objects.get(id = data.get('expense'))
+                cashier_expenses_update.status = True
+                cashier_expenses_update.save()
+
+                CashBook.objects.create(
+                    amount = amount,
+                    expense = expense,
+                    credit = True,
+                    description=f'Expense ({expense.description[:20]})'
+                )
+            else:
+                CashBook.objects.create(
+                    amount = amount,
+                    expense = expense,
+                    credit = True,
+                    description=f'Expense ({expense.description[:20]})'
+                )
 
             send_expense_creation_notification(expense.id)
             
@@ -918,16 +930,18 @@ def transaction_logs(request):
 @login_required
 def cashier_expenses(request, cashier_id):
     if request.method == 'GET':
-
-        if request.user.role in ['manager', 'superviser', 'admin' 'accountant']:
+        logger.info(request.user.role)
+        if request.user.role in ['manager', 'superviser', 'admin', 'accountant']:
             expenses = CashierExpense.objects.all()
+            expense_category = ExpenseCategory.objects.all()
         else:
-            expenses = CashierExpense.objects.filter(id=cashier_id)
-            
-        total_expenses = expenses.aggregate(total=Sum('amount'))['total'] or 0
+            expenses = CashierExpense.objects.filter(cashier__id = cashier_id)
 
+        total_expenses = expenses.aggregate(total=Sum('amount'))['total'] or 0
+        logger.info(expenses)
         return render(request, 'finance/cashier_expenses.html', {
             'expenses':expenses,
+            'categories': expense_category,
             'total_expenses':total_expenses
         })
     
@@ -943,7 +957,7 @@ def cashier_expenses(request, cashier_id):
         description = data.get('description')
         
         if not name:
-            return JsonResponse({'success':False, 'message':'Missing fields: namet.'})
+            return JsonResponse({'success':False, 'message':'Missing fields: name.'})
         
         if not amount:
             return JsonResponse({'success':False, 'message':'Missing fields: amount.'})
@@ -963,22 +977,26 @@ def cashier_expenses(request, cashier_id):
             expense_id:int
         """
         data = json.loads(request.body)
+        logger.info(data)
         expense_id = data.get('expense_id')
         name = data.get('name')
-        amount = data.get('amount')
+        amount = float(data.get('amount'))
         description = data.get('description')
-        
+
+        logger.info(type(amount))
         try:
             expense = CashierExpense.objects.get(id=expense_id)
-
-            expense.name = name,
-            expense.amount = amount,
-            expense.description = description,
-
+            
+            expense.name = name
+            expense.amount = amount
+            expense.description = description
+        
             expense.save()
             return JsonResponse({'success':True, 'message':'Cashier expense successfully updated.'}, status=201)
         except CashierExpense.DoesNotExist:
             return JsonResponse({'success':False, 'message':'Cashier expense not found.'}, status=404)
+        except Exception as e:
+            return JsonResponse({'success':False, 'message':f'{e}.'}, status=500)
         
 
     if request.method == 'DELETE':
