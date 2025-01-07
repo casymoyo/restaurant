@@ -33,6 +33,7 @@ urlpatterns = [
     path('confirm/minor_raw_materials/<int:pp_id>/', confirm_minor_raw_materials, name='confirm_minor_raw_materials'),
     path('confirm/minor_raw_materials/', confirm_minor_raw, name='confirm_minor_raw'),
     path('production_raw_materials/', production_raw_materials, name='production_raw_materials'),
+    path('production_rm/detail/<int:rm_id>/', production_rm_detail, name='production_rm_detail'),
     
     # supplier
     path('suppliers/list', suppliers, name='suppliers'),
@@ -40,7 +41,9 @@ urlpatterns = [
     path('create/supplier/', create_supplier, name='create_supplier'),
     path('supplier/json/list/', supplier_list_json, name='supplier_list_json'),
     path('supplier_prices/<str:raw_material_name>/', supplier_prices, name='supplier_prices'),
-    path('supplier_prices/<str:raw_material_name>/', supplier_prices, name='supplier_prices'),
+
+    #to remove
+    path('home', p_home, name='p_home'),
     
     # ppurchase orders
     path('purchase_orders/list/', purchase_orders, name='purchase_orders'),
@@ -54,11 +57,12 @@ urlpatterns = [
     
     # dishes
     path('dishes/', DishListView.as_view(), name='dish_list'),
-    path('create/dish/', add_dish, name='dish_create'),
+    path('edit_dish/<int:dish_id>/', edit_dish, name='edit_dish'),
     path('create/dish/', add_dish, name='dish_create'),
     path('dishes/<int:pk>/edit/', DishUpdateView.as_view(), name='dish_update'),
     path('dishes/<int:pk>/delete/', DishDeleteView.as_view(), name='dish_delete'),
     path('dish_json_detail/', dish_json_detail, name='dish_json_detail'),
+    path('dish_data_json/<int:dish_id>/', get_dish_data, name='dish_json'),
     
     # ingridients
     path('ingredients/', IngredientListView.as_view(), name='ingredient_list'),
@@ -77,6 +81,7 @@ urlpatterns = [
     path('save-end-of-day/', end_of_day_view, name='save_end_of_day'),
     path('confirm_end_of_day/', confirm_end_of_day, name='confirm_end_of_day'),
     path('end_of_day_detail/<int:e_o_d_id>/', end_of_day_detail, name='end_of_day_detail'),
+    path('end_of_day_list/', end_of_day_list, name='end_of_day_list'),
     
     # reorder_lis
     path('order_list', order_list, name='order_list'),
@@ -90,5 +95,11 @@ urlpatterns = [
     
     # production sales
     path('production_sales/', production_sales, name='production_sales'),
+    
+    # check_list
+    path('check_list/', check_check_list, name='check_check_list'),
 
+    #budgets
+    path('budgets/', budget, name='budget'),
+    path('create-budget/', createBudgetItem, name='create-budget')
 ]

@@ -5,19 +5,17 @@
 <style>
     /* Floating Button */
     .floating-button {
-        position: fixed;
+        marging-top: 300px;
+        positon:relative;
         bottom: 20px;
         left: 20px;
-        width: 50px;
+        width: 100%;
         height: 50px;
-        background-color: #333;
         color: #fff;
-        border-radius: 50%;
+        border-radius: 2%;
         display: flex;
-        justify-content: center;
         align-items: center;
         cursor: pointer;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
         z-index: 1000;
     }
 
@@ -87,8 +85,8 @@
     }
 
     .loader {
-        border: 16px solid #f3f3f3; /* Light grey */
-        border-top: 16px solid #333; /* Black */
+        border: 16px solid #f3f3f3; 
+        border-top: 16px solid #333; 
         border-radius: 50%;
         width: 120px;
         height: 120px;
@@ -100,37 +98,63 @@
         100% { transform: rotate(360deg); }
     }
 </style>
-<div class="loader-wrapper" id="loader">
-    <div class="loader"></div>
-</div>
-    <div class="pos">
-        <div class="container-flui">
+    <div class="pos px-2">
+        <div class="">
             <div class="row">
-                <main role="main" class="col-md-9 ml-sm-auto col-lg-9 px-4">
-                    <div class="d-flex flex-row flex-md-nowrap align-items-center pt-3 pb-2 rounded">
-                        <div class="mb-2 mt- w-100 d-flex">
-                            <input type="search" class="form-control w-100" id="food_search" placeholder="Search">
-                            <!-- <button class="btn btn-outline-dark mx-2" id="foodButton">Food</button>
-                            <button class="btn btn-outline-dark" id="categoryButton">Dr</button> -->
+                <div class="col-8">
+                    <div class="div" style='height:78vh;'>
+                        <div class="d-flex justify-content-between bg-dark text-light p-1 rounded mt-2 align-items-center">
+                            <h5 class="text-light">Products</h5>
+                            <!-- <select class="form-select w-25" id="food_search">
+                                {% for item in combined_items %}
+                                    <option 
+                                        value="{{ item.id }}" 
+                                        data-price="{{ item.price }}" 
+                                        data-type="{{ item.type }}">
+                                        {{ meal.name }}
+                                    </option>
+                                {% endfor %}
+                            </select> -->
+                            <input 
+                                type="text" 
+                                id="searchInput" 
+                                class="form-control form-control-sm w-25" 
+                                placeholder="Search for items..." 
+                                oninput="searchItems()"
+                            >
                         </div>
-                    <div class="d-flex flex-row flex-md-nowrap align-items-center pt-3 pb-2 rounded">
-                        <div class="mb-2 mt- w-100 d-flex">
-                            <input type="search" class="form-control w-100" id="food_search" placeholder="Search">
+                        <div class="mt-4">
+                            <div class="row" id="itemsContainer" style='height:70vh; overflow-y: auto;'></div>
                         </div>
                     </div>
-                    <div>
-                        <div class="row" id="itemsContainer">
-                            <!-- Items will be rendered here by JavaScript -->
+
+                    <div id="floatingButton" class="floating-button d-flex justify-content-between align-items-center">
+                        <div class="d-flex">
+                            <i class="bx bx-menu"></i> 
+                            <li><a href="{% url 'inventory:end_of_day_view' %}" class="btn btn-outline-dark w-100">End of day</a></li>
+                            <li class='mx-2'>
+                                <button class="btn btn-outline-dark w-100" id="chargeStaff">Staff</button>
+                            </li>
+                            <li>
+                                <a href='{% url "pos:change_list" %}' class="btn btn-outline-dark w-100">View Change</a>
+                            </li>
+                            <li class='mx-2'>
+                                <a href="{% url 'finance:cashier_expenses' request.user.id %}" class="btn btn-outline-dark w-100">Expenses</a>
+                            </li>
+                            <li class='mx-2'>
+                                <button onclick="cashupAuth()" class="btn btn-outline-dark w-100">Cash Up</a>
+                            </li>
                         </div>
-                        <div class="row" id="itemsContainer"></div>
+                        <div>
+                            <li>
+                                <a class="btn btn-danger text-light w-100" id="void">Void</a>
+                            </li>
+                        </div>
                     </div>
-                    <div>
-                        <div class="row" id="itemsContainer"></div>
-                    </div>
-                </main>
-                <section class="col-md-3 bg-dark text-light sidebar rounded mt-3">
-                <section class="col-md-3 bg-dark text-light sidebar rounded mt-3">
-                    <div class="p-3">
+
+                </div>
+                <div class="col-4">
+                    <div class="bg-dark text-light sidebar rounded p-4" style='width:380px;'>
                         <h5 class="fw-bold">Order Details</h5>
                         <div id="orderDetails" style="height:300px"></div>
                         <hr>
@@ -147,24 +171,108 @@
                             <span>Total</span>
                             <span id="total">$0.00</span>
                         </div>
+                        <div class="d-flex justify-content-center mt-3">
+                            <button class="btn btn-warning w-100 " id="chargeButton">Charge $0.00
+                                <span class="text-light mx-2">
+                                    Enter
+                                </span>
+                            </button>
+                        </div>
                         <div class="mt-3">
                             <button class="btn btn-outline-danger w-100" id="cancelBtn">Cancel</button>
                         </div>
-                        <div class="d-flex justify-content-center mt-3">
-                            <button class="btn btn-success w-100" id="chargeButton">Charge $0.00</button>
-                        </div>
                     </div>
-                </section>
+                </div>
             </div>
         </div>
+
+        <div class="modal fade" id="authModal" tabindex="-1" aria-labelledby="chargeModalLabel" aria-hidden="true">
+            <div class="modal-dialog bg modal-dialog-centered">
+                <div class="modal-content p-2">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="chargeModalLabel">Authenticate to void</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <form action="" method="POST" autocomplete="off" >
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Username</label>
+                            <input 
+                                type="text" 
+                                id="username" 
+                                name="username" 
+                                class="form-control" 
+                                placeholder="Enter username" 
+                                autocomplete="off"
+                                required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Password</label>
+                            <input 
+                                type="password" 
+                                id="password" 
+                                name="password" 
+                                class="form-control" 
+                                placeholder="Enter password" 
+                                autocomplete="new-password"
+                                required>
+                        </div>
+                        <button type="button" id="authForm" class="btn btn-primary w-100">Authenticate</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="authCashModal" tabindex="-1" aria-labelledby="chargeModalLabel" aria-hidden="true">
+            <div class="modal-dialog bg modal-dialog-centered">
+                <div class="modal-content p-2">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="chargeModalLabel">Authenticate to Cash Up</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <form action="" method="POST" autocomplete="off" >
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Usernafme</label>
+                            <input 
+                                type="text" 
+                                id="c_username" 
+                                name="username" 
+                                class="form-control" 
+                                placeholder="Enter username" 
+                                autocomplete="off"
+                                required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Password</label>
+                            <input 
+                                type="password" 
+                                id="c_password" 
+                                name="password" 
+                                class="form-control" 
+                                placeholder="Enter password" 
+                                autocomplete="new-password"
+                                required>
+                        </div>
+                        <button type="button" onclick="cashUp()" class="btn btn-primary w-100">Authenticate</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
     
         <!-- Modal -->
         <div class="modal fade" id="chargeModal" tabindex="-1" aria-labelledby="chargeModalLabel" aria-hidden="true">
             <div class="modal-dialog bg modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="chargeModalLabel">Finalize Sale</h5>
+                        <!-- <h5 class="modal-title" id="chargeModalLabel">Finalize Sale</h5> -->
+                        <h5 id="payModal"></h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    
+                    <div class='m-2'>
+                        <button id="sitting-btn" class="order-type-btn btn btn-outline-dark w-100">Sitting (S)</button>
+                        <button id="takeaway-btn" class="order-type-btn btn btn-outline-dark w-100 mt-2">Takeaway (T)</button>
+                        <input type="hidden" id="order-type-input">
                     </div>
                     <div class="modal-body">
                         <div class="mb-3">
@@ -176,104 +284,43 @@
                             <input type="text" class="form-control" id="changeDisplay" readonly>
                         </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <div class="modal-footer d-flex justify-content-between align-items-center">
+                        <button class="btn btn-danger" onclick="showChangeForm()">Change not available (<span class="text-light">Shift</span>)</button>
                         <button type="button" class="btn btn-primary" onclick="finalizeSale(false)">Finalize Sale</button>
                     </div>
                 </div>
             </div>
-            <script>
-                function focusInput() {
-                    document.getElementById('totalAmountInput').focus();
-                }
-                focusInput()
-            </script>
         </div>
-
-        <div class="modal fade" id="staffChargeModal" tabindex="-1" aria-labelledby="chargeModalLabel" aria-hidden="true">
-            <div class="modal-dialog bg modal-dialog-centered">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="chargeModalLabel">Finalize Sale</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="mb-3">
-                            <label for="totalAmountInput" class="form-label">Total Amount</label>
-                            <input type="number" class="form-control" id="staffTotalAmountInput" placeholder="Enter total amount received">
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                        <button type="button" class="btn btn-primary" onclick="finalizeSale(true)">Finalize Sale</button>
-                        <button type="button" class="btn btn-primary" onclick="finalizeSale(false)">Finalize Sale</button>
-                    </div>
-                </div>
-            </div>
-            <script>
-                function focusInput() {
-                    document.getElementById('totalAmountInput').focus();
-                }
-                focusInput()
-            </script>
-        </div>
-
-        <div class="modal fade" id="staffChargeModal" tabindex="-1" aria-labelledby="chargeModalLabel" aria-hidden="true">
-            <div class="modal-dialog bg modal-dialog-centered">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="chargeModalLabel">Finalize Sale</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="mb-3">
-                            <label for="totalAmountInput" class="form-label">Total Amount</label>
-                            <input type="number" class="form-control" id="staffTotalAmountInput" placeholder="Enter total amount received">
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                        <button type="button" class="btn btn-primary" onclick="finalizeSale(true)">Finalize Sale</button>
-                    </div>
-                </div>
-            </div>
-            <script>
-                function focusInput() {
-                    document.getElementById('totalAmountInput').focus();
-                }
-                focusInput()
-            </script>
-            <script>
-                function focusInput() {
-                    document.getElementById('totalAmountInput').focus();
-                }
-                focusInput()
-            </script>
-        </div>
-        <!-- Floating Button -->
-        <div id="floatingButton" class="floating-button" onclick="toggleFloatingContent()">
-            <i class="bx bx-menu"></i> 
-        </div>
-    
         
-        <div id="floatingContent" class="floating-content">
-            <div class="content-header d-flex justify-content-between align-items-center">
-                <h6>More Options</h6>
-                <button type="button" class="btn-close text-light" onclick="toggleFloatingContent()"></button>
+        <div class="modal fade" id="staffChargeModal" tabindex="-1" aria-labelledby="chargeModalLabel" aria-hidden="true">
+            <div class="modal-dialog bg modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="chargeModalLabel">Finalize Sale</h5> 
+                        <div id="payModal"></div>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="totalAmountInput" class="form-label">Total Amount</label>
+                            <input type="number" class="form-control" id="staffTotalAmountInput" placeholder="Enter total amount received">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary" onclick="finalizeSale(true)">Finalize Sale</button>
+                    </div>
+                </div>
             </div>
-            <div class="content-body">
-                <ul>
-                    <li><a href="{% url 'inventory:end_of_day_view' %}" class="btn btn-outline-dark w-100">End of day</a></li>
-                    <li>
-                        <button class="btn btn-primary w-100" id="chargeStaff">Staff</button>
-                    </li>
-                    <li>
-                        <button class="btn btn-primary w-100" id="chargeStaff">Staff</button>
-                    </li>
-                </ul>
-            </div>
+            <script>
+                function focusInput() {
+                    document.getElementById('totalAmountInput').focus();
+                }
+                focusInput()
+            </script>
         </div>
-                <!-- Sales List Modal -->
+        
+      <!-- Sales List Modal -->
         <div class="modal fade" id="salesListModal" tabindex="-1" aria-labelledby="salesListModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
@@ -283,7 +330,7 @@
                     </div>
                     <div class="modal-body">
                         <ul id="salesList" class="list-group">
-                            <!-- Sales items will be appended here -->
+                           
                         </ul>
                         <div class="mt-3 d-flex justify-content-between">
                             <span class="fw-bold">Total Sales:</span>
@@ -302,129 +349,445 @@
                 <div class="modal-content p-5">
                     <h5 class="fw-bold">Confirm Sale For Staff</h5>
                     <div class="d-flex justify-content-end mt-4">
-                        <button class="btn btn-outline-dark">No</button>
+                        <button class="btn btn-outline-dark mx-2" data-bs-dismiss="modal">No</button>
                         <button class="btn btn-outline-secondary" id="staff">Yes</button>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="modal fade" id="staffModal" tabindex="-1" aria-labelledby="chargeModalLabel" aria-hidden="true">
-            <div class="modal-dialog bg modal-dialog-centered">
-                <div class="modal-content p-5">
-                    <h5 class="fw-bold">Confirm Sale For Staff</h5>
-                    <div class="d-flex justify-content-end mt-4">
-                        <button class="btn btn-outline-dark">No</button>
-                        <button class="btn btn-outline-secondary" id="staff">Yes</button>
+
+        <!-- change modal -->
+        <div class="modal fade" id="customModal" tabindex="-1" aria-labelledby="customModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="customModalLabel">Fill In Details Change Customer</h5>
+                        <!-- <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button> -->
+                    </div>
+                    <div class="modal-body">
+                        <form id="customForm">
+                            <div class="mb-3s">
+                                <label for="id_cient_name" class="form-label">Full name</label>
+                                <input type="text" class="form-control" id="client_name" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="id_phone_number" class="form-label">Phone number</label>
+                                <input type="text" class="form-control" id="phonenumber" placeholder="Optional">
+                            </div>
+                            <div class="mb-3">
+                                <label for="id_change_amount" class="form-label">Change Amount</label>
+                                <input type="text" class="form-control" id="change_amount" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="id_change_given" class="form-label">Change Given</label>
+                                <input type="text" class="form-control" id="change_given" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="id_balance" class="form-label">Balance</label>
+                                <textarea class="form-control" id="balance" rows="1" required></textarea>
+                            </div>
+                            <div class='d-flex justify-content-between'>
+                                <button type="button" class="btn btn-outline-dark" id="btn_back">Back</button>
+                                <button type="button" class="btn btn-primary" id="btn_proceed">Proceed</button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             </div>
         </div>
+
     </div>
-    
-    
+    <script src="https://unpkg.com/imask"></script>
     <script>
         const VAT_RATE = 0.15;
         let cart = [];
         let meals = [];
         let drinks = [];
         let items = [];
-
-        let items = [];
+        let mealsData = []
+        let orderType = ''
+        let changeAmount = 0;
+        const changeData = []
 
         const chargeModal = new bootstrap.Modal(document.getElementById('chargeModal'));
-        const staffModal = new bootstrap.Modal(document.getElementById('staffModal'))
-        const staffChargeModal = new bootstrap.Modal(document.getElementById('staffChargeModal'))
-        const staff = document.getElementById('staff')
+        const staffModal = new bootstrap.Modal(document.getElementById('staffModal'));
+        const staffChargeModal = new bootstrap.Modal(document.getElementById('staffChargeModal'));
+        const staff = document.getElementById('staff');    
+        const proceedBtn = document.getElementById('btn_proceed');
+        const changeEl = document.getElementById('id_change');
+        const backButton = document.getElementById('btn_back');
+        const authenticateBtn = document.getElementById('void')
+        const authenticateModal = new bootstrap.Modal(document.getElementById('authModal'));
+        const search = document.getElementById('searchInput')
 
-        staff.addEventListener('click', ()=>{
-            staffModal.hide()
-            document.getElementById('totalAmountInput').value = parseFloat(document.getElementById('total').innerText.slice(1))
-            finalizeSale(true)
+        
+        // clear search input
+
+        const clearChangeData = () => {
+            const name = document.getElementById('client_name')
+            const phonenumber = document.getElementById('phonenumber')
+            const amount = document.getElementById('change_amount')
+            const amountGiven = document.getElementById('change_given');
+            const balance = document.getElementById('balance');
+
+            name.value = '';
+            phonenumber.value = '';
+            amount.value='';
+            amountGiven.value='';
+            balance.value='';
+        }
+
+        search.addEventListener('click', ()=>{
+            search.value = '';
         })
 
-        document.getElementById('chargeStaff').addEventListener('click', ()=>{
-            if (cart.length === 0){
-                Swal.fire({
-                    title: "Error",
-                    text: "Empty Order",
-                    icon: "error"
-                });
-            }else{
-                staffModal.show()
-            }
+        authenticateBtn.addEventListener('click', ()=>{
+            authenticateModal.show()
         })
 
-        document.getElementById('food_search').addEventListener('input', function () {
-            const searchValue = this.value.toLowerCase();
-            const filteredItems = items.filter(item => item.name.toLowerCase().includes(searchValue));
-            displayItems(filteredItems);
-        });
-    
-        function displayItems(itemsToDisplay) {
-            const itemsContainer = document.getElementById('itemsContainer');
-            itemsContainer.innerHTML = '';
-    
-            itemsToDisplay.forEach(item => {
+        // show change modal
+        const showChangeForm = () =>{
+            chargeModal.hide()
+            $('#customModal').modal('show');
+        }
+
+        function renderItems(items) {
+            itemsContainer.innerHTML = ''; 
+            items.forEach(item => {
                 const itemCard = document.createElement('div');
                 itemCard.className = 'col-md-3';
                 itemCard.innerHTML = `
-                    <div class="card mb-4 box-shadow" style="border: none;">
-                        <div class="card-body rounded">
-                            <p class="card-text">${item.name}</p>
-                            <div class="d-flex justify-content-between align-items-center">
-                                <button type="button" class="btn btn-sm btn-outline-dark" onclick="addToCart(${item.id}, '${item.name}', ${item.price}, ${item.finished_product})">Add</button>
-                            </div>
+                    <div class="card mb-4 box-shadow">
+                        <div class="card-body rounded p-3 d-flex align-items-center bg-warning" style='height:50px;' onclick="addToCart(${item.id}, '${item.name}', ${item.price}, ${item.finished_product}, ${item.meal}, ${item.dish})">
+                            <p class="card-text text">${item.name}</p>
                         </div>
                     </div>
                 `;
                 itemsContainer.appendChild(itemCard);
             });
         }
-    
-        window.addEventListener('load', function () {
-            fetch('{% url "pos:product_meal_json" %}')
-                .then(response => response.json())
-                .then(data => {
-                    items = data.items;
-                    displayItems(items);
-                    setTimeout(() => {
-                        document.getElementById('loader').style.display = 'none';
-                    }, 1000);
-                })
-                .catch(error => console.error('Error fetching items:', error));
+
+        function searchItems() {
+            console.log(mealsData)
+            const query = document.getElementById('searchInput').value
+            console.log(query)
+            const filteredItems = items.filter(item => 
+                item.name.toLowerCase().includes(query) 
+            );
+            displayItems(filteredItems);
+        }
+
+        // Proceed button for Creating change for a client
+        proceedBtn.addEventListener('click', function() {
+            const clientName = document.getElementById('client_name').value;
+            const phoneNumber = document.getElementById('phonenumber').value;
+            const amount = parseFloat(document.getElementById('change_amount').value);
+            const amountGiven = parseFloat(document.getElementById('change_given').value);
+            const balance = parseFloat(document.getElementById('balance').value);
+
+            if (!clientName || !amount || !balance) {
+
+                if (!clientName) {
+                    document.getElementById('client_name').focus();
+                } else if (!amount) {
+                    document.getElementById('change_amount').focus();
+                } else if (!balance) {
+                    document.getElementById('balance').focus();
+                }
+
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'Please fill out all required fields.',
+                    icon: 'error',
+                    confirmButtonText: 'OK'
+                });
+            } else {
+                changeData.push({
+                    name: clientName,
+                    phonenumber: phoneNumber,
+                    amount: amount,
+                    amount_given: amountGiven,
+                    balance:balance
+                });
+                $('#customModal').modal('hide');
+                chargeModal.show()
+            }
+        });
+
+        // f3 key binding for create change modal
+        // document.addEventListener('keydown', function(event) {
+        //     if (event.key === 'Shift') {
+        //         event.preventDefault(); 
+        //         chargeModal.hide()
+        //         $('#customModal').modal('show');
+        //     }
+        // });
+
+        // back button to the charge modal
+        backButton.addEventListener('click', ()=>{
+            $('#customModal').modal('hide');
+            chargeModal.show()
+        })
+        
+        document.getElementById('customForm').addEventListener('submit', function(event) {
+            event.preventDefault(); 
+        
+            const formData = {
+                name: document.getElementById('client_name').value,
+                phonenumber: document.getElementById('phonenumber').value,
+                amount: document.getElementById('change_amount').value,
+                receipt_number: document.getElementById('receipt_number').value,
+            };
+        
+            fetch('/pos/create_change/', { 
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken') 
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        title: 'Success!',
+                        text: 'Your form has been submitted.',
+                        icon: 'success',
+                        confirmButtonText: 'OK'
+                    }).then(() => {
+                        $('#customModal').modal('hide'); 
+                        document.getElementById('customForm').reset(); 
+                    });
+                } else {
+                    Swal.fire({
+                        title: 'Error!',
+                        text: data.message || 'There was a problem submitting your form.',
+                        icon: 'error',
+                        confirmButtonText: 'OK'
+                    });
+                }
+            })
+            .catch(error => {
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'An error occurred while submitting the form.',
+                    icon: 'error',
+                    confirmButtonText: 'OK'
+                });
+            });
         });
     
-        const staffModal = new bootstrap.Modal(document.getElementById('staffModal'))
-        const staffChargeModal = new bootstrap.Modal(document.getElementById('staffChargeModal'))
-        const staff = document.getElementById('staff')
+        document.addEventListener('DOMContentLoaded', function() {
+            const sittingButton = document.getElementById('sitting-btn');
+            const takeawayButton = document.getElementById('takeaway-btn');
+            const totalAmountInput = document.getElementById('totalAmountInput');
 
+            document.addEventListener('keydown', function(event) {
+                if (event.key === 's' || event.key === 'S') {
+                    sittingButton.click();  
+                } else if (event.key === 't' || event.key === 'T') {
+                    takeawayButton.click(); 
+                }
+            });
+
+            sittingButton.addEventListener('click', function() {
+                orderType = 'Sitting';
+                totalAmountInput.focus();  
+            });
+
+            takeawayButton.addEventListener('click', function() {
+                orderType = 'Takeaway';
+                totalAmountInput.focus(); 
+            });
+        });
+        
+
+        document.addEventListener("DOMContentLoaded", function() {
+            let selectedOrderType = null;
+        
+            const sittingBtn = document.getElementById("sitting-btn");
+            const takeawayBtn = document.getElementById("takeaway-btn");
+            const chargeBtn = document.querySelector(".btn-primary");
+            const orderTypeInput = document.getElementById("order-type-input");
+            const totalAmountInput = document.getElementById("totalAmountInput");
+        
+            function activateButton(button) {
+                sittingBtn.classList.remove("btn-dark");
+                takeawayBtn.classList.remove("btn-dark");
+
+                sittingBtn.classList.remove("text-light");
+                takeawayBtn.classList.remove("text-light");
+                
+                button.classList.add("btn-dark");
+                button.classList.add("text-light");
+
+                selectedOrderType = button.id === "sitting-btn" ? "sitting" : "takeaway";
+                orderTypeInput.value = selectedOrderType;
+        
+                chargeBtn.disabled = false;
+            }
+        
+            sittingBtn.addEventListener("click", function() {
+                activateButton(sittingBtn);
+            });
+        
+            takeawayBtn.addEventListener("click", function() {
+                activateButton(takeawayBtn);
+            });
+        
+            window.finalizeSale = function(staff) {
+                const amountField = document.getElementById('totalAmountInput');
+                const changeDisplay = document.getElementById('changeDisplay');
+                const orderTypeInput = document.getElementById('order-type-input');
+
+                setTimeout(() => {
+                    totalAmountInput.focus();
+                    totalAmountInput.select();
+                }, 100);
+
+                if (staff) {
+                    selectedOrderType = 'sitting';
+                } else {
+                    selectedOrderType = selectedOrderType;
+                }
+
+                const totalAmount = parseFloat(totalAmountInput.value);
+                const total = parseFloat(document.getElementById('total').innerText.slice(1));
+                const change = totalAmount - total;
+
+                document.getElementById('changeDisplay').value = `$${change.toFixed(2)}`;
+
+                if (!totalAmount) {
+                    Swal.fire({
+                        title: "Error",
+                        text: "Please insert amount.",
+                        icon: "error"
+                    });
+                    return;
+                }
+
+                if (!selectedOrderType) {
+                    Swal.fire({
+                        title: "Error",
+                        text: "Please select an order type before finalizing the sale.",
+                        icon: "error"
+                    });
+                    return;
+                }
+
+                const saleData = {
+                    received_amount: totalAmount,
+                    staff: staff,
+                    order_type: selectedOrderType,
+                    items: cart.map(meal => ({
+                        meal_id: meal.id,
+                        quantity: meal.quantity,
+                        price: meal.price,
+                        type: meal.type,
+                        meal: meal.meal,
+                        dish: meal.dish
+                    })),
+                    change_data: changeData
+                };
+
+                // Show "Processing..." Swal
+                Swal.fire({
+                    title: "Processing...",
+                    text: "Please wait while the sale is being processed.",
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,   
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                fetch('{% url "pos:process_sale" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify(saleData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    Swal.close(); // Close the "Processing..." Swal
+                    if (data.success) {
+                        console.log('Sale processed successfully:', data.data);
+                        Swal.fire({
+                            title: "Success",
+                            text: "Processing Receipt",
+                            icon: "success"
+                        })
+                        cart = [];
+                        updateOrderDetails();
+                        chargeModal.hide();
+                        clearChangeData();
+
+                        console.log('cleared')
+
+                        const receiptContent = generateReceiptContent(data.data);
+                        printReceiptSilently(receiptContent);
+                        setTimeout(function() {
+                            location.reload();
+                        },1500);
+                        
+                    } else {
+                        Swal.fire({
+                            title: "Error",
+                            text: data.message,
+                            icon: "error"
+                        });
+                        const chargeModal = bootstrap.Modal.getInstance(document.getElementById('chargeModal'));
+                        chargeModal.hide();
+                    }
+                })
+                .catch(error => {
+                    Swal.close(); // Close the "Processing..." Swal
+                    console.error('Error:', error);
+                    Swal.fire({
+                        title: "Error",
+                        text: "An error occurred while processing the sale.",
+                        icon: "error"
+                    });
+                });
+            };
+
+        });
+        
         document.addEventListener('keydown', function(event) {
             switch (event.code) {
                 case 'F2': // Hotkey for searching
                     event.preventDefault();
                     searchFunction(); 
                     break;
-                case 'Space': // Hotkey for charge button
+                case 'Enter': // Hotkey for charge button
                     event.preventDefault();
-                    chargeFunction(); 
+                    chargeFunction(event); 
                     break;
-                case 'Enter': // Hotkey for finalizing sales
+                case 'Escape': // Hotkey for emptying the cart
                     event.preventDefault();
-                    finalizeSale(false)
-                    break;
+                    emptyCart();
                 default:
                     break;
             }
         });
-    
-        function searchFunction() {
-            const searchField = document.getElementById('food_search');
-            searchField.focus(); 
-            searchField.select(); 
-            console.log('Search triggered');
+
+        function emptyCart() {
+            cart = []
+            updateOrderDetails()
         }
     
-        function chargeFunction() {
+        // function searchFunction(e) {
+        //     const searchField = $('#food_search'); 
+        //     searchField.select2('open');
+        
+        //     const searchInput = $('.select2-search__field'); 
+        
+        // }
+    
+        function chargeFunction(event) {
             if (cart.length === 0){
                 Swal.fire({
                     title: "Error",
@@ -432,9 +795,15 @@
                     icon: "error"
                 });
             }else{
+                // const chargeModal = new bootstrap.Modal(document.getElementById('chargeModal'));
+                // const isModalOpen = chargeModal.classList.contains('show')
+                // if(!isModalOpen){
+                //     event.preventDefault()
+                    
+                // }
                 chargeModal.show()
             }
-            console.log('Charge triggered');
+
         }
 
         staff.addEventListener('click', ()=>{
@@ -455,26 +824,27 @@
             }
         })
 
-        document.getElementById('food_search').addEventListener('input', function () {
-            const searchValue = this.value.toLowerCase();
-            const filteredItems = items.filter(item => item.name.toLowerCase().includes(searchValue));
-            displayItems(filteredItems);
-        });
+        // document.getElementById('food_search').addEventListener('input', function () {
+        //     const searchValue = this.value.toLowerCase();
+        //     const filteredItems = items.filter(item => item.name.toLowerCase().includes(searchValue));
+            
+        //     displayItems(filteredItems);
+        // });
     
         function displayItems(itemsToDisplay) {
             const itemsContainer = document.getElementById('itemsContainer');
             itemsContainer.innerHTML = '';
+
+            console.log(itemsToDisplay)
     
             itemsToDisplay.forEach(item => {
+                console.log(item.meal, item.dish)
                 const itemCard = document.createElement('div');
                 itemCard.className = 'col-md-3';
                 itemCard.innerHTML = `
-                    <div class="card mb-4 box-shadow" style="border: none;">
-                        <div class="card-body rounded">
-                            <p class="card-text">${item.name}</p>
-                            <div class="d-flex justify-content-between align-items-center">
-                                <button type="button" class="btn btn-sm btn-outline-dark" onclick="addToCart(${item.id}, '${item.name}', ${item.price}, ${item.finished_product})">Add</button>
-                            </div>
+                    <div class="card mb-4 box-shadow">
+                        <div class="card-body rounded p-3 d-flex align-items-center bg-warning" style='height:50px;' onclick="addToCart('${item.id}', '${item.name}', ${item.price}, ${item.finished_product}, ${item.meal}, ${item.dish})">
+                            <p class="card-text text">${item.name}</p>
                         </div>
                     </div>
                 `;
@@ -486,10 +856,12 @@
             fetch('{% url "pos:product_meal_json" %}')
                 .then(response => response.json())
                 .then(data => {
+                    console.log(data)
                     items = data.items;
+                    mealsData.push(data)
                     displayItems(items);
                     setTimeout(() => {
-                        document.getElementById('loader').style.display = 'none';
+                        //document.getElementById('loader').style.display = 'none';
                     }, 1000);
                 })
                 .catch(error => console.error('Error fetching items:', error));
@@ -502,7 +874,7 @@
         
         window.addEventListener('load', function () {
             setTimeout(()=>{
-                document.getElementById('loader').style.display = 'none';
+                //document.getElementById('loader').style.display = 'none';
             }, 1000)
         }); 
 
@@ -528,9 +900,9 @@
             }
         })
     
-        function addToCart(id, name, price, type) {
-        function addToCart(id, name, price, type) {
-          const existingMeal = cart.find(meal => meal.id === id);
+        function addToCart(id, name, price, type, meal, dish) {
+            console.log(id)
+          const existingMeal = cart.find(m => m.id === id);
           if (existingMeal) {
             existingMeal.quantity += 1;
           } else {
@@ -539,16 +911,9 @@
             }else{
                 type=false
             }
-            const meal = { id, name, price, quantity: 1, type};
-            if(type){
-                type=true
-            }else{
-                type=false
-            }
-            const meal = { id, name, price, quantity: 1, type};
-            cart.push(meal);
+            const item = { id, name, price, quantity: 1, type, meal, dish};
+            cart.push(item);
           }
-          console.log(cart)
           console.log(cart)
           updateOrderDetails();
         }
@@ -560,33 +925,45 @@
             let subTotal = 0;
           
             cart.forEach(meal => {
-              const mealRow = document.createElement('div');
-              mealRow.className = 'd-flex justify-content-between align-items-center';
+              const mealRow = document.createElement('tr');
           
+              const removeCell = document.createElement('td');
               const removeIcon = document.createElement('i');
               removeIcon.classList.add('bx', 'bx-trash'); 
               removeIcon.addEventListener('click', () => {
                 removeFromCart(meal.id);
               });
+              removeCell.appendChild(removeIcon);
+              mealRow.appendChild(removeCell);
           
-              mealRow.appendChild(removeIcon);
+              const nameCell = document.createElement('td');
+              nameCell.innerText = meal.name;
+              mealRow.appendChild(nameCell);
+
+              const quantityCell = document.createElement('td');
+              const input = document.createElement('input');
+              input.classList.add('form-control', 'form-control-sm');
+              input.style.width = '50px';
+              input.value = meal.quantity;
+              input.addEventListener('change', () => {
+                meal.quantity = parseInt(input.value);
+                updateCart(meal.id
+                    , meal.quantity
+                );
+              });
+
+              quantityCell.appendChild(input);
+              mealRow.appendChild(quantityCell);
           
-              const nameQuantityContainer = document.createElement('div');
-              nameQuantityContainer.className = 'meal-details';
+              const priceCell = document.createElement('td');
+              priceCell.innerText = `$${(meal.price * meal.quantity).toFixed(2)}`;
+              mealRow.appendChild(priceCell);
           
-              const mealName = document.createElement('span');
-              mealName.innerText = meal.name;
-              nameQuantityContainer.appendChild(mealName);
+              orderDetails.appendChild(mealRow);
           
-              const mealQuantity = document.createElement('span');
-              mealQuantity.innerText = ` (x${meal.quantity})`;
-              nameQuantityContainer.appendChild(mealQuantity);
-          
-              mealRow.appendChild(nameQuantityContainer);
-          
-              const mealPrice = document.createElement('span');
-              mealPrice.innerText = `$${(meal.price * meal.quantity).toFixed(2)}`;
-              mealRow.appendChild(mealPrice);
+            //   const mealPrice = document.createElement('span');
+            //   mealPrice.innerText = `$${(meal.price * meal.quantity).toFixed(2)}`;
+            //   mealRow.appendChild(mealPrice);
           
               orderDetails.appendChild(mealRow);
               subTotal += meal.price * meal.quantity;
@@ -600,7 +977,20 @@
             document.getElementById('tax').innerText = `$${tax.toFixed(2)}`;
             document.getElementById('total').innerText = `$${total.toFixed(2)}`;
             document.getElementById('chargeButton').innerText = `Charge $${total.toFixed(2)}`;
+
+            // pay modal
+            document.getElementById('totalAmountInput').value = total.toFixed(2);
+            
+            document.getElementById('payModal').innerHTML = `Total Order Amount: <span class'text-bold'>${total.toFixed(2)}</span>`;
           }
+
+    function updateCart(mealId, quantity) {
+        const meal = cart.findIndex(meal => meal.id === mealId);
+        if (meal){
+            cart[meal].quantity = quantity;
+        }
+        updateOrderDetails();
+    }
 
     function removeFromCart(mealId) {
         const mealIndex = cart.findIndex(meal => meal.id === mealId);
@@ -612,8 +1002,10 @@
     }
 
     function finalizeSale(staff) {
-    function finalizeSale(staff) {
         const amountField = document.getElementById('totalAmountInput');
+        const changeDisplay = document.getElementById('changeDisplay');
+        const orderTypeInput = document.getElementById('order-type-input');
+
         setTimeout(() => {
             amountField.focus();
             amountField.select();
@@ -623,7 +1015,8 @@
         const total = parseFloat(document.getElementById('total').innerText.slice(1));
         const change = totalAmountInput - total;
         document.getElementById('changeDisplay').value = `$${change.toFixed(2)}`;
-        if(!totalAmountInput){
+
+        if (!totalAmountInput) {
             Swal.fire({
                 title: "Error",
                 text: "Please Insert Amount.",
@@ -631,24 +1024,34 @@
             });
             return;
         }
-    
+
+        Swal.fire({
+            title: "Processing...",
+            text: "Please wait while the sale is being processed.",
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
         const saleData = {
             received_amount: totalAmountInput,
-            staff:staff,
-            staff:staff,
+            staff: staff,
+            order_type: orderType,
             items: cart.map(meal => ({
                 meal_id: meal.id,
                 quantity: meal.quantity,
                 price: meal.price,
-                type:meal.type,
-                price: meal.price,
-                type:meal.type,
-            }))
+                type: meal.type,
+                meal: meal.meal,
+                meal: meal.dish
+            })),
+            change_data: changeData
         };
-        
-        console.log(saleData)
-        
-        console.log(saleData)
+
+        console.log(saleData);
+
         fetch('{% url "pos:process_sale" %}', {
             method: 'POST',
             headers: {
@@ -657,39 +1060,482 @@
             },
             body: JSON.stringify(saleData)
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                console.log('Sale processed successfully:', data);
-                Swal.fire({
-                    title: "Success",
-                    text: "Processing Receipt",
-                    icon: "success"
-                });
-                cart = []
-                updateOrderDetails();
-                chargeModal.hide()
-            } else {
+            .then(response => response.json())
+            .then(data => {
+                Swal.close();
+                if (data.success) {
+                    console.log('Sale processed successfully:', data);
+                    Swal.fire({
+                        title: "Success",
+                        text: "Processing Receipt",
+                        icon: "success"
+                    });
+
+                    // Clear the cart and reset UI
+                    cart = [];
+                    updateOrderDetails();
+                    chargeModal.hide();
+                    clearChangeData()
+                    console.log('cleared')
+
+                    // Generate and print receipt
+                    const receiptContent = generateReceiptContent(data.data);
+                    printReceiptSilently(receiptContent);
+
+                } else {
+                    Swal.fire({
+                        title: "Error",
+                        text: data.message,
+                        icon: "error"
+                    });
+                    chargeModal.hide();
+                }
+            })
+            .catch(error => {
+                Swal.close();
+                console.error('Error:', error);
                 Swal.fire({
                     title: "Error",
-                    text: data.message,
+                    text: "An error occurred while processing the sale.",
                     icon: "error"
                 });
-                chargeModal.hide()
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-        });
+            });
     }
 
+    function generateReceiptContent(saleData) {
+        const { received_amount, items, order_type, cashier, receipt_number } = saleData;
+        const sub_total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+        const tax = sub_total * (0.15 / (1 + 0.15));
+        const total_amount = sub_total;
+        const change = received_amount - total_amount;
+
+        return `
+            <style>
+                .totals {
+                    width: 100%;
+                    font-weight: bold;
+                }
+
+                .line {
+                    display: flex;
+                    justify-content: space-between;
+                    margin: 5px 0;
+                }
+
+                .line span {
+                    display: inline-block;
+                }
+            </style>
+
+            <div style="
+                font-family: Arial, 
+                sans-serif; 
+                font-size: 14px;
+                "
+                >
+                <h3 style="text-align: center;">Parsles Investments (Urban Eats)</h3>
+                <p style="text-align: center;">65 Speke Ave, Harare</p>
+                <hr>
+                <div class='line'>
+                    <span><strong>TAX NR:</strong> 220356643</span>
+                    <span><strong>TIN No:</strong> 2001020099</span>
+                </div>
+                <hr>
+                <p>Date: ${new Date().toLocaleDateString()}</p>
+                <p>Time: ${new Date().toLocaleTimeString()}</p>
+                <p>Order Type: ${orderType}</p>
+                <hr>
+                ${items.map(item =>`
+                    <p class='line'>
+                        <span>
+                            ${item.dish__name 
+                                ? item.dish__name 
+                                : item.meal__name 
+                                ? item.meal__name 
+                                : item.product__name} 
+                            ${item.quantity} x $${item.price}
+                        </span>
+                        <span>$${(item.quantity * item.price).toFixed(2)}</span>
+                    </p>
+                `).join('')}
+                <hr>
+                <div class="totals">
+                    <div class="line">
+                        <span>Subtotal:</span>
+                        <span>$${sub_total.toFixed(2)}</span>
+                    </div>
+                    <div class="line">
+                        <span>Total:</span>
+                        <span>$${total_amount.toFixed(2)}</span>
+                    </div>
+                    <div class="line">
+                        <span>Received:</span>
+                        <span>$${received_amount.toFixed(2)}</span>
+                    </div>
+                    <div class="line">
+                        <span>Change:</span>
+                        <span>$${change.toFixed(2)}</span>
+                    </div>
+                    <div class="line">
+                        <span>Cashier:</span>
+                        <span>${cashier}</span>
+                    </div>
+                    <div class="line">
+                        <span>Receipt Number:</span>
+                        <span style='font-size:13.5px'>#${receipt_number}</span>
+                    </div>
+                </div>
+                <hr>
+                <p style="text-align: center;">Thank you for your purchase!</p>
+            </div>
+        `;
+    }
+
+    function printReceiptSilently(content) {
+        console.log(content)
+        let printFrame = document.getElementById("print-frame");
+
+        if (!printFrame) {
+            printFrame = document.createElement("iframe");
+            printFrame.id = "print-frame";
+            printFrame.style.display = "none"
+            document.body.appendChild(printFrame);
+        }
+        const frameDoc = printFrame.contentWindow || 
+                        printFrame.contentDocument.document || 
+                        printFrame.contentDocument;
+
+        frameDoc.document.open();
+        frameDoc.document.write(`
+            <html>
+            <head>
+                <title>Receipt</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        font-size: 13.5px;
+                        margin: 0;
+                        padding: 2px;
+                    }
+                    h3 {
+                        text-align: center;
+                    }
+                    hr {
+                        border: none;
+                        border-top: 1px solid #000;
+                    }
+                    p {
+                        margin: 5px 0;
+                    }
+                </style>
+            </head>
+            <body>
+                ${content}
+            </body>
+            </html>
+        `);
+        frameDoc.document.close();
+        setTimeout(() => {
+            printFrame.contentWindow.print(false);
+        }, 100);
+    }
+
+
+    // function printReceiptSilently(content) {
+    //     const printFrame = document.getElementById("print-frame");
+
+    //     if (!printFrame) {
+    //         const iframe = document.createElement("iframe");
+    //         iframe.id = "print-frame";
+    //         iframe.style.display = "none";
+    //         document.body.appendChild(iframe);
+    //     }
+
+    //     const frameDoc = document.getElementById("print-frame").contentWindow || 
+    //                     document.getElementById("print-frame").contentDocument.document || 
+    //                     document.getElementById("print-frame").contentDocument;
+
+    //     frameDoc.document.open();
+    //     frameDoc.document.write(`
+    //         <html>
+    //         <head>
+    //             <title>Receipt</title>
+    //         </head>
+    //         <body onload="window.print();">
+    //             ${content}
+    //         </body>
+    //         </html>
+    //     `);
+    //     frameDoc.document.close();
+    // }
+
+
+    
+    // calulate the change amount on input 
     document.getElementById('totalAmountInput').addEventListener('input', () => {
         const totalAmountInput = parseFloat(document.getElementById('totalAmountInput').value);
         const total = parseFloat(document.getElementById('total').innerText.slice(1));
         const change = totalAmountInput - total;
         document.getElementById('changeDisplay').value = `$${change.toFixed(2)}`;
+        document.getElementById('change_amount').value = change.toFixed(2);
+        changeAmount = change.toFixed(2);
     });
-    
+
+    // caculate the change balance
+    document.getElementById('change_given').addEventListener('input', ()=>{
+        const amountGiven = parseFloat(document.getElementById('change_given').value);
+        const changeAmount = parseFloat(document.getElementById('change_amount').value);
+        document.getElementById('balance').value = changeAmount - amountGiven;
+    })
+
+    //authenticate function
+    const authenticate = (username, password) => {
+        console.log(username, password);
+        fetch('{% url "pos:void_authenticate" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({ username, password })
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log(data)
+            if (data.success) {
+                {% comment %} Swal.fire({
+                    title: 'Success!',
+                    text: 'Authentication successful!',
+                    icon: 'success',
+                }).then(() => {
+                    window.location.href =  `/pos/sales/${data.user_id}`;
+                }); {% endcomment %}
+                window.location.href =  `/pos/sales/${data.user_id}`;
+            } else {
+                Swal.fire({
+                    title: 'Authentication Failed',
+                    text: data.message || 'Invalid username or password.',
+                    icon: 'error',
+                    confirmButtonText: 'Try Again'
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error during authentication:', error);
+            Swal.fire({
+                title: 'Oops!',
+                text: 'Something went wrong. Please try again later.',
+                icon: 'error',
+                confirmButtonText: 'OK'
+            });
+        });
+    };
+
+    const form = document.querySelector('#authForm');
+
+    form.addEventListener('click', (event) => {
+        event.preventDefault(); 
+
+        const username = document.querySelector('#username').value;
+        const password = document.querySelector('#password').value;
+
+        authenticate(username, password); 
+    });
+
+    // cahsup
+
+    const cashupAuth = () =>{
+        $(document).ready(function() {
+            $('#authCashModal').modal('show');
+        });
+    }
+
+    const cashUp = () => {
+        const username = document.querySelector('#c_username').value;
+        const password = document.querySelector('#c_password').value;
+
+        fetch('{% url "pos:void_authenticate" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({ username, password })
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log(data)
+            if (data.success) {
+                Swal.fire({
+                    title: 'Success!',
+                    text: 'Authentication successful!',
+                    icon: 'success',
+                }).then(() => {
+                    processsCashUp()
+                });
+            } else {
+                Swal.fire({
+                    title: 'Authentication Failed',
+                    text: data.message || 'Invalid username or password.',
+                    icon: 'error',
+                    confirmButtonText: 'Try Again'
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error during authentication:', error);
+            Swal.fire({
+                title: 'Oops!',
+                text: 'Something went wrong. Please try again later.',
+                icon: 'error',
+                confirmButtonText: 'OK'
+            });
+        });
+    }
+
+    const processsCashUp = () => {
+        fetch(`/pos/cash_up/{{ request.user.id }}/`, {
+            method: 'GET'
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log(data)
+            if (data.success) {
+                let cashupContent = generateCashUpContent(data.data);
+                Swal.fire({
+                    title: "Processing...",
+                    text: "Please wait while printing the cash up.",
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+                setTimeout(() => {
+                    Swal.close();
+                    printCashUpSilently(cashupContent);
+                }, 2000); 
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Failed to process Cash Up'
+                });
+            }
+        })
+    }
+
+    function generateCashUpContent(cashUpData) {
+        const { total_sales, total_expenses, total_change, cash_in_hand } = cashUpData;
+
+        return `
+            <style>
+                .totals {
+                    width: 100%;
+                    margin-top:15px;
+                }
+
+                .line {
+                    display: flex;
+                    justify-content: space-between;
+                    margin: 5px 0;
+                }
+
+                .line span {
+                    display: inline-block;
+                }
+            </style>
+
+            <div style="
+                width: 80mm; 
+                height:120mm; 
+                font-family: Arial, 
+                sans-serif; 
+                font-size: 14px;
+                "
+                >
+                <h3 style="text-align: center;">Parsles Investments (Urban Eats)</h3>
+                <h4 style="text-align: center;">Cash Up</h4>
+                <hr>
+                <p>Cashier: {{ request.user.first_name }}</p>
+                <p>Date: ${new Date().toLocaleDateString()}</p>
+                <p>Time: ${new Date().toLocaleTimeString()}</p>
+                <div class="totals">
+                    <div class="line">
+                        <span>Total Sales:</span>
+                        <span>$${total_sales}</span>
+                    </div>
+                    <div class="line">
+                        <span>Total Expenses:</span>
+                        <span>$${total_expenses}</span>
+                    </div>
+                    <div class="line">
+                        <span>Change</span>
+                        <span>$${total_change}</span>
+                    </div>
+                    <div class="line">
+                        <span>Chash In Hand:</span>
+                        <span>$${cash_in_hand}</span>
+                    </div>
+            </div>
+        `;
+    }
+
+    function printCashUpSilently(content) {
+        console.log(content)
+        let printFrame = document.getElementById("print-frame-cash-up");
+
+        if (!printFrame) {
+            printFrame = document.createElement("iframe");
+            printFrame.id = "print-frame-cash-up";
+            printFrame.style.display = "none"
+            document.body.appendChild(printFrame);
+        }
+        const frameDoc = printFrame.contentWindow || 
+                        printFrame.contentDocument.document || 
+                        printFrame.contentDocument;
+
+        frameDoc.document.open();
+        frameDoc.document.write(`
+            <html>
+            <head>
+                <title>Cash Up</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        font-size: 14px;
+                        margin: 0;
+                        padding: 2px;
+                    }
+                    h3 {
+                        text-align: center;
+                    }
+                    hr {
+                        border: none;
+                        border-top: 1px solid #000;
+                    }
+                    p {
+                        margin: 5px 0;
+                    }
+                </style>
+            </head>
+            <body>
+                ${content}
+            </body>
+            </html>
+        `);
+        frameDoc.document.close();
+        setTimeout(() => {
+            printFrame.contentWindow.print(false);
+        }, 100);
+
+        Swal.fire({
+            title: "Success",
+            text: "Cash Up printed successfully.",
+            icon: "success"
+        });
+    }
+
+
     function getCookie(name) {
         let cookieValue = null;
         if (document.cookie && document.cookie !== '') {

@@ -2,11 +2,11 @@
 {% load crispy_forms_tags %}
 {% block content %}
 <div>
-   <div class='production-plan mt-2 d-flex justify-content-between align-items-center'>
+   <div class='d-flex justify-content-between align-items-center border-bottom'>
         <div>
             <a href='{% url "inventory:meal_list" %}' class='border btn bx bx-arrow-back fs-5'></a>
             <a href='/' class='bx bx-home btn border fs-5 mx-2'></a>
-            <span class='mt-2 fs-5'>Create Meal</span>
+            <span class='fs-5'>Create Meal</span>
         </div>
         <div>
             <ul class="list-unstyled mt-3 d-flex align-items-center">
@@ -17,7 +17,7 @@
         </div>
     </div>
 
-    <form method="post">
+    <form method="post" class='mt-4'>
         {% csrf_token %}
     
         <div id="div_id_name" class="mb-3">
@@ -52,7 +52,7 @@
             </label>
             <select name="dish" class="form-control selectmultiple form-select" required id="id_dish" multiple>
                 {% for dish in dishes %}
-                    <option value="{{ dish.id }}">{{dish.name }}</option>
+                    <option value="{{ dish.id }}">{{ dish.name }} ({{ dish.cost}})</option>
                 {% endfor %}
             </select>
         </div>
@@ -89,6 +89,11 @@
     </div>
 </div>
 <script>
+
+     new SlimSelect({
+        select: '#id_dish',
+        placeholder: 'Select Product'
+    });
 
     function populateCategories() {
         fetch("{% url 'inventory:create_meal_category' %}", {

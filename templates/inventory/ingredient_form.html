@@ -5,63 +5,72 @@
 {% block content %}
 <div class="inventory">
     <div class='add-production-plan'>
-        <div class='production-plan mt-2 d-flex justify-content-between align-items-center'>
+        <div class='production-plan mt-2 py-2 border-bottom'>
             <div>
                 <a href='{% url "inventory:dish_list" %}' class='border btn bx bx-arrow-back fs-5'></a>
                 <a href='/' class='bx bx-home btn border fs-5 mx-2'></a>
                 <span class='mt-2 fs-5'>Add Dish</span> 
             </div>
-            <div>
-                <ul class="list-unstyled mt-3">
-                    <li>
-                        <a href="{% url 'inventory:production_plans' %}" class="btn border"></a>
-                    </li>
-                </ul>
-            </div>
         </div>
-        <div class="row">
-            <form action="post">
-                {% csrf_token %}
-                {{ dish_form | crispy }}
-            </form>
 
-<<<<<<< HEAD
-            <h5 class="mt-2 mb-2">Ingredients</h5>
-=======
-            <h5 class="mt-2 mb-2">Minor raw materials (Ingredients)</h5>
->>>>>>> d1c14cc97287c67047ba0ba1f6f8c7790636586a
-            <div class="col-9">
-                <table class="table">
-                    <thead class="bg-primary">
-                        <th>Raw Material</th>
-                        <th>Quantity (kgs)</th>
-                    <tbody id="cart-items"></tbody>
-                </table>
-                <div class="d-flex justify-content-end">
-                  <button class="btn border bx bx-reset mx-2" id="id_reset"></button>
-                  <button class="btn-primary btn sm bx bx-save" id="id_submit"></button>
-                </div>
-            </div>
-            <div class="col-3 border p-2 rounded mt-2">
-<<<<<<< HEAD
-               
-=======
->>>>>>> d1c14cc97287c67047ba0ba1f6f8c7790636586a
+
+        <div class="row mt-3">
+            <div class="row">
+             <div class="col-9">
+                <h5 class="mt-2 px-1 bg-secondary rounded py-1 text-light">Dish Details</h5>
+                <form action="post">
+                    {% csrf_token %}
+                    {{ dish_form | crispy }}
+                </form>
+             </div>
+            <div class="col-3 border p-2 rounded">
                 <form id="production-plan-form" action="" method="post">
                     {% csrf_token %}
-
-<div id="div_id_raw_material" class="mb-3"> <label for="id_raw_material" class="form-label requiredField">
-            Choose Ingredients    <span class="asteriskField">*</span> </label> <select name="raw_material" required="" id="id_raw_material" tabindex="-1" class='form-control' aria-hidden="true"> 
-                <option value="" selected="" >---------</option> 
-                {% for r in r_m %}
-                    <option value="{{ r.id}}" selected="" >{{ r.name }}</option> 
-                {% endfor %}
-</select> </div> <div id="div_id_quantity" class="mb-3"> <label for="id_quantity" class="form-label requiredField">
-                Quantity <span id='unit'></span><span class="asteriskField">*</span> </label> <input type="number" name="quantity" step="any" class="numberinput form-control" required="" id="id_quantity"> </div> <div id="div_id_note" class="mb-3"> <label for="id_note" class="form-label requiredField">
-                Note<span class="asteriskField">*</span> </label> <input type="text" name="note" maxlength="100" class="textinput form-control" required="" id="id_note" spellcheck="false" data-ms-editor="true"> </div>
+                    <div id="div_id_raw_material" class="mb-3"> 
+                        <label for="id_raw_material" class="form-label requiredField">
+                            Choose Ingredients    
+                            <span class="asteriskField">*</span> 
+                        </label> 
+                            <select name="raw_material" required="" id="id_raw_material" tabindex="-1" class='form-control' aria-hidden="true"> 
+                            <option value="">---------</option> 
+                            {% for r in r_m %}
+                                <option value="{{ r.id}}">{{ r.name }}</option> 
+                            {% endfor %}
+                            </select> 
+                    </div> 
+                    <div id="div_id_quantity" class="mb-3"> <label for="id_quantity" class="form-label requiredField">
+                        Quantity <span id='unit'></span><span class="asteriskField">*</span> </label> <input type="number" name="quantity" step="any" class="numberinput form-control" required="" id="id_quantity"> </div> <div id="div_id_note" class="mb-3"> <label for="id_note" class="form-label requiredField">
+                        Note<span class="asteriskField">*</span> </label> <input type="text" name="note" maxlength="100" class="textinput form-control" required="" id="id_note" spellcheck="false" data-ms-editor="true"> </div>
 
                     <button type="button" id="save-button" class="btn btn-secondary btn-sm w-100">Save</button>
                 </form>
+            </div>
+            </div>
+
+            <div class="p-2">
+                <h5 class="mt-2 px-1 bg-secondary rounded py-1 text-light">Dish Ingredients</h5>
+                <div class="col">
+                    <table class="table">
+                        <thead class="bg-primary">
+                            <th>Raw Material</th>
+                            <th>Quantity (kgs)</th>
+                            <th>Total Cost</th>
+                            <th>Action</th>
+                        <tbody id="cart-items"></tbody>
+                        <tfoot>
+                            <tr>
+                                <td class='fw-bold'>Total Cost</td>
+                                <td col-span='2'></td>
+                                <td class='fw-bold' id='dish_total'>0.00</td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                    <div class="d-flex justify-content-end">
+                    <button class="btn border bx bx-reset mx-2" id="id_reset"></button>
+                    <button class="btn-primary btn sm bx bx-save" id="id_submit"></button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -71,21 +80,25 @@ $(document).ready(function() {
     let cart = [];
     let product = '';
     let unit_cost = 1;
+    let productCost = 0.00
     let unit_of_measurement = ''
 <<<<<<< HEAD
     let rawMaterialData = []
+    let portionMultiplier = 0
+    let dish_total = 0
 
-=======
-    
->>>>>>> d1c14cc97287c67047ba0ba1f6f8c7790636586a
-    $('#id_raw_material').select2();
     $('#id_dish').select2();
+
+    new SlimSelect({
+        select: '#id_raw_material',
+        placeholder: 'Select Raw Material'
+      });
+
 
     $('#id_raw_material').on('change', function(e){
         product = e.target.value;
     });
 
-    //reset button
     $('#id_reset').on('click', function(){
       cart = []
       updateCartTable()
@@ -98,8 +111,6 @@ $(document).ready(function() {
             raw_material_id: selectedProductId,
         };
 
-        console.log('here')
-
         fetch('{% url "inventory:raw_material_json" %}', {
             method: 'POST',
             headers: {
@@ -111,7 +122,8 @@ $(document).ready(function() {
         .then(response => response.json())
         .then(data => {
             if (data.success){
-                console.log(data.data[0].unit__unit_name)
+                console.log(data.data)
+                productCost = parseFloat(data.data[0].cost)
                 rawMaterialData.push(data.data)   
                 document.getElementById('unit').textContent=`(${data.data[0].unit__unit_name})`                                                                        
             } else {
@@ -127,20 +139,18 @@ $(document).ready(function() {
         });
     });
 
-
-    // submit button 
     $('#id_submit').on('click', function(){
+        
       const postData = {
         csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val(),
         cart: cart,
+        dish_cost: dish_total,
         name: document.getElementById('id_name').value,
-<<<<<<< HEAD
-=======
-        major_raw_material: parseInt(document.getElementById('id_major_raw_material').value),
->>>>>>> d1c14cc97287c67047ba0ba1f6f8c7790636586a
-        portion_multiplier: parseFloat(document.getElementById('id_portion_multiplier').value)
+        selling_price: parseFloat(document.getElementById('id_price').value),
+        portion_multiplier: parseFloat(document.getElementById('id_portion_multiplier').value),
+        category: document.getElementById('id_category').value
     };
-    console.log(postData)
+    
     fetch('{% url "inventory:dish_create" %}', {
         method: 'POST',
         headers: {
@@ -175,14 +185,36 @@ $(document).ready(function() {
     })
 
     $('#save-button').on('click', function() {
+        let totalProductCost = 0
+        let quantity = parseFloat(document.getElementById('id_quantity').value)
+        portionMultiplier = parseFloat(document.getElementById('id_portion_multiplier').value)
+
+        if(!portionMultiplier){
+            Swal.fire({
+                title: "Error",
+                text: 'Please specify portion multiplier value.',
+                icon: "error"
+            });
+            return;
+        }
+
+        if(!quantity){
+            Swal.fire({
+                title: "Error",
+                text: 'Qauntity cant be empty!',
+                icon: "error"
+            });
+            return;
+        }
+
+        totalProductCost =  totalCost(quantity, productCost, portionMultiplier)
+
         const item = {
             note: document.getElementById('id_note').value,
 <<<<<<< HEAD
             raw_material: $('#id_raw_material option:selected').text(),
-=======
-            raw_material: $('#id_minor_raw_material option:selected').text(),
->>>>>>> d1c14cc97287c67047ba0ba1f6f8c7790636586a
-            quantity: parseFloat(document.getElementById('id_quantity').value),
+            quantity: quantity,
+            cost: totalProductCost.toFixed(3),
         };
 
         cart.push(item);
@@ -190,19 +222,42 @@ $(document).ready(function() {
         updateCartTable();
     });
 
+    function totalCost(quantity, productCost, portionMultiplier){
+        return (quantity * productCost) / portionMultiplier
+    }
+
     function updateCartTable() {
+        let total = 0
         const cartItems = $('#cart-items');
         cartItems.empty();
         cart.forEach((item, index) => {
             cartItems.append(
                 `
                     <tr>
-                        <td><button class="btn border bx bx-trash" onclick="deleteItem(${index})"></button> <span class='mx-2'>${item.raw_material}</span></td>
+                        <td><span class='mx-2'>${item.raw_material}</span></td>
                         <td><input type="number" class="form-control" value="${item.quantity}" onchange="updateQuantity(${index}, this.value)"></td>
+                        <td>${item.cost}</td>
+                        <td><button class="btn border bx bx-trash" onclick="deleteItem(${index})"></button></td>
                     </tr>
                 `
             );
+            total += parseFloat(item.cost)
         });
+
+        dish_total = total;
+        document.getElementById('dish_total').innerText = `${dish_total.toFixed(3)}`;
+
+        // success swal
+        Swal.fire({
+            icon: 'success',
+            text: 'Ingredient successfully added to cart.',
+            title: 'Success',
+            timer: 1000, 
+            timerProgressBar: true 
+        }).then(()=>{
+            document.getElementById('id_quantity').value=0
+            $('#id_raw_material option:selected').val = ''
+        })
     }
 
     window.deleteItem = function(index) {
@@ -213,8 +268,7 @@ $(document).ready(function() {
     window.updateQuantity = function(index, newQuantity) {
         const item = cart[index];
         item.quantity = parseFloat(newQuantity);
-        item.actual_quantity = parseFloat(newQuantity - (parseFloat(item.lf_bf_quantity) + parseFloat(item.rm_bf_quantity)));
-        item.total_cost = item.actual_quantity * unit_cost;
+        item.cost = totalCost(newQuantity, productCost, portionMultiplier)
         updateCartTable();
     }
 });

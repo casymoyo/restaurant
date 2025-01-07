@@ -1,0 +1,361 @@
+
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Cash Ups{% endblock title %}
+{% block content %}
+<div>
+    <nav class="d-flex justify-content-between align-items-center rounded mb-2 py-2 border-bottom">
+        <div>
+            <a href='{% url "finance:finance"%}' class='border btn bx bx-arrow-back fs-5'></a>
+            <a href='/' class='bx bx-home btn border fs-5 mx-2'></a>
+            <span class='mt-2 fs-5'>Cash Ups</span>
+        </div>
+        <div class="d-flex justify-content-between mt-1">
+            <div>
+                <select class="form-select" id="filterSelect" onchange="filterCashBook()">
+                    <option value="today" {% if filter_option == 'today' %}selected{% endif %}>Today</option>
+                    <option value="this_week" {% if filter_option == 'this_week' %}selected{% endif %}>This Week</option>
+                    <option value="yesterday" {% if filter_option == 'yesterday' %}selected{% endif %}>Yesterday</option>
+                    <option value="this_month" {% if filter_option == 'this_month' %}selected{% endif %}>This Month</option>
+                    <option value="last_month" {% if filter_option == 'last_month' %}selected{% endif %}>Last Month</option>
+                    <option value="this_year" {% if filter_option == 'this_year' %}selected{% endif %}>This Year</option>
+                </select>
+            </div>
+            <div id="customDateRange" class="d-flex mx-2">
+                <input type="date" id="startDate" value="{{ start_date }}" class="form-control" placeholder="Start Date">
+                <input type="date" id="endDate" value="{{ end_date}}" class="form-control mx-2" placeholder="End Date">
+                <button class="btn btn-primary" onclick="applyCustomFilter()">Apply</button>
+            </div>
+            <button class="btn btn-secondary" onclick="downloadReport()">Download Report</button>
+        </div>
+    </nav>
+    
+    <div class="table-responsive">
+        <table class="table table-hover table-striped table-bordered" id="cash_up_table">
+            <thead>
+                <th>date</th>
+                <th>Cashier</th>
+                <th>Done By</th>
+                <th>Sales</th>
+                <th>Voided Sales</th>
+                <th>Change</th>
+                <th>Expenses</th>
+                <th>Cashed Amount</th>
+                <th>Cashed Amnt Diff</th>
+                <th>Status</th>
+                <!-- <th>Action</th> -->
+            </thead>
+            <tbody>
+                {% for cashup in cashups %}
+                    <tr data-cashup-id="{{ cashup.id }}">
+                        <td><small>{{ cashup.date }}</small></td>
+                        <td><small>{{ cashup.cashier }}</small></td>
+                        <td><small>{{ cashup.user }}</small></td>
+                        <td><small class="sales">{{ cashup.sales }}</small></td>
+                        <td><small>{{ cashup.void_amount }}</small></td>
+                        <td><small>{{ cashup.change }}</small></td>
+                        <td><small>{{ cashup.expenses }}</small></td>
+                        <td>
+                            <small>
+                                {% if not cashup.cashed_amount %}
+                                    <input 
+                                        type="number" 
+                                        class="form-control form-control-sm cashed-amount-input" 
+                                        value="{{ cashup.cashed_amount }}" 
+                                        data-cashup-id="{{ cashup.id }}" 
+                                    />
+                                {% else %}
+                                    {{ cashup.cashed_amount }}
+                                {% endif %}
+                            </small>
+                        </td>
+                        <td><small>{{ cashup.difference }}</small></td>
+                        <td>
+                            <small class="status">
+                                {% if cashup.status %}
+                                    Done
+                                {% else %}
+                                    {% if cashup.difference > 0 %}
+                                        <a href="" class="btn btn-outline-dark claim-amount w-100">claim</a>
+                                    {% elif not cashup.cashed %}
+                                        <button class="btn btn-outline-dark charge-cashier w-100" onclick="chargeCashier({{ cashup.cashier.id }})">charge cashier</a>
+                                    {% else %}
+                                        Cashed
+                                    {% endif %}
+                                {% endif %}
+                            </small>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="modal fade" id="cashUpModal" tabindex="-1" aria-labelledby="cashUpModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="cashUpModalLabel">Enter Amount Received</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="cashUpForm">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="cashed_amount" class="form-label">Cashed Amount</label>
+                            <input type="number" class="form-control" id="cashed_amount" required>
+                        </div>
+                        <div class="d-flex justify-content-end">
+                            <button type="reset" class="btn btn-danger mx-2 bx bx-reset"></button>
+                            <button type="button" class="btn btn-primary bx bx-save" onclick="submitCashUp()"></button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let cashier = null;
+
+    new DataTable('#cash_up_table')
+    const cashierModal = new bootstrap.Modal(document.getElementById('cashUpModal'));
+
+    const chargeCashier = (cashier_id) =>{
+        cashierModal.show()
+        cashier = cashier_id
+    }
+
+    const filterCashBook = () => {
+        const filter = document.getElementById('filterSelect').value;
+        window.location.href = `?filter=${filter}`;
+    }
+
+    const applyCustomFilter = () => {
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
+        if (startDate && endDate) {
+            window.location.href = `?filter=custom&start_date=${startDate}&end_date=${endDate}`;
+        } else {
+            Swal.fire({
+                title: "Error",
+                text: "Please select both start and end dates.",
+                icon: "error"
+            });
+        }
+    }
+
+    const  downloadReport = () => {
+        const filter = document.getElementById('filterSelect').value;
+        let url = `?filter=${filter}&download=${true}/`;
+
+        if (filter === 'custom') {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            url += `&start_date=${startDate}&end_date=${endDate}`;
+        }
+
+        window.location.href = url;
+    }
+
+
+    const rows = document.querySelectorAll("#cash_up_table tbody tr");
+
+        // rows.forEach(row => {
+        //     const sales = parseFloat(row.querySelector(".sales").textContent.trim());
+        //     const cashedAmount = parseFloat(row.querySelector(".cashed-amount").textContent.trim());
+        //     const cashupId = row.getAttribute('data-cashup-id');
+
+        //     const difference = (cashedAmount - sales).toFixed(2);
+
+        //     const claimButton = row.querySelector(".claim-amount");
+        //     const chargeButton = row.querySelector(".charge-cashier");
+
+        //     if (cashedAmount > sales && claimButton) {
+        //         claimButton.textContent = `claim ($${difference})`;
+        //         claimButton.addEventListener('click', function(event) {
+        //             event.preventDefault();
+        //             claimCashupDifference(cashupId, difference);
+        //         });
+        //     } else if (sales > cashedAmount && chargeButton) {
+        //         const chargeAmount = (sales - cashedAmount).toFixed(2)
+                
+        //         chargeButton.textContent = `charge cashier ($${chargeAmount})`;
+        //         chargeButton.addEventListener('click', function(event) {
+        //             event.preventDefault();
+        //             chargeCashupDifference(cashupId, chargeAmount);
+        //         });
+        //     }
+        // });
+
+    const claimCashupDifference = (cashupId, claimAmount) => {
+        fetch(`/finance/claim-cashup/${cashupId}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}',
+            },
+            body: JSON.stringify({
+                cashup_id: cashupId,
+                claim_amount: claimAmount
+            }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                Swal.fire({
+                    title: 'Success!',
+                    text: data.message,
+                    icon: 'success',
+                    confirmButtonText: 'OK'
+                }).then(() => {
+                    window.location.reload();
+                });
+            } else {
+                Swal.fire({
+                    title: 'Error!',
+                    text: data.message,
+                    icon: 'error',
+                    confirmButtonText: 'OK'
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            Swal.fire({
+                title: 'Error!',
+                text: 'Something went wrong!',
+                icon: 'error',
+                confirmButtonText: 'OK'
+            });
+        });
+    }
+
+    const chargeCashupDifference = (cashupId, chargeAmount) => {
+        fetch(`/finance/charge_cashup_difference/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}',
+            },
+            body: JSON.stringify({
+                cashup_id: cashupId,
+                charge_amount: chargeAmount
+            }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                Swal.fire({
+                    title: 'Success!',
+                    text: data.message,
+                    icon: 'success',
+                    confirmButtonText: 'OK'
+                }).then(() => {
+                    window.location.reload();
+                });
+            } else {
+                Swal.fire({
+                    title: 'Error!',
+                    text: data.message,
+                    icon: 'error',
+                    confirmButtonText: 'OK'
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            Swal.fire({
+                title: 'Error!',
+                text: 'Something went wrong!',
+                icon: 'error',
+                confirmButtonText: 'OK'
+            });
+        });
+    }
+
+    const submitCashUp = () => {
+        const cashed_amount = document.getElementById('cashed_amount').value;
+
+        fetch("{% url 'finance:cash_up' %}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": "{{ csrf_token }}"
+            },
+            body: JSON.stringify({
+                cashier: cashier,
+                cashed_amount: cashed_amount
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success!',
+                    text: data.message,
+                }).then(() => {
+                    location.reload(); 
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: data.message,
+                });
+            }
+        })
+        .catch(error => {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: 'Something went wrong!',
+            });
+        });
+    }
+
+    document.querySelectorAll('.cashed-amount-input').forEach(input => {
+        input.addEventListener('change', function () {
+            const cashupId = this.dataset.cashupId;
+            const cashedAmount = this.value;
+
+            fetch(`/pos/update-cashed-amount/${cashupId}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}',
+                },
+                body: JSON.stringify({
+                    cashed_amount: cashedAmount,
+                }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Updated!',
+                        text: data.message,
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error!',
+                        text: data.message,
+                    });
+                }
+            })
+            .catch(error => {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: 'Something went wrong!',
+                });
+            });
+        });
+    });
+
+</script>
+{% endblock content %}

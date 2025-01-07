@@ -1,12 +1,9 @@
 import os
 from pathlib import Path
-
-# from decouple import config
-
+import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
@@ -19,18 +16,23 @@ DEBUG = True
 
 ALLOWED_HOSTS = [
     'localhost',
-    '127.0.0.1',
-    '25e8-209-198-132-38.ngrok-free.app'
+    '127.0.0.1', 
+    'web-production-20d8.up.railway.app',
+    '192.168.10.156',
+    '192.168.10.173',
+    '192.168.10.38',
+    '192.168.10.181',
+    'c845-196-27-126-114.ngrok-free.app'
 ]
-CSRF_TRUSTED_ORIGINS = [
-    'https://25e8-209-198-132-38.ngrok-free.app' 
-]
-# Application definition
 
+CSRF_TRUSTED_ORIGINS = [
+    'https://web-production-20d8.up.railway.app'
+]
 
 # Application definition
 
 DJANGO_APPS = [
+    "daphne",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -42,8 +44,7 @@ DJANGO_APPS = [
 THIRD_PARTY_APPS = [
   "crispy_forms",
   "crispy_bootstrap5",
-  'corsheaders',
-  'corsheaders',
+  'django_extensions',
 ]
 
 LOCAL_APPS = [
@@ -58,8 +59,6 @@ LOCAL_APPS = [
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
-# CSRF_TRUSTED_ORIGINS = ['https://94c6-91-102-181-72.ngrok-free.app', 'https://90ce-91-102-181-72.ngrok-free.app/']
-# CSRF_TRUSTED_ORIGINS = ['https://94c6-91-102-181-72.ngrok-free.app', 'https://90ce-91-102-181-72.ngrok-free.app/']
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 CORS_ORIGIN_ALLOW_ALL = True
@@ -76,6 +75,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     
+    # custom
     'users.middleware.CompanySetupMiddleware'
 ]
 
@@ -92,11 +92,16 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                
+                # customm
+                'inventory.context_processors.notification_processor', 
+                'inventory.context_processors.check_list_processor'
             ],
         },
     },
 ]
 
+ASGI_APPLICATION = 'restaurant.asgi.application'
 WSGI_APPLICATION = 'restaurant.wsgi.application'
 
 LOGIN_URL = "users:login" 
@@ -105,16 +110,26 @@ LOGIN_URL = "users:login"
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
 DATABASES = {
+    # 'default': dj_database_url.config(
+    #     default='postgresql://postgres:bsgtOvAIFbBQgIcHLvlUFlvIiAiapbHm@autorack.proxy.rlwy.net:44818/railway'
+    # )
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME':  'urban-eats',
+        'NAME': 'urban-eats',  
         'USER': 'postgres',
-        'PASSWORD': 'techcity',
-        'HOST': 'urban-eats.ddns.net',
-        'PORT': '5432'
+        'PASSWORD': '5052',
+        # 'HOST': '192.168.10.173',
+        'PORT': '5432',
     }
+    # 'default': {
+    #     'ENGINE': 'django.db.backends.postgresql',
+    #     'NAME': 'postgres',  
+    #     'USER': 'postgres',
+    #     'PASSWORD': 'neverfail',
+    #     'HOST': '192.168.10.173',
+    #     'PORT': '5433',
+    # }
 }
-
 
 AUTH_USER_MODEL = 'users.User'
 
@@ -214,17 +229,78 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 
 # Celery Configuration
-CELERY_BROKER_URL='redis://localhost:6379/0'
-CELERY_RESULT_BACKEND='redis://localhost:6379/0'
-CELERY_ACCEPT_CONTENT='json'
-CELERY_TASK_SERIALIZER='json'
-CELERY_RESULT_SERIALIZER='json'
-CELERY_TIMEZONE='Africa/Johannesburg'
+CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://localhost:6379/0')
+CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
+CELERY_ACCEPT_CONTENT = os.environ.get('CELERY_ACCEPT_CONTENT', 'json').split(',')
+CELERY_TASK_SERIALIZER = os.environ.get('CELERY_TASK_SERIALIZER', 'json')
+CELERY_RESULT_SERIALIZER = os.environ.get('CELERY_RESULT_SERIALIZER', 'json')
+CELERY_TIMEZONE = os.environ.get('CELERY_TIMEZONE', 'Africa/Johannesburg')
 
 # Email Backend Configuration
-EMAIL_BACKEND='django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST='mail.techcity.co.zw'
-EMAIL_PORT='465'
-EMAIL_USE_SSL='True'
-EMAIL_HOST_USER='admin@techcity.co.zw'
-EMAIL_HOST_PASSWORD='kv]j[N~StShy'
+EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
+EMAIL_HOST = os.environ.get('EMAIL_HOST', 'localhost')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 25)) 
+EMAIL_USE_SSL = os.environ.get('EMAIL_USE_SSL', 'False').lower() == 'true'  
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+
+
+
+# channels
+# CHANNEL_LAYERS = {
+#     'default': {
+#         'BACKEND': 'channels_redis.core.RedisChannelLayer',
+#         'CONFIG': {
+#             'hosts': [('127.0.0.1', 6379)],
+#         },
+#     },
+# }
+
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+SESSION_COOKIE_AGE = 86400 #1day
+
+# LOGGING = {
+#     'version': 1,
+#     'disable_existing_loggers': False, 
+#     'formatters': {
+#         'verbose': {
+#             'format': '{levelname} {asctime} {module} {message}',
+#             'style': '{',
+#         },
+#         'simple': {
+#             'format': '{levelname} {message}',
+#             'style': '{',
+#         },
+#     },
+#     'handlers': {
+#         'file': {
+#             'level': 'WARNING',
+#             'class': 'logging.FileHandler',
+#             'filename': os.path.join(BASE_DIR, 'logs/app.log'),
+#             'formatter': 'verbose',
+#         },
+#         'console': {
+#             'level': 'DEBUG',
+#             'class': 'logging.StreamHandler',
+#             'formatter': 'simple',
+#         },
+#         'mail_admins': {
+#             'level': 'ERROR',
+#             'class': 'django.utils.log.AdminEmailHandler',
+#             'formatter': 'verbose',
+#         },
+#     },
+#     'loggers': {
+#         'django': {
+#             'handlers': ['file', 'console', 'mail_admins'],
+#             'level': 'DEBUG',  
+#             'propagate': True,
+#         },
+#         'restaurant': { 
+#             'handlers': ['file', 'console'],
+#             'level': 'INFO',
+#             'propagate': False,
+#         },
+#     },
+# }
+

@@ -1,0 +1,353 @@
+{% extends "base.html" %}
+{% load static %}
+{% load crispy_forms_tags %}
+{% block title %} Create Dish {% endblock %}
+{% block content %}
+<div class="inventory">
+    <div class='add-production-plan'>
+        <div class='production-plan mt-2 py-2 border-bottom'>
+            <div>
+                <a href='{% url "inventory:dish_list" %}' class='border btn bx bx-arrow-back fs-5'></a>
+                <a href='/' class='bx bx-home btn border fs-5 mx-2'></a>
+                <span class='mt-2 fs-5'>Edit Dish: {{ dish.name }}</span> 
+            </div>
+        </div>
+
+
+        <div class="row mt-3">
+            <div class="row">
+             <div class="col-9">
+                <h5 class="mt-2 px-1 bg-secondary rounded py-1 text-light">Dish Details</h5>
+                <form action="post">
+                    {% csrf_token %}
+                    {{ dish_form | crispy }}
+                </form>
+             </div>
+            <div class="col-3 border p-2 rounded">
+                <form id="production-plan-form" action="" method="post">
+                    {% csrf_token %}
+                    <div id="div_id_raw_material" class="mb-3"> 
+                        <label for="id_raw_material" class="form-label requiredField">
+                            Choose Ingredients    
+                            <span class="asteriskField">*</span> 
+                        </label> 
+                            <select name="raw_material" required="" id="id_raw_material" tabindex="-1" class='form-control' aria-hidden="true"> 
+                            <option value="">---------</option> 
+                            {% for r in r_m %}
+                                <option value="{{ r.id}}">{{ r.name }}</option> 
+                            {% endfor %}
+                            </select> 
+                    </div> 
+                    <div id="div_id_quantity" class="mb-3"> <label for="id_quantity" class="form-label requiredField">
+                        Quantity <span id='unit'></span><span class="asteriskField">*</span> </label> <input type="number" name="quantity" step="any" class="numberinput form-control" required="" id="id_quantity"> </div> <div id="div_id_note" class="mb-3"> <label for="id_note" class="form-label requiredField">
+                        Note<span class="asteriskField">*</span> </label> <input type="text" name="note" maxlength="100" class="textinput form-control" required="" id="id_note" spellcheck="false" data-ms-editor="true"> </div>
+
+                    <button type="button" id="save-button" class="btn btn-secondary btn-sm w-100">Save</button>
+                </form>
+            </div>
+            </div>
+
+            <div class="p-2">
+                <h5 class="mt-2 px-1 bg-secondary rounded py-1 text-light">Dish Ingredients</h5>
+                <div class="col">
+                    <table class="table">
+                        <thead class="bg-primary">
+                            <th>Raw Material</th>
+                            <th>Quantity (kgs)</th>
+                            <th>Total Cost</th>
+                            <th>Action</th>
+                        <tbody id="cart-items"></tbody>
+                        <tfoot>
+                            <tr>
+                                <td class='fw-bold'>Total Cost</td>
+                                <td col-span='2'></td>
+                                <td class='fw-bold' id='dish_total'>0.00</td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                    <div class="d-flex justify-content-end">
+                    <button class="btn border bx bx-reset mx-2" id="id_reset"></button>
+                    <button class="btn-primary btn sm bx bx-save" id="id_submit"></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+$(document).ready(function() {
+    let cart = [];
+    let product = '';
+    let unit_cost = 1;
+    let productCost = 0.00
+    let unit_of_measurement = ''
+    let rawMaterialData = []
+    let portionMultiplier = 0
+    let dish_total = 0
+
+    $('#id_dish').select2();
+
+    new SlimSelect({
+        select: '#id_raw_material',
+        placeholder: 'Select Raw Material'
+      });
+
+
+    $('#id_raw_material').on('change', function(e){
+        product = e.target.value;
+    });
+
+    $('#id_reset').on('click', function(){
+      cart = []
+      updateCartTable()
+    })
+
+    // get dish and ingridients data 
+    const getDishData = () =>{
+        
+        Swal.fire({
+            title: 'Loading...',
+            text: 'Please wait while we fetch the dish data.',
+            icon: 'info',
+            showConfirmButton: false,
+            allowOutsideClick: false, 
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        fetch('/inventory/dish_data_json/{{ dish.id }}/',{
+            method:'GET',
+            headers:{
+
+            }
+        })
+        .then(response => response.json())
+        .then(data =>{
+            console.log(data)
+            if(data.success){
+                displayDishData(data.dish[0], data.ingridients)
+                Swal.close()
+                console.log('data: ', data)
+            }else {
+                    Swal.fire({
+                        title: 'Error!',
+                        text: 'Failed to load dish data. Please try again.',
+                        icon: 'error',
+                        confirmButtonText: 'Ok'
+                    });
+                }
+            })
+            .catch(error => {
+                Swal.close();
+                console.log(error)
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'An error occurred while fetching data. Please try again later.',
+                    icon: 'error',
+                    confirmButtonText: 'Ok'
+                });
+            });
+    }
+
+    getDishData()
+
+    const displayDishData = (dish, ingridients) => {
+        // display dish info
+        console.log('dish', dish)
+        document.getElementById('dish_total').innerText = dish.cost
+        document.getElementById('id_name').value = dish.name
+        document.getElementById('id_price').value= dish.price
+        document.getElementById('id_portion_multiplier').value = dish.portion_multiplier
+        document.getElementById('id_category').value = dish.category
+
+        // assign the portion multiplier
+        portionMultiplier = document.getElementById('id_portion_multiplier').value = dish.portion_multiplier
+
+        // display ingridients
+        console.log(ingridients)
+        ingridients.forEach((ing)=>{
+            totalProductCost =  totalCost(ing.quantity, ing.raw_material__cost, dish.portion_multiplier)
+            const item = {
+                note: ing.note,
+                raw_material: ing.raw_material__name,
+                quantity: ing.quantity,
+                cost: totalProductCost.toFixed(3),
+                r_m_cost:ing.raw_material__cost
+            };
+
+            cart.push(item);
+            updateCartTable();
+        })
+    }
+
+
+    $('#id_raw_material').on('change', function(e) {
+        const selectedProductId = e.target.value;
+        const postData = {
+            csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val(),
+            raw_material_id: selectedProductId,
+        };
+
+        fetch('{% url "inventory:raw_material_json" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': $('input[name="csrfmiddlewaretoken"]').val()
+            },
+            body: JSON.stringify(postData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success){
+                console.log(data.data)
+                productCost = parseFloat(data.data[0].cost)
+                rawMaterialData.push(data.data)   
+                document.getElementById('unit').textContent=`(${data.data[0].unit__unit_name})`                                                                        
+            } else {
+                Swal.fire({
+                    title: "Error",
+                    text: data.message,
+                    icon: "error"
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error posting product data:', error);
+        });
+    });
+
+    $('#id_submit').on('click', function(){
+        
+      const postData = {
+        csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val(),
+        cart: cart,
+        dish_cost: dish_total,
+        name: document.getElementById('id_name').value,
+        selling_price: parseFloat(document.getElementById('id_price').value),
+        portion_multiplier: parseFloat(document.getElementById('id_portion_multiplier').value),
+        category: document.getElementById('id_category').value
+    };
+    
+    fetch('/inventory/edit_dish/{{ dish.id }}/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': $('input[name="csrfmiddlewaretoken"]').val()
+        },
+        body: JSON.stringify(postData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            Swal.fire({
+                title: "Success",
+                text: "Dish created successfully!",
+                icon: "success"
+            }).then(() => {
+                cart = [];
+                updateCartTable();
+                window.location.href = "{% url 'inventory:dish_list' %}";
+            });
+        }else {
+            Swal.fire({
+                title: "Error",
+                text: data.message,
+                icon: "error"
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error submitting production plan:', error);
+    });
+    })
+
+    $('#save-button').on('click', function() {
+        let totalProductCost = 0
+        let quantity = parseFloat(document.getElementById('id_quantity').value)
+        portionMultiplier = parseFloat(document.getElementById('id_portion_multiplier').value)
+
+        if(!portionMultiplier){
+            Swal.fire({
+                title: "Error",
+                text: 'Please specify portion multiplier value.',
+                icon: "error"
+            });
+            return;
+        }
+
+        if(!quantity){
+            Swal.fire({
+                title: "Error",
+                text: 'Qauntity cant be empty!',
+                icon: "error"
+            });
+            return;
+        }
+
+        totalProductCost =  totalCost(quantity, productCost, portionMultiplier)
+
+        const item = {
+            note: document.getElementById('id_note').value,
+            raw_material: $('#id_raw_material option:selected').text(),
+            quantity: quantity,
+            cost: totalProductCost.toFixed(3),
+        };
+
+        cart.push(item);
+        updateCartTable();
+    });
+
+    function totalCost(quantity, productCost, portionMultiplier){
+        return (quantity * productCost) / portionMultiplier
+    }
+
+    function updateCartTable() {
+        let total = 0
+        const cartItems = $('#cart-items');
+        cartItems.empty();
+        cart.forEach((item, index) => {
+            cartItems.append(
+                `
+                    <tr>
+                        <td><span class='mx-2'>${item.raw_material}</span></td>
+                        <td><input type="number" class="form-control" value="${item.quantity}" onchange="updateQuantity(${index}, this.value)"></td>
+                        <td>${item.cost}</td>
+                        <td><button class="btn border bx bx-trash" onclick="deleteItem(${index})"></button></td>
+                    </tr>
+                `
+            );
+            total += parseFloat(item.cost)
+        });
+
+        dish_total = total;
+        document.getElementById('dish_total').innerText = `${dish_total.toFixed(3)}`;
+    }
+
+    window.deleteItem = function(index) {
+        cart.splice(index, 1);
+        updateCartTable();
+    }
+
+    window.updateQuantity = function(index, newQuantity) {
+        console.log('updated quantity: ', newQuantity)
+        p_m = parseFloat(document.getElementById('id_portion_multiplier').value)
+        
+        const item = cart[index];
+       
+        let p_cost = totalCost(newQuantity, item.r_m_cost, p_m)
+
+        if(productCost){
+            item.cost = totalCost(newQuantity, productCost, portionMultiplier)
+        }else{
+            item.cost = p_cost.toFixed(3)
+        }
+
+        item.quantity = parseFloat(newQuantity);
+        
+        updateCartTable();
+    }
+});
+</script>
+{% endblock content %}

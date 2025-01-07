@@ -22,89 +22,137 @@
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
     {% endblock css %}
     
+    <script src="https://unpkg.com/slim-select@latest/dist/slimselect.min.js"></script>
+    <link href="https://unpkg.com/slim-select@latest/dist/slimselect.css" rel="stylesheet"></link>
 
     <script src="{% static 'js/jquery.js'%}"></script>
     <script src="{% static 'css/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
     <script src="{% static 'assets/DataTables/datatables.min.js' %}"></script>
-    {% comment %} <script type="text/javascript" src="{% static 'js/Chart.min.js' %}"></script> {% endcomment %}
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 
     <title>
         {% block title %}{{ request.user.company.name }}{% endblock title %}
     </title>
+
+    <style>
+        #notification-icon {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        #notification-badge {
+            display: none;
+            position: absolute;
+            top: -5px; 
+            right: -10px;  
+        }
+        
+        .notifications {
+            position: absolute;
+            top: 100%; 
+            left: 50%; 
+            transform: translateX(-50%);
+            width: 300px;
+            background-color: white;
+            border: 1px solid #ddd;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            display: none; 
+            z-index: 1000; 
+        }  
+        
+        #notification-dropdown.show {
+            display: block; 
+        }
+        
+        .notifications ul {
+            padding: 0;
+            margin: 0;
+            list-style: none;
+        }
+        
+        .notifications li {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+            cursor: pointer;
+        }
+        
+        .notifications li:hover {
+            background-color: #f8f9fa; 
+        }
+    </style>
+    
 </head>
 <body>
     <div class="Urban-Eat">
         <div class="row">
             <div class=" top-bar">
-                <nav class="p-2">
+                <nav class="p-2 border">
                     <div class="d-flex justify-content-between align-items-center w-100">
                         <div>
                             <h4 class="fw-bold">{{ request.user.company.name }}</h4>
                         </div>
                         <div>
                             <ul class="list-unstyled d-flex align-items-center">
+                                <!-- Notification Icon with Badge -->
+                                <li class="position-relative mx-3 d-flex align-items-center justify-content-center">
+                                    <i class="bx bx-bell fs-3 cursor-pointer" id="notification-icon"></i>
+                                    <span id="notification-badge" class="badge rounded-pill bg-danger text-dark position-absolute top-0 start-100 translate-middle">
+                                        2
+                                    </span>
+                                    <div class="notifications dropdown-menu dropdown-menu-end p-2" id="notification-dropdown" style="max-height: 200px; overflow-y: auto;">
+                                        <ul id="notification-box" class="list-unstyled">
+                                            {% for notification in notifications %}
+                                                <li>
+                                                    <small class='text-muted'>{{ notification.timestamp }}</small>
+                                                    <small>- {{ notification.message }} </small>
+                                                </li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                </li>
+                                <!-- Username -->
                                 <li class="mx-2">{{ request.user }}</li>
                                 <li class='btn border btn-danger bx bx-log-out-circle mt-1 fs-3 cursor-pointer' data-bs-toggle="modal" data-bs-target="#logoutModal"></li>
                             </ul>
                         </div>
                     </div>
+                                       
                 </nav>
-                <div class='row bg-light'>
-                    <div class="app-area col-12 overflow">
-                        {% if messages %}
-                            {% for message in messages %}
-                                <div class="alert alert-dismissible {% if message.tags %}alert-{{ message.tags }}{% endif %}">
-                                {{ message }}
-                                <button type="button"
-                                    class="btn-close"
-                                    data-bs-dismiss="alert"
-                                    aria-label="Close">
-                                </button>
-                                </div>
-                            {% endfor %}
+                    <div class="row">
+                        {% if request.resolver_match.url_name != 'production_plans'%}
+                            <div class="col-2" style='background:#f8f9fa;'>
+                                {% include 'base/side_bar.html' %}
+                            </div>
                         {% endif %}
-                        {% block content %}{% endblock %}
-                        {% block notification %}
-        <div class='floating-box text-dark'>
-            
-            {% if request.user.role == 'Chef' %}
-                <ul class='list-unstyled'>
-                    {% for notis in chef_notifications %}
-                        <li>
-                            <a href=''>{{ notis }}</a>
-                        </li>
-                    {% endfor %}
-                </ul>
-            {% elif request.user.role == 'Accountant' %}
-                <ul class='list-unstyled'>
-                    {% for notis in accountant_notifications %}
-                        <li>
-                            <a href=''>{{ notis }}</a>
-                        </li>
-                    {% endfor %}
-                </ul>
-            {% else %}
-                <ul class='list-unstyled'>
-                    {% for notis in admin_notifications %}
-                        <li>
-                            <a href=''>{{ notis }}</a>
-                        </li>
-                    {% endfor %}
-                </ul>
-            {% endif %}
-        </div>
-    {% endblock notification %}
-    
+                        <div class="col-10">
+                            <div class="app-area overflow">
+                                {% if messages %}
+                                    {% for message in messages %}
+                                        <div class="alert alert-dismissible {% if message.tags %}alert-{{ message.tags }}{% endif %}">
+                                        {{ message }}
+                                        <button type="button"
+                                            class="btn-close"
+                                            data-bs-dismiss="alert"
+                                            aria-label="Close">
+                                        </button>
+                                        </div>
+                                    {% endfor %}
+                                {% endif %}
+                                {% block content %}{% endblock %}
+                            </div>
+                        </div>
+                        {% if request.resolver_match.url_name == 'production_plans' %}
+                            <div class="col-2">
+                                {% include 'base/check_list.html' %}
+                            </div>
+                        {% endif %}
                     </div>
-                </div>
-            </nav>
+            </div>
         </div>
-
-        {% comment %} notifications {% endcomment %}
-        
-
         <!-- logout modal -->
         <div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="chargeModalLabel" aria-hidden="true">
             <div class="modal-dialog bg modal-dialog-centered">
@@ -116,13 +164,62 @@
                     </div>
                 </div>
             </div>
-        </div>
+        </div>      
     </div>
     <script src="{% static 'css/bootstrap/js/bootstrap.bundle.min.js'%}"></script>    
-    
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
-          
+        document.getElementById('notification-icon').addEventListener('click', function() {
+            const dropdown = document.getElementById('notification-dropdown');
+            dropdown.classList.toggle('show');
+        });
+        
+        // const ws = new WebSocket('ws://' + window.location.host + '/ws/notifications/');
+
+        // function playNotificationSound() {
+        //     const audio = new Audio('{% static "sounds/ding.mp3" %}'); 
+        //     audio.play();
+        // }
+
+        // ws.onmessage = function(event) {
+        //     const data = JSON.parse(event.data);
+        //     const notificationBox = document.getElementById('notification-box');
+        //     const newNotification = document.createElement('li');
+
+        //     newNotification.textContent = data.message + " - " + new Date().toLocaleTimeString();
+        //     notificationBox.appendChild(newNotification);
+
+        //     const badge = document.getElementById('notification-badge');
+        //     let currentCount = parseInt(badge.textContent) || 0;
+
+        //     badge.textContent = currentCount + 1;
+        //     badge.style.display = 'inline-block'; 
+
+        //     playNotificationSound();
+        // }
+
+        // // totals sales websocket
+        // const socket = new WebSocket('ws://' + window.location.host + '/ws/sales/');
+
+        // socket.onopen = function() {
+        //     console.log('WebSocket connection established');
+        // };
+
+        // socket.onerror = function(error) {
+        //     console.error('WebSocket error:', error);
+        // };
+
+        // socket.onmessage = function(e) {
+        //     const message = JSON.parse(e.data);
+        //     console.log(message['data'], 'web socket data');
+            
+        //     const totalSalesElement = document.getElementById('total-sales');
+        //     if (totalSalesElement) {
+        //         totalSalesElement.innerText = `$${message['data']['total_sales']}`;
+        //     }
+
+        // };
+
     </script>
 </body>
 </html>

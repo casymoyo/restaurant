@@ -2,82 +2,530 @@
 {% load static %}
 {% block title %}Cash Book{% endblock title %}
 {% block content %}
-    <div>
-        <nav class="d-flex justify-content-between align-items-center rounded mb-2 p-2">
-            <div>
-                <a href='{% url "finance:finance"%}' class='border btn bx bx-arrow-back fs-5'></a>
-                <a href='/' class='bx bx-home btn border fs-5 mx-2'></a>
-                <span class='mt-2 fs-5'>Cashbook</span>
+<style>
+    .chat-messages {
+        max-height: 300px;
+        overflow-y: auto;
+        border: 1px solid #ccc;
+        padding: 10px;
+        margin-bottom: 10px;
+    }
+    
+    .chat-message {
+        margin-bottom: 15px;
+    }
+    
+    .chat-message strong {
+        color: #007bff;
+    }
+    
+    .chat-message small {
+        display: block;
+        color: #888;
+        margin-top: 5px;
+    }  
+</style>
+<div>
+    <nav class="d-flex justify-content-between align-items-center rounded mb-2 py-2">
+        <div>
+            <a href='{% url "finance:finance"%}' class='border btn bx bx-arrow-back fs-5'></a>
+            <a href='/' class='bx bx-home btn border fs-5 mx-2'></a>
+            <span class='mt-2 fs-5'>Cashbook <span class='fw-bold'></span></span>
+        </div>
+        <div>
+            <div class="d-flex justify-content-between mt-1">
+                <div>
+                    <select class="form-select" id="filterSelect" onchange="filterCashBook()">
+                        <option value="today" {% if filter_option == 'today' %}selected{% endif %}>Today</option>
+                        <option value="this_week" {% if filter_option == 'this_week' %}selected{% endif %}>This Week</option>
+                        <option value="yesterday" {% if filter_option == 'yesterday' %}selected{% endif %}>Yesterday</option>
+                        <option value="this_month" {% if filter_option == 'this_month' %}selected{% endif %}>This Month</option>
+                        <option value="last_month" {% if filter_option == 'last_month' %}selected{% endif %}>Last Month</option>
+                        <option value="this_year" {% if filter_option == 'this_year' %}selected{% endif %}>This Year</option>
+                    </select>
+                </div>
+                <div id="customDateRange" class="d-flex mx-2">
+                    <input type="date" id="startDate" value="{{ start_date }}" class="form-control" placeholder="Start Date">
+                    <input type="date" id="endDate" value="{{ end_date}}" class="form-control mx-2" placeholder="End Date">
+                    <button class="btn btn-primary" onclick="applyCustomFilter()">Apply</button>
+                </div>
+                <button class="btn btn-secondary" onclick="downloadReport()">Download Report</button>
             </div>
-            <div>
-                <div class="d-flex justify-content-between mt-1">
-                    <div>
-                        <select class="form-select" id="filterSelect" onchange="filterCashBook()">
-                            <option value="this_week" {% if filter_option == 'this_week' %}selected{% endif %}>This Week</option>
-                            <option value="yesterday" {% if filter_option == 'yesterday' %}selected{% endif %}>Yesterday</option>
-                            <option value="this_month" {% if filter_option == 'this_month' %}selected{% endif %}>This Month</option>
-                            <option value="last_month" {% if filter_option == 'last_month' %}selected{% endif %}>Last Month</option>
-                            <option value="this_year" {% if filter_option == 'this_year' %}selected{% endif %}>This Year</option>
-                        </select>
+        </div>
+    </nav>
+    
+    <div class="row mt-2">
+        <div class="">
+            <div class="table-responsive ">
+                <table id="financialTable" class="table table-striped table-bordered table-hover">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Description</th>
+                            <th>Note</th>
+                            <th>Expenses</th>
+                            <th>Income</th>
+                            <th>Balance</th>
+                            <th>Accountant</th>
+                            <th>Manager</th>
+                            <th>Directors</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="5"><strong>Balance B/F</strong></td>
+                            <td id="initialBalance">{{ balance_bf|floatformat:2 }}</td>
+                            <td id="accountant">{{ balance_bf|floatformat:2 }}</td>
+                            <td id="manager">{{ balance_bf|floatformat:2 }}</td>
+                            <td id="director">{{ balance_bf|floatformat:2 }}</td>
+                            <!-- <td colspan="3"></td> -->
+                        </tr>
+                        {% for entry in entries %}
+                        <tr>
+                            <td class="{% if entry.credit %}text-dange{% endif %} {% if entry.cancelled %}text-decoration-line-through text-danger{% endif %}">{{ entry.date }}</td>
+                            <td class="{% if entry.credit %}text-dange{% endif %}">
+                                <span class="hint--bottom {% if entry.cancelled %}text-decoration-line-through text-danger{% endif %}" aria-label="
+                                    {% if entry.debit %}
+                                        {% for sale in sales %}
+                                            {% if sale.sale == entry.sale %}
+                                                {% if sale.meal %}
+                                                    {{ sale.meal }} x {{ sale.quantity }}
+                                                {% else %}
+                                                    {{ sale.product }} x {{ sale.quantity}}
+                                                {% endif %}
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% endif %}
+                                ">
+                                    {{ entry.description }}
+                                </span>
+                            </td>
+                            <td class="{% if entry.credit %}text-dange{% endif %}">
+                                <span class='d-flex justify-content-center'>
+                                    <i class='bx bx-message-rounded-dots text-primary' type='button' onclick='openChat({{ entry.id }})'></i>
+                                </span>
+                            </td>
+                            <td class="expense text-dange {% if entry.cancelled %}text-decoration-line-through text-danger{% endif %}">
+                                {% if entry.credit %}
+                                    {{ entry.amount }}
+                                {% endif %}
+                            </td>
+                            <td class="income {% if entry.cancelled %}strike-line-through{% endif %} ">
+                                {% if entry.debit %}
+                                    {{ entry.amount }}
+                                {% endif %}                                                          
+                            </td>
+                            <td class="balance {% if entry.credit %}text-dange{% endif %} {% if entry.cancelled %}text-decoration-line-through text-danger{% endif %}"></td>
+                            <td>
+                                <input type="checkbox" 
+                                       class="status-checkbox" 
+                                       data-id="{{ entry.id }}" 
+                                       data-field="accountant" 
+                                       {% if entry.accountant %}checked{% endif %}
+                                >
+                            </td>
+                            <td>
+                                <input type="checkbox" 
+                                       class="status-checkbox" 
+                                       data-id="{{ entry.id }}" 
+                                       data-field="manager" 
+                                       {% if entry.manager %}checked{% endif %}
+                                >
+                            </td>
+                            <td class="d-flex align-items-center">
+                                <input type="checkbox" 
+                                       class="status-checkbox" 
+                                       data-id="{{ entry.id }}" 
+                                       data-field="director" 
+                                       {% if entry.director %}checked{% endif %}
+                                >
+                                <button class="btn bx bx-x mx-2 {% if entry.cancelled %}text-decoration-line-through text-danger{% endif %}" onclick="cancel({{ entry.id }});"></button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="3"><strong>Total</strong></td>
+                            <td class='fw-bold'>{{ total_credit|floatformat:2 }}</td>
+                            <td class='fw-bold'>{{ total_debit|floatformat:2 }}</td>
+                            <td class='fw-bold'>{{ total_balance|floatformat:2 }}</td>
+                            <td colspan="3"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chat Modal -->
+    <div class="modal fade" id="chatModal" tabindex="-1" aria-labelledby="chatModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="chatModalLabel">Notes Chat</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="chatMessages" class="chat-messages">
                     </div>
+                    <textarea id="chatInput" class="form-control mt-3" rows="2" placeholder="Type your message..."></textarea>
                 </div>
-            </div>
-        </nav>
-        
-        <div class="row border rounded p-2">
-            <div class="col-md-6">
-                <h5>Debit Entries</h5>
-                <div class="table-responsive">
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Description</th>
-                                <th>Amount</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for entry in debit_entries %}
-                                <tr>
-                                    <td>{{ entry.date }}</td>
-                                    <td>{{ entry.description }}</td>
-                                    <td>{{ entry.amount }}</td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <h5>Credit Entries</h5>
-                <div class="table-responsive">
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Description</th>
-                                <th>Amount</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for entry in credit_entries %}
-                                <tr>
-                                    <td>{{ entry.date }}</td>
-                                    <td>{{ entry.description }}</td>
-                                    <td>{{ entry.amount }}</td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-outline-dark bx bx-send fs-3" onclick="sendMessage()"></button>
                 </div>
             </div>
         </div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        function filterCashBook() {
-            const filter = document.getElementById('filterSelect').value;
-            window.location.href = `?filter=${filter}`;
+
+</div>
+
+<script>
+    let initialBalance = parseFloat(document.getElementById("initialBalance").textContent);
+    let tableRows = document.querySelectorAll("#financialTable tbody tr");
+    let runningBalance = initialBalance;
+    
+    let entry_id = '';
+
+    {% comment %} const entryId = "{{ entry.id }}";
+    const chatSocket = new WebSocket(
+        'ws://' + window.location.host + '/ws/chat/' + entryId + '/'
+    );
+    
+    chatSocket.onmessage = function(e) {
+        const data = JSON.parse(e.data);
+        const chatMessages = document.getElementById('chatMessages');
+        const messageElement = document.createElement('div');
+        messageElement.classList.add('chat-message');
+        messageElement.innerHTML = `<strong>${data.user}</strong>: ${data.message}`;
+        chatMessages.appendChild(messageElement);
+    };
+
+    chatSocket.onclose = function(e) {
+        console.error('Chat socket closed unexpectedly');
+    };
+
+    function sendMessage() {
+        const messageInput = document.getElementById('chatInput');
+        const message = messageInput.value;
+        chatSocket.send(JSON.stringify({
+            'message': message
+        }));
+        messageInput.value = '';
+    } {% endcomment %}
+
+    function cancel(entryId) {
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "You won't be able to revert this!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, cancel it!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const data = {
+                    entry_id: entryId
+                };
+                console.log(data)
+                fetch('/finance/cancel-entry/', { 
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken') 
+                    },
+                    body: JSON.stringify(data)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        Swal.fire({
+                            title: 'Success!',
+                            text: 'Entry successfully cancelled.',
+                            icon: 'success',
+                            confirmButtonText: 'OK'
+                        }).then(() => {
+                            location.reload(); 
+                        });
+                    } else {
+                        Swal.fire({
+                            title: 'Error!',
+                            text: 'Failed to cancel the entry.',
+                            icon: 'error',
+                            confirmButtonText: 'OK'
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    Swal.fire({
+                        title: 'Error!',
+                        text: 'An error occurred while cancelling the entry.',
+                        icon: 'error',
+                        confirmButtonText: 'OK'
+                    });
+                });
+            }
+        });
+    }
+        
+    tableRows.forEach((row, index) => {
+        if (index === 0) return;
+
+        let expenseCell = row.querySelector(".expense");
+        let incomeCell = row.querySelector(".income");
+        let balanceCell = row.querySelector(".balance");
+
+        let expense = parseFloat(expenseCell.textContent) || 0;
+        let income = parseFloat(incomeCell.textContent) || 0;
+
+        runningBalance = runningBalance - expense + income;
+        console.log(runningBalance)
+        balanceCell.textContent = runningBalance.toFixed(2);
+    });
+
+    function addNote(tr) {
+        document.getElementById('noteModalTitle').textContent = 'Add Note';
+        document.getElementById('noteText').value = '';
+        document.getElementById('saveNoteBtn').onclick = function() { saveNote(); };
+        entry_id = tr.dataset.id;
+        
+        $('#noteModal').modal('show');
+    }
+
+    function openChat(entryId) {
+        entry_id = entryId;
+        
+        fetch(`/finance/cashbook/note/${entryId}/`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    let chatContent = data.notes.map(note => `
+                        <div class="chat-message">
+                            <strong>${note.user}</strong>: ${note.note}
+                            <br><small>${note.timestamp}</small>
+                        </div>
+                    `).join('');
+
+                    document.getElementById('chatMessages').innerHTML = chatContent;
+                    $('#chatModal').modal('show');
+                } else {
+                    swal({
+                        title: 'Error!',
+                        text: data.message,
+                        icon: 'error',
+                        confirmButtonText: 'OK'
+                    });
+                }
+            });
+    }
+
+    function sendMessage() {
+        const noteText = document.getElementById('chatInput').value;
+        
+        fetch(`/finance/cashbook/note/${entry_id}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({ note: noteText })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('chatInput').value = ''; 
+                openChat(entry_id); 
+            } else {
+                Swal.fire({
+                    title: 'Error!',
+                    text: data.message,
+                    icon: 'error',
+                    confirmButtonText: 'OK'
+                });
+            }
+        });
+    }
+
+
+    function saveNote() {
+        const noteText = document.getElementById('noteText').value;
+       
+        fetch(`/finance/cashbook/note/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({ entry_id: entryId, note: noteText })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                Swal.fire({
+                    title: 'Success!',
+                    text: 'Note successfully saved.',
+                    icon: 'success',
+                    confirmButtonText: 'OK'
+                }).then(() => {
+                    location.reload(); 
+                });
+            } else {
+                Swal.fire({
+                    title: 'Error!',
+                    text: data.message,
+                    icon: 'error',
+                    confirmButtonText: 'OK'
+                });
+            }
+        });
+    }
+
+    
+    function filterCashBook() {
+        const filter = document.getElementById('filterSelect').value;
+        window.location.href = `?filter=${filter}`;
+    }
+
+
+    function applyCustomFilter() {
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
+        if (startDate && endDate) {
+            window.location.href = `?filter=custom&start_date=${startDate}&end_date=${endDate}`;
+        } else {
+            Swal.fire({
+                title: "Error",
+                text: "Please select both start and end dates.",
+                icon: "error"
+            });
         }
-    </script>
+    }
+
+    function downloadReport() {
+        const filter = document.getElementById('filterSelect').value;
+        let url = `/finance/report/?filter=${filter}/`;
+
+        if (filter === 'custom') {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            url += `&start_date=${startDate}&end_date=${endDate}`;
+        }
+
+        window.location.href = url;
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const checkboxes = document.querySelectorAll('.status-checkbox');
+    
+        checkboxes.forEach(function(checkbox) {
+            checkbox.addEventListener('change', function() {
+                const entryId = this.getAttribute('data-id');
+                const field = this.getAttribute('data-field');
+                const status = this.checked;
+    
+                fetch(`/finance/update_transaction_status/${entryId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({ status: status, field: field })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.success) {
+                        alert('Failed to update status');
+                    } else {
+                        console.log(`Updated ${field} to ${status}`);
+                    }
+                });
+            });
+        });
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const tableRows = document.querySelectorAll("#financialTable tbody tr");
+        let runningBalance = parseFloat(document.getElementById("initialBalance").textContent);
+    
+        tableRows.forEach((row, index) => {
+            if (index === 0) return; // Skip the balance B/F row
+    
+            const expenseCell = row.querySelector(".expense");
+            const incomeCell = row.querySelector(".income");
+            const balanceCell = row.querySelector(".balance");
+    
+            const isCancelled = row.querySelector(".text-decoration-line-through") !== null;
+    
+            const expense = isCancelled ? 0 : parseFloat(expenseCell.textContent) || 0;
+            const income = isCancelled ? 0 : parseFloat(incomeCell.textContent) || 0;
+    
+            runningBalance = runningBalance - expense + income;
+            balanceCell.textContent = runningBalance.toFixed(2);
+        });
+    });
+    
+    
+
+        
+        // Calculate initial balances
+        calculateBalances();
+    
+        function calculateBalances() {
+            let totalCredit = 0;
+            let totalDebit = 0;
+    
+            tableRows.forEach((row, index) => {
+                if (index === 0) return;
+    
+                let expenseCell = row.querySelector(".expense");
+                let incomeCell = row.querySelector(".income");
+                let balanceCell = row.querySelector(".balance");
+    
+                let expense = parseFloat(expenseCell.textContent) || 0;
+                let income = parseFloat(incomeCell.textContent) || 0;
+    
+                // Check if the entry is cancelled
+                let isCancelled = row.classList.contains("text-decoration-line-through") ||
+                                  expenseCell.classList.contains("text-decoration-line-through") ||
+                                  incomeCell.classList.contains("text-decoration-line-through");
+    
+                if (isCancelled) {
+                    expense = 0;
+                    income = 0;
+                } else {
+                    totalCredit += expense;
+                    totalDebit += income;
+                }
+    
+                runningBalance = runningBalance - expense + income;
+                balanceCell.textContent = runningBalance.toFixed(2);
+            });
+    
+            // Update totals in the footer
+            document.querySelector("tfoot .fw-bold:nth-child(2)").textContent = totalCredit.toFixed(2);
+            document.querySelector("tfoot .fw-bold:nth-child(3)").textContent = totalDebit.toFixed(2);
+            document.querySelector("tfoot .fw-bold:nth-child(4)").textContent = runningBalance.toFixed(2);
+        }
+    
+     
+    
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+</script>
 {% endblock %}

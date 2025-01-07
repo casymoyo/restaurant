@@ -1,20 +1,33 @@
 {% extends "base.html" %}
-
 {% block title %} Analytics Overview {% endblock %}
-
 {% block content %}
-    <div>
-        <div class="d-flex justify-content-between align-items-center mt-2 mb-2">
+<style>
+    .analytics .card{
+        height: 150px !important;
+    }
+</style>
+    <div class="analytics">
+        <div class="d-flex justify-content-between border-bottom p-2 align-items-center mt-2 mb-2">
             <div>
                 <a href='/' class='bx bx-home btn border fs-5'></a>
                 <span class='mt-2 fs-5 mx-2 fw-bold'>Analytics</span>
             </div>
+            <!-- <div>
+                <li class="">
+                    <a href="{% url 'inventory:production_sales' %}" class='btn btn-outline-dark mx-2'>Sales in portions</a>
+                </li>
+            </div> -->
         </div>
-        <div class="row mt-4">
-            <div class="d-flex align-items-center justify-content-between">
+
+        <div class="row mt-4" id="analyticsData">
+            <!-- Data will be populated here by JavaScript -->
+        </div>
+
+        <div class="row mt-4 border p-1">
+            <div class="d-flex align-items-center justify-content-between w-100">
                 <h5>Sales</h5>
                 <div class="d-flex align-items-center">
-                    <h6 class="card-title">Filter By</h6>
+                    <h6>Filter</h6>
                     <select id="filterBy" class="form-control mx-2">
                         <option value="day">Day</option>
                         <option value="hour">Hour</option>
@@ -25,8 +38,47 @@
             </div>
         </div>
 
-        <div class="row mt-4" id="analyticsData">
-            <!-- Data will be populated here by JavaScript -->
+        <div id="loader" class="d-flex justify-content-center align-items-center position-fixed top-0 start-0 w-100 h-100 bg-light" style="z-index: 1050; display: none;">
+            <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-md-12">
+                <ul class="nav nav-tabs sticky-top bg-light" id="myTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="meals-tab" data-bs-toggle="tab" data-bs-target="#meals" type="button" role="tab" aria-controls="meals" aria-selected="true">Combined Dishes</button>
+                    </li>
+                    <li class="nav-item" role="presentation"></li>
+                        <button class="nav-link" id="dishes-tab" data-bs-toggle="tab" data-bs-target="#dishes" type="button" role="tab" aria-controls="dishes" aria-selected="false">Dishes</button>
+                    </li>
+                    <li class="nav-item" role="presentation"></li>
+                        <button class="nav-link" id="staff-tab" data-bs-toggle="tab" data-bs-target="#staff" type="button" role="tab" aria-controls="staff" aria-selected="false">Staff</button>
+                    </li>
+                </ul>
+
+                <div class="tab-content" id="myTabContent">
+
+                    <div class="tab-pane fade show active" id="meals" role="tabpanel" aria-labelledby="meals-tab">
+                        <table id="mealsTable" class="table mt-2 table-hover table-bordered table-striped table-hover">
+                            <!-- Meals data will be populated here -->
+                        </table>
+                    </div>
+
+                    <div class="tab-pane fade" id="dishes" role="tabpanel" aria-labelledby="dishes-tab">
+                        <table id="dishesTable" class="table mt-2 table-hover table-bordered table-striped table-hover">
+                            <!-- Dishes data will be populated here -->
+                        </table>
+                    </div>
+
+                    <div class="tab-pane fade" id="staff" role="tabpanel" aria-labelledby="staff-tab">
+                        <table id="staffTable" class="table mt-2 table-hover table-bordered table-striped table-hover">
+                            <!-- Dishes data will be populated here -->
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -34,27 +86,31 @@
     <script>
         document.getElementById('filterBy').addEventListener('change', function() {
             const filterBy = this.value;
+            loader.style.display = 'flex';
             fetch(`/analytics/analytics/?filter_by=${filterBy}`)
                 .then(response => response.json())
                 .then(data => {
+                    console.log(data, 'data')
                     const analyticsData = document.getElementById('analyticsData');
                     analyticsData.innerHTML = '';
-
+    
                     if (filterBy === 'day') {
                         analyticsData.innerHTML += `
                             <div class="col-md-3">
-                                <div class="card" style='border:none;'>
+                                <div class="card shadow" style='border:none;'>
                                     <div class="card-body">
                                         <h5 class="card-title text-muted">Today's Sales</h5>
-                                        <p class="card-text text-center fs-3">${data.today_sales || "0.00"}</p>
+                                        <p class="card-text text-center fs-5" id='total-sales'>Sales: $${data.today_sales || "0.00"}</p>
+                                        <p class="card-text text-center fs-5">Voids $${data.total_void_sales || "0.00"}</p>
                                     </div>
                                 </div>
                             </div>
                             <div class="col-md-3">
-                                <div class="card" style='border:none;'>
+                                <div class="card shadow" style='border:none;'>
                                     <div class="card-body">
-                                        <h5 class="card-title text-muted">Yesterday's Sales</h5>
-                                        <p class="card-text text-center fs-3">${data.yesterday_sales || "0.00"}</p>
+                                        <h5 class="card-title text-muted">Yesterday's</h5>
+                                        <p class="card-text text-center fs-5">Sales $${data.yesterday_sales || "0.00"}</p>
+                                        <p class="card-text text-center fs-5">Voids $${data.yesterday_void_sales || "0.00"}</p>
                                     </div>
                                 </div>
                             </div>
@@ -62,7 +118,7 @@
                     } else if (filterBy === 'month') {
                         analyticsData.innerHTML += `
                             <div class="col-md-3">
-                                <div class="card" style='border:none;'>
+                                <div class="card shadow" style='border:none;'>
                                     <div class="card-body">
                                         <h5 class="card-title text-muted">This Month's Sales</h5>
                                         <p class="card-text text-center fs-3">${data.month_sales || "0.00"}</p>
@@ -73,7 +129,7 @@
                     } else if (filterBy === 'year') {
                         analyticsData.innerHTML += `
                             <div class="col-md-4">
-                                <div class="card" style='border:none;'>
+                                <div class="card shadow" style='border:none;'>
                                     <div class="card-body">
                                         <h5 class="card-title text-muted">This Year's Sales</h5>
                                         <p class="card-text text-center fs-3">${data.year_sales || "0.00"}</p>
@@ -84,10 +140,10 @@
                     } else if (filterBy === 'hour') {
                         const labels = data.sales_by_hour.map(item => item.hour);
                         const salesData = data.sales_by_hour.map(item => item.total_sales);
-
+    
                         analyticsData.innerHTML += `
                             <div class="col-md-6">
-                                <div class="card">
+                                <div class="card shadow">
                                     <div class="card-body">
                                         <h5 class="card-title">Sales by Hour</h5>
                                         <canvas id="salesByHourChart"></canvas>
@@ -95,7 +151,7 @@
                                 </div>
                             </div>
                         `;
-
+    
                         const salesByHourData = {
                             labels: labels,
                             datasets: [{
@@ -106,7 +162,7 @@
                                 borderWidth: 1
                             }]
                         };
-
+    
                         const salesByHourConfig = {
                             type: 'bar',
                             data: salesByHourData,
@@ -118,28 +174,179 @@
                                 }
                             }
                         };
-
+    
                         const salesByHourChart = new Chart(
                             document.getElementById('salesByHourChart'),
                             salesByHourConfig
                         );
                     }
-
+    
                     if (data.best_selling_meal) {
                         analyticsData.innerHTML += `
                             <div class="col-md-6">
-                                <div class="card" style='border:none;'>
-                                    <div class="card-body" >
-                                        <h5 class="card-title text-muted">Best Selling Meal</h5>
-                                        <p class="card-text text-center fs-3">${data.best_selling_meal.meal__name} - ${data.best_selling_meal.total_sold} sold</p>
+                                <div class="card shadow" style='border:none;'>
+                                    <div class="card-body">
+                                        <div class='d-flex justify-content-between'>
+                                            <div>
+                                                <h5 class="card-title text-muted">Best Selling Meal</h5>
+                                                <p class="card-text text-center fs-4">${data.best_selling_meal.meal__name} - ${data.best_selling_meal.total_sold} sold</p>
+                                            </div>
+                                            <div>
+                                                <h5 class="card-title text-muted">Best Selling Dish</h5>
+                                                <p class="card-text text-center fs-4">${data.best_selling_dish.dish__name} - ${data.best_selling_dish.total_sold} sold</p>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         `;
                     }
-                });
-        });
+    
+            const mealsTable = document.getElementById('mealsTable');
+            const dishesTable = document.getElementById('dishesTable');
+            mealsTable.innerHTML = '';
+            dishesTable.innerHTML = '';
 
+            const sortedCategories = ['Today', 'Yesterday', ...Object.keys(data.grouped_meals).filter(cat => cat !== 'Today' && cat !== 'Yesterday')];
+
+            // Function to calculate total sales for a category
+            // const calculateTotalSales = (items) => items.reduce((sum, item) => parseFloat(sum)+ parseFloat(item.price), 0);
+
+            // Populate meals table
+            sortedCategories.forEach(category => {
+                const meals = data.grouped_meals[category] || [];
+                const dishes = data.grouped_dishes[category] || [];
+                // let totalSales = calculateTotalSales(meals);
+                // totalSales += calculateTotalSales(dishes);
+
+                
+
+                mealsTable.innerHTML += `
+                    <thead>
+                        <tr>
+                            <th colspan="3">${category}s</th>
+                        </tr>
+                        <tr>
+                            <th>Meal</th>
+                            <th>Quantity</th>
+                            <th>Selling Price Per Unit</th>
+                            <th>Total Selling Amnt</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${dishes
+                            .map(dish => dish.staff ? '' : `
+                                <tr>
+                                    <td>${dish.name}</td>
+                                    <td>${dish.quantity}</td>
+                                    <td>${(dish.price / dish.quantity).toFixed(2)}</td>
+                                    <td>${dish.price}</td>
+                                </tr>
+                            `)
+                            .join('')}
+                        ${meals
+                            .map(meal => meal.staff ? '' : `
+                                <tr>
+                                    <td>${meal.name}</td>
+                                    <td>${meal.quantity}</td>
+                                    <td>${(meal.price / meal.quantity).toFixed(2)}</td>
+                                    <td>${meal.price}</td>
+                                </tr>
+                            `)
+                            .join('')}
+                    </tbody>
+                `;
+            });
+
+            // Populate dishes table
+            sortedCategories.forEach(category => {
+                const dishes = data.dishes[category] || [];
+                // const totalSales = calculateTotalSales(dishes);
+
+                    dishesTable.innerHTML += `
+                        <thead>
+                            <tr>
+                                <th colspan="3">${category}</th>
+                            </tr>
+                            <tr>
+                                <th>Dish</th>
+                                <th>Quantity</th>
+                                <th>Price</th>
+                                <th>Total Selling Amnt</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${dishes
+                                .map(dish => dish.staff ? '' : `
+                                    <tr>
+                                        <td>${dish.name}</td>
+                                        <td>${dish.quantity}</td>
+                                        <td>${(dish.price / dish.quantity).toFixed(2)}</td>
+                                        <td>${dish.price}</td>
+                                    </tr>
+                                `)
+                                .join('')}
+                        </tbody>
+                    `;
+            });
+ 
+
+        // Populate staff table
+        const staffTable = document.getElementById('staffTable');
+        staffTable.innerHTML = '';
+
+        sortedCategories.forEach(category => {
+            const dishes = data.staff_dishes[category] || [];
+            let totalSales = 0;
+
+            staffTable.innerHTML += `
+                <thead>
+                    <tr>
+                        <th colspan="5">${category} -> ${totalSales}</th>
+                    </tr>
+                    <tr>
+                        <th>Dish</th>
+                        <th>Quantity</th>
+                        <th>Price</th>
+                        <th>Total Selling Amnt</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${dishes
+                        .map(dish => {
+                            console.log(dish)
+                            totalSales += parseFloat(dish.price);
+                            return `
+                                <tr>
+                                    <td>${dish.name}</td>
+                                    <td>${dish.quantity}</td>
+                                    <td>${(dish.price / dish.quantity).toFixed(2)}</td>
+                                    <td>${dish.price}</td>
+                                </tr>
+                            `;
+                            return '';
+                        })
+                        .join('')}
+                    <tr>
+                        <td>Total Sales</td>
+                        <td  colspan="2"></td> 
+                        <td class="fw-bold">${totalSales.toFixed(2)}</td>
+                    </tr>
+                </tbody>
+            `;
+        });
+    })
+    .catch(error => {
+            console.error('Error fetching data:', error);
+        })
+        .finally(() => {
+            console.log('done')
+            loader.classList.remove('d-flex')
+            loader.style.display = 'none';
+        });
+    });
+    
         document.getElementById('filterBy').dispatchEvent(new Event('change'));
     </script>
 {% endblock %}
+

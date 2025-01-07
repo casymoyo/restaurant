@@ -2,24 +2,28 @@
 {% load static %}
 {% block title %}Production Sales In Portions{% endblock title %}
 {% block content %}
-<div class="products m-2">
-    <nav class='mt-2 d-flex align-items-center justify-content-between'>
+<div>
+    <nav class='mt-2 d-flex align-items-center justify-content-between border-bottom'>
         <div>
             <ul class="list-unstyled d-flex align-items-center">
                 <li><a href='/' class='bx bx-home btn border fs-5 mt-1'></a></li>
                 <li class='mx-2 fs-5'>Sales In Portions</li>
             </ul>
         </div>
-        <div>
-            <form method="GET" class="d-flex">
-                <select name="filter" class="form-select me-2" onchange="this.form.submit()">
+        <div class='d-flex justify-content-between'>
+            <form method="GET" class="d-flex" >
+                <select name="filter" class="form-select mx-2" onchange="this.form.submit()">
                     <option value="today" {% if filter_by == 'today' %}selected{% endif %}>Today</option>
                     <option value="yesterday" {% if filter_by == 'yesterday' %}selected{% endif %}>Yesterday</option>
                     <option value="this_month" {% if filter_by == 'this_month' %}selected{% endif %}>This Month</option>
                     <option value="this_year" {% if filter_by == 'this_year' %}selected{% endif %}>This Year</option>
                 </select>
-                {% comment %}  {% endcomment %}
-                <button type="submit" name="download" value="csv" class="btn btn-success ms-2">Download CSV</button>
+                <div id="customDateRange" class="d-flex mx-2">
+                    <input type="date" id="startDate" value="{{ start_date }}" class="form-control" placeholder="Start Date">
+                    <input type="date" id="endDate" value="{{ end_date}}" class="form-control mx-2" placeholder="End Date">
+                    <button class="btn btn-primary" type='button' onclick="applyCustomFilter()">Apply</button>
+                </div>
+                <button type="submit" name="download" value="csv" class="btn btn-secondary btn-sm">Download</button>
             </form>
         </div>
     </nav>
@@ -29,15 +33,21 @@
             <table class="table table-hover table-responsive" id="production_sales_table" style="width: 100%;">
                 <thead class="bg-primary">
                     <th>Name</th>
+                    <th>Cost</th>
                     <th>Total Portions</th>
                     <th>Total Sold Portions</th>
+                    <th>Total Wastage </th>
+                    <th>Total Left Overs </th>
                 </thead>
                 <tbody>
                     {% for item in production_data %}
                         <tr>
                             <td><small>{{ item.dish__name }}</small></td>
+                            <td><small>{{ item.total_cost | floatformat:2 }}</small></td>
                             <td><small>{{ item.total_portions }}</small></td>
                             <td><small>{{ item.total_sold }}</small></td>
+                            <td><small>{{ item.wastage }}</small></td>
+                            <td><small>{{ item.left_overs }}</small></td>
                         </tr>
                     {% endfor %}
                 </tbody>
@@ -45,10 +55,24 @@
         </div>
     </div>
     <script>
-        new DataTable('#production_sales_table');
+        new DataTable('#production_sales_table', {
+
+        });
+
+        function applyCustomFilter() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            if (startDate && endDate) {
+                window.location.href = `?filter=custom&start_date=${startDate}&end_date=${endDate}`;
+            } else {
+                Swal.fire({
+                    title: "Error",
+                    text: "Please select both start and end dates.",
+                    icon: "error"
+                });
+            }
+        }
+        
     </script>
 </div>
 {% endblock content %}
-<input type="date" name="start_date" class="form-control me-2" placeholder="Start Date">
-                <input type="date" name="end_date" class="form-control me-2" placeholder="End Date">
-                <button type="submit" class="btn btn-primary">Filter</button>

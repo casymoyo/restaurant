@@ -2,65 +2,106 @@
 {% block title %} Dish List {% endblock %}
 {% block content %}
 <div class="">
-    <nav class="d-flex justify-content-between align-items-center">
-        <div class='d-flex'>
+    <nav class="d-flex justify-content-between align-items-center border-bottom">
+        <div class='d-flex align-items-center'>
             <a href='{% url "inventory:production_plans" %}' class='border btn bx bx-arrow-back fs-5'></a>
             <a href='/' class='bx bx-home btn border fs-5 mx-2'></a>
             <span class='fs-5'>Dishes</span>
         </div>
         <div>
-            <ul class="list-unstyled d-flex">
+            <ul class="list-unstyled d-flex mt-3">
                 <li class="">
-                    <a href="{% url 'inventory:dish_create' %}" class="btn btn-outline-dark mt-2">Add New Dish</a>
+                    <a href="{% url 'inventory:dish_create' %}" class="btn btn-outline-dark mx-2">Add New Dish</a>
+                </li>
+                <li class="">
+                    <button onclick="printTable()" class="btn btn-outline-dark">
+                        Print Table
+                        <i class="bx bx-printer"></i>
+                    </button>
                 </li>
             </ul>
         </div>
     </nav>
-    <table class="table table-hover" id="dishes_table">
-        <thead>
-            <tr>
-                <th>Name</th>
-                <th>Portion Multiplier</th>
-<<<<<<< HEAD
-=======
-                <th>Major Raw Material</th>
->>>>>>> d1c14cc97287c67047ba0ba1f6f8c7790636586a
-                <th>Ingredients</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for dish in dishes %}
-                <tr>
-                    <td>{{ dish.name }}</td>
-                    <td>{{ dish.portion_multiplier }}</td>
-<<<<<<< HEAD
-                    <td>
-                        {% for ingredient in ingredients %}
-                            {% if dish == ingredient.dish %}
-                                {{ ingredient.raw_material.name }} ({{ ingredient.quantity }})<br>
-=======
-                    <td>{{ dish.major_raw_material }}</td>
-                    <td>
-                        {% for ingredient in ingredients %}
-                            {% if dish == ingredient.dish %}
-                                {{ ingredient.minor_raw_material.name }} ({{ ingredient.quantity }})<br>
->>>>>>> d1c14cc97287c67047ba0ba1f6f8c7790636586a
-                            {% endif %}
-                        {% endfor %}
-                    </td>
-                    <td>
-                        {% comment %} <a href="{% url 'inventory:dish_update' dish.id %}" class="btn btn-warning btn-sm bx bx-edit"></a> {% endcomment %}
-                        <a href="{% url 'inventory:dish_delete' dish.id %}" class="btn btn-danger btn-sm bx bx-trash"></a>
-                        {% comment %} <a href="{% url 'inventory:ingredient_create' dish.id %}" class="btn btn-light btn-sm">Add Ingridients</a> {% endcomment %}
-                        <!-- <a href="" class="btn btn-danger btn-sm">Update Ingridients</a> -->
-                    </td>
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class='mt-2'>
+        <div id="printable_area">
+            <table class="table table-hover table-bordered table-striped" id="dishes_table">
+                <thead>
+                    <tr>
+                        <th>Count</th>
+                        <th>Name</th>
+                        <th>Category</th>
+                        <th>Portion Multiplier</th>
+                        <th>Cost</th>
+                        <th>Selling Price</th>
+                        <th>GP (%)</th>
+                        <th>Ingredients</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for dish in dishes %}
+                        <tr>
+                            <td><small>{{ forloop.counter }}</small></td>
+                            <td><small>{{ dish.name }}</small></td>
+                            <td><small>{{ dish.category }}</small></td>
+                            <td><small>{{ dish.portion_multiplier }}</small></td>
+                            <td><small class="cost">{{ dish.cost }}</small></td>
+                            <td><small class="price">{{ dish.price }}</small></td>
+                            <td><small class="gp"></small></td>
+                            <td>
+                                <small>
+                                    {% for ingredient in ingredients %}
+                                        {% if dish == ingredient.dish %}
+                                            {{ ingredient.raw_material.name }} ({{ ingredient.quantity }})<br>
+                                        {% endif %}
+                                    {% endfor %}
+                                </small>
+                            </td>
+                            <td>
+                                <small>
+                                    <a href="{% url 'inventory:edit_dish' dish.id %}" class="btn bx bx-edit mx-1"></a>
+                                    <a href="{% url 'inventory:dish_delete' dish.id %}" class="btn bx bx-trash"></a>
+                                </small>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
+
 <script>
-    new DataTable('#dishes_table')
+    function printTable() {
+        const originalContent = document.body.innerHTML; 
+        const tableContent = document.getElementById('printable_area').innerHTML; 
+        document.body.classList.add('p-2')
+        document.body.innerHTML = tableContent; 
+        window.print(); 
+        document.body.innerHTML = originalContent; 
+        location.reload(); 
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const rows = document.querySelectorAll("#dishes_table tbody tr");
+        rows.forEach(row => {
+            const cost = parseFloat(row.querySelector(".cost").textContent.trim()) || 0;
+            const price = parseFloat(row.querySelector(".price").textContent.trim()) || 0;
+            const gpCell = row.querySelector(".gp");
+
+            if (price > 0) {
+                const gp = ((price - cost) / price) * 100;
+                gpCell.textContent = gp.toFixed(2) + " %";
+            } else {
+                gpCell.textContent = "N/A";
+            }
+        });
+    });
+
+    new DataTable('#dishes_table', {
+        paging: false,
+        fixedHeader: true,
+        responsive: true
+    });
 </script>
 {% endblock %}

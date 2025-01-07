@@ -2,7 +2,7 @@
 {% block title %} Dish List {% endblock %}
 {% block content %}
 <div class="">
-    <nav class="d-flex justify-content-between align-items-center p-2">
+    <nav class="d-flex justify-content-between align-items-center border-bottom">
         <div class='d-flex'>
             <a href='{% url "inventory:production_plans" %}' class='border btn bx bx-arrow-back fs-5'></a>
             <a href='/' class='bx bx-home btn border fs-5 mx-2'></a>
@@ -16,11 +16,12 @@
             </ul>
         </div>
     </nav>
-    <table class="table table-hover" id="dishes_table">
+    <table class="table table-hover table-bordered table-striped table-hover" id="dishes_table">
         <thead>
             <tr>
                 <th>Name</th>
                 <th>Dishes</th>
+                <th>Selling Price</th>
                 <th>Actions</th>
             </tr>
         </thead>
@@ -30,14 +31,17 @@
                     <td>{{ meal.name }}</td>
                     <td>
                         {% for dish in meal.dish.all %}
-                            {{ dish.name }}<br>
+                            {{ dish.name }} - ${{ dish.cost }} <br>
                         {% empty %}
                             No dishes available
                         {% endfor %}
                     </td>
                     <td>
-                        <a href="{% url 'inventory:edit_meal' meal.id %}" class="btn btn-warning btn-sm bx bx-edit"></a>
-                        <a href="javascript:void(0);" class="btn btn-danger btn-sm bx bx-trash btn-delete" data-meal-id="{{ meal.id }}" data-meal-name="{{ meal.name }}"></a>
+                        {{ meal.price }}
+                    </td>
+                    <td>
+                        <a href="{% url 'inventory:edit_meal' meal.id %}" class="btn btn-sm bx bx-edit"></a>
+                        <a href="javascript:void(0);" class="btn btn-sm bx bx-trash btn-delete" data-meal-id="{{ meal.id }}" data-meal-name="{{ meal.name }}"></a>
                     </td>
                 </tr>
             {% endfor %}

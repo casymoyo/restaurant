@@ -3,41 +3,83 @@
 {% load crispy_forms_tags %}
 {% block title%} Production Plan {% endblock%}
 {% block content %}
-   <div class="inventory">
+<style>
+    @media (min-width:600px ) and (max-width:1024px){
+        .checklist{
+            display: none;
+        }
+        .col-10{
+            width: 100%; 
+            flex: 0 0 100%;
+            max-width: 100%; 
+        }
+        .Production{
+            margin-right: 15px;
+        }
+    }
+    @media (max-width: 1024px) {
+        .Production .production-buttons {
+            display: none; 
+        }
+        .hamburger-menu {
+            display: block;
+        }
+    }
+
+    @media (min-width: 1025px) {
+        .hamburger-menu {
+            display: none; /
+        }
+    }
+</style>
+   <div class="Production" style="margin-left: 15px;">
         <div class="inventory-navbar">
             <nav class="d-flex justify-content-between align-items-center mt-2 mb-2">
-                <div class='fw-bold d-flex'>
+                <div class='fw-bold d-flex align-items-center'>
                     {% if request.user.role != 'chef'%}
                         <a href='/' class='bx bx-home btn border fs-5'></a>
                     {% endif %}
                     <span class='fs-5 mx-2'>Production</span>
                 </div>
-                <div>
+                <div class="d-flex align-items-center mt-2">
+                    <button class="btn btn-dark hamburger-menu" type="button" data-bs-toggle="collapse" data-bs-target="#hamburgerMenuContent" aria-expanded="false" aria-controls="hamburgerMenuContent">
+                        <i class="bx bx-menu"></i>
+                    </button>
+    
+                    <!-- Hamburger menu content -->
+                    <div class="collapse" id="hamburgerMenuContent">
+                        <ul class="list-unstyled mt-2">
+                            <li>
+                                <a href="{% url 'inventory:create_production_plan' %}" class='btn btn-outline-dark w-100 mb-2'>Create Production Plan</a>
+                            </li>
+                            <li>
+                                <a href="{% url 'inventory:production_transfers' %}" class='btn btn-outline-dark w-100 mb-2'>Receive Transfers <span class='badge text-dark'>{{ transfer_count }}</span></a>
+                            </li>
+                            <li>
+                                <a href="{% url 'inventory:production_raw_materials' %}" class='btn btn-outline-dark w-100 mb-2'>Production Raw Materials</a>
+                            </li>
+                            <li>
+                                <button type="button" class='btn btn-outline-dark w-100' data-bs-toggle="modal" data-bs-target="#checklistModal">Checklist</button>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="dropdown mx-2" style="margin-top: -9px;">
+                        <button class="btn btn-outline-dark dropdown-toggle" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
+                          Add
+                        </button>
+                        <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
+                            <li class="mx-2 py-2">
+                                <a href="{% url 'inventory:meal_list' %}">Meals</a>
+                            </li>
+                            <li class="mx-2 py-2">
+                                <a href="{% url 'inventory:dish_list' %}">Dishes</a>
+                            </li>
+                        </ul>
+                    </div>
                     <ul class="list-unstyled mt-2 d-flex">
                         <li class="">
 <<<<<<< HEAD
                             <a href="{% url 'inventory:create_production_plan' %}" class='btn btn-outline-dark'>Create Production Plan</a>
-                        </li>
-                        <li class="">
-                            <a href="{% url 'inventory:production_sales' %}" class='btn btn-outline-dark mx-2'>Sales in portions</a>
-                        </li>
-                        <li class="">
-                            <a href="{% url 'inventory:meal_list' %}" class='btn btn-outline-dark mx-2'>Meals</a>
-                        </li>
-=======
-                            <a href="{% url 'inventory:create_production_plan' %}" class='btn btn-outline-dark mx-2'>Create Production Plan</a>
-                            </li>
-                            {% if request.user.role != 'chef'%}
-                                <li class="">
-                                    <a href="{% url 'inventory:meal_list' %}" class='btn btn-outline-dark'>Meals</a>
-                                </li>
-                                <li class="">
-                                    <a href="{% url 'inventory:dish_list' %}" class='btn btn-outline-dark mx-2'>Dishes</a>
-                                </li>
-                            {% endif %}
->>>>>>> d1c14cc97287c67047ba0ba1f6f8c7790636586a
-                        <li class="">
-                            <a href="{% url 'inventory:dish_list' %}" class='btn btn-outline-dark'>Dishes</a>
                         </li>
                         <li class="">
                             <a href="{% url 'inventory:production_transfers' %}" class='btn btn-outline-dark mx-2'>
@@ -83,7 +125,7 @@
                                                 {% if plan.status %}
                                                     <small class="bg-success text-light p-2 rounded text-center w-100">Confirmed</small>
                                                 {%else %}
-                                                    <a href="{% url 'inventory:confirm_production_plan' plan.id %}" class="bg-danger text-light p-2 rounded text-center w-100">Waiting Confirmation</a>
+                                                    <a href="{% url 'inventory:confirm_production_plan' plan.id %}" class="bg-danger text-light p-2 rounded text-center w-100">Please Confirm</a>
                                                 {% endif %}
                                             </small>
                                         {% endif %}
@@ -155,6 +197,8 @@
         </div>
    </div> 
    <script>
-        new DataTable('#production_table');
+        new DataTable('#production_table',{
+            pageLength: 100  
+        });
    </script>
 {% endblock content %}

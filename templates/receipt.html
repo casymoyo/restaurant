@@ -1,0 +1,63 @@
+{% block content %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Receipt</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      width: 8cm;
+      margin: 0 auto;
+      padding: 1cm;
+    }
+    .center {
+      text-align: center;
+    }
+    .item-row {
+      display: flex;
+      justify-content: space-between;
+      margin: 0.5cm 0;
+    }
+    .bold {
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="center bold">Parsales Investments (Urban Eats)</div>
+  <div class="center">65 Speke Ave, Harare</div>
+  <div class="center bold">TAX INVOICE</div>
+  <hr>
+  <div>Date: <span id="date"></span></div>
+  <div>Time: <span id="time"></span></div>
+  <div>Cashier: <span id="cashier"></span></div>
+  <hr>
+  <div id="items"></div>
+  <hr>
+  <div class="item-row bold">
+    <span>Sub Total:</span>
+    <span id="sub_total"></span>
+  </div>
+  <div class="item-row">
+    <span>Tax:</span>
+    <span id="tax"></span>
+  </div>
+  <div class="item-row bold">
+    <span>Total:</span>
+    <span id="total_amount"></span>
+  </div>
+  <div class="item-row">
+    <span>Cash Received:</span>
+    <span id="received_amount"></span>
+  </div>
+  <div class="item-row">
+    <span>Change:</span>
+    <span id="change"></span>
+  </div>
+  <hr>
+  <div class="center bold">Thank You, Call Again!</div>
+</body>
+</html>
+{% endblock %}

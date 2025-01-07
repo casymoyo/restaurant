@@ -12,6 +12,8 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.hashers import make_password
 from .models import Company, User
 from .forms import CompanyForm, CustomUserCreationForm
+from settings.models import Modules
+from django.db import transaction
 
 def create_company(request):
     if Company.objects.exists():
@@ -22,22 +24,34 @@ def create_company(request):
         user_form = CustomUserCreationForm(request.POST)
         
         if company_form.is_valid() and user_form.is_valid():
-            # Save the company
-            company = company_form.save()
-            
-            # Create the user with the company
-            user = user_form.save(commit=False)
-            user.company = company
-            user.role = 'owner'  
-            user.save()
-            
-            login(request, user)  
+
+            with transaction.atomic():
+                # Save the company
+                company = company_form.save()
+                
+                # Create the user with the company
+                user = user_form.save(commit=False)
+                user.company = company
+                user.role = 'owner'  
+                user.save()
+                
+                # create modules
+                modules = ['Sales', 'Finance', 'Inventory', 'Production']
+                bulk_modules = []
+
+                for m in modules:
+                    bulk_modules.append(Modules(name=m))
+
+                Modules.objects.bulk_create(bulk_modules)
             return redirect('users:login')
+        else:
+            messages.warning(request, f'Company registration form not valid.')
     else:
         company_form = CompanyForm()
         user_form = CustomUserCreationForm()
 
     return render(request, 'create_company.html', {'company_form': company_form, 'user_form': user_form})
+
 
 def users(request):
     search_query = request.GET.get('q', '')
@@ -79,6 +93,12 @@ def login_view(request):
                 login(request, user)
                 logger.info(f'User: {user.first_name + " " + user.email} logged in')
                 logger.info(f'User role: {user.role}')
+
+                # session_key = request.session.session_key
+                # user.session_key = session_key
+                # user.save()
+
+                # logger.info(f'logged with session key: {session_key}')
                 if user.role in ['accountant', 'admin', 'owner']:
                     logger.info(f'User: {user.first_name + " " + user.email} is an {user.role}')
                     return redirect('dashborad')
@@ -89,14 +109,7 @@ def login_view(request):
                 messages.error(request, 'Your account is not active, contact admin')
         else:
             messages.warning(request, 'Invalid username or password')
-    
-    # if request.method == 'GET':
-    #     User = get_user_model()
-    #     if not User.objects.exists():
-    #         logger.info('here')
-    #         return redirect('company:register_company')
-    #     elif request.user.is_authenticated:
-    #         return redirect('pos:pos')
+
     return render(request, 'auth/login.html')
 
 

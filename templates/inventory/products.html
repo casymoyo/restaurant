@@ -2,34 +2,18 @@
 {% load static %}
 {% block title %}Products{% endblock title %}
 {% block content %}
-<<<<<<< HEAD
-=======
-<style>
-    .card{
-        border: none;
-    }
-    a{
-        text-decoration: none;
-        color: #333;
-    }
-</style>
->>>>>>> d1c14cc97287c67047ba0ba1f6f8c7790636586a
-<div class="products m-2">
-    <nav class='mt-2 d-flex align-items-center justify-content-between'>
+<div class="products">
+    <nav class='border-bottom d-flex align-items-center justify-content-between mt-2'>
         <div>
             <ul class="list-unstyled d-flex align-items-center">
                 <li><a href='/' class='bx bx-home btn border fs-5 mt-1'></a></li>
-                <li class='mx-2 fs-5'>Inventory
+                <li class='mx-2 fs-5'>Admin Inventory
                     (<span class='mx-2 fw-bold'>{{ count }} items</span>)
                 </li>
             </ul>
         </div>
         <div>
-            <ul class="list-unstyled d-flex mt-3">
-<<<<<<< HEAD
-                <li class="mx-2">
-                    {% comment %} <a href="{% url 'inventory:create_purchase_order' %}" class="btn btn-outline-dark">Transfer(s) to Production</a> {% endcomment %}
-                </li>
+            <ul class="list-unstyled d-flex">
                 <li>
                     <a href="{% url 'inventory:create_purchase_order' %}" class="btn btn-outline-dark mx-2">Add Inventory</a>
                 </li>
@@ -40,27 +24,18 @@
                     <a href="{% url 'inventory:order_list' %}" class="btn btn-outline-dark mx-2">Reorder List</a>
                 </li>
                 <li>
-                    <a href="{% url 'inventory:transfers' %}" class="btn btn-outline-dark">Transfers</a>
-=======
-                <li>
-                    <a href="{% url 'inventory:create_purchase_order' %}" class="btn btn-outline-dark">Add Inventory</a>
-                </li>
-                <li class="mx-2">
-                    <a href="{% url 'inventory:create_purchase_order' %}" class="btn btn-outline-dark">Transfer(s) to Production</a>
-                </li>
-                <li>
-                    <a href="{% url 'inventory:purchase_orders' %}" class="btn btn-outline-dark">Purchase Orders</a>
-                </li>
-                <li class="btn btn-outline-dark mx-2">Raw Materials</li>
-                <li>
-                    <a href="{% url 'inventory:finished_products' %}" class="btn btn-outline-dark">Products</a>
->>>>>>> d1c14cc97287c67047ba0ba1f6f8c7790636586a
+                    <a href="{% url 'inventory:budget' %}" class="btn btn-outline-dark mx-2">Budgets</a>
                 </li>
             </ul>
         </div>
     </nav>
+    <div class="d-flex justify-content-between mt-2 mb-2 w-100">
+        <h5>Raw Materials</h35>
+        <button onclick="printTable()" class="btn btn-primary btn-sm">Print Table</button>
+    </div>
+    
     <div class="tables">
-        <table class="table table-hover table-responsive raw" id="raw_materials_table" style="width: 100%;">
+        <table class="table table-hover table-responsive table-bordered table-striped" id="raw_materials_table" style="width: 100%;">
             <thead class="bg-primary">
                 <th>Name</th>
                 <th>Cost per unit</th>
@@ -71,7 +46,7 @@
                 {% for raw_material in raw_materials  %}
                     <tr>
                         <td><small>{{ raw_material.name }}</small></td>
-                        <td><small>{{ raw_material.cost}}</small></td>
+                        <td><small>{{ raw_material.cost | floatformat:3 }}</small></td>
                         <td><small>{{ raw_material.quantity | floatformat:3 }} {{ raw_material.unit }}</small></td>
                         <td>
                             <small>
@@ -99,8 +74,122 @@
     </div>
         </div>
 </div>
+<!-- <script>
+    new DataTable('#raw_materials_table')
+    // new DataTable('#products_table')
+
+    function printTable() {
+        // Select the table
+        const table = document.querySelector('#raw_materials_table');
+
+        // Open a new window
+        const printWindow = window.open('', '_blank');
+
+        // Write the table content to the new window
+        printWindow.document.write(`
+            <html>
+            <head>
+                <title>Print Table</title>
+                <link rel="stylesheet" href="{% static 'path/to/your/styles.css' %}">
+            </head>
+            <body>
+                <table style="width: 100%; border-collapse: collapse;">
+                    ${table.outerHTML}
+                </table>
+            </body>
+            </html>
+        `);
+
+        // Close the document to trigger rendering
+        printWindow.document.close();
+
+        // Wait for styles to load, then print
+        printWindow.onload = () => {
+            printWindow.print();
+            printWindow.close();
+        };
+    }
+
+</script> -->
 <script>
     new DataTable('#raw_materials_table')
-    new DataTable('#products_table')
+    new DataTable('#inventory', {
+        searchable: true,
+        sortable: true,
+        paging:false
+    })
+
+    function printTable() {
+        const rows = document.querySelectorAll('#raw_materials_table tr');
+
+        let printContent = `
+            <table style="width: 100%; border-collapse: collapse; border: 1px solid black;">
+                <thead>
+                    <tr style="background-color: #007bff; color: white; text-align: left;">
+                        <th style="padding: 8px; border: 1px solid black;">Name</th>
+                        <th style="padding: 8px; border: 1px solid black;">Cost per unit</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        rows.forEach((row, index) => {
+            if (index > 0) { // Skip the header row
+                const cells = row.querySelectorAll('td');
+                if (cells.length > 0) {
+                    const name = cells[0].innerText.trim(); 
+                    const cost = cells[1].innerText.trim(); 
+                    printContent += `
+                        <tr>
+                            <td style="padding: 8px; border: 1px solid black;">${name}</td>
+                            <td style="padding: 8px; border: 1px solid black;">${cost}</td>
+                        </tr>
+                    `;
+                }
+            }
+        });
+
+        printContent += `
+                </tbody>
+            </table>
+        `;
+
+        const printWindow = window.open('', '_blank');
+
+        printWindow.document.write(`
+            <html>
+            <head>
+                <title>Print Name and Cost</title>
+                <style>
+                    table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        font-family: Arial, sans-serif;
+                    }
+                    th, td {
+                        border: 1px solid black;
+                        padding: 8px;
+                        text-align: left;
+                    }
+                    th {
+                        background-color: #007bff;
+                        color: white;
+                    }
+                </style>
+            </head>
+            <body>
+                ${printContent}
+            </body>
+            </html>
+        `);
+
+        printWindow.document.close();
+
+        printWindow.onload = () => {
+            printWindow.print();
+            printWindow.close();
+        };
+    }
 </script>
+
 {% endblock content %}

@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% load static%}
+{% block title%} Production Inventory Detail {% endblock%}
+{% block content %}
+   <div class="inventory">
+        <nav class='mt-3 d-flex align-items-center justify-content-between border-bottom'>
+            <div>
+                <ul class="list-unstyled d-flex align-items-center">
+                    <li><a href='{% url "inventory:production_raw_materials"%}' class='border btn bx bx-arrow-back fs-5'></a></li>
+                    <li><a href='/' class='bx bx-home btn border fs-5 mx-2'></a></li>
+                    <li class='fs-5'>{{ product.product | capfirst }} <small class='px-1 fw-bold fx-6'>Raw Material Logs</small></li>
+                </ul>
+            </div>
+        </nav>
+        <div>
+            <div class="inventory-chart hidden text-center charts" style='width: 100vh; height: 100vh;'>
+                <canvas id="inventoryChart"></canvas>
+            </div>
+
+            <div class="table-detail mt-2 w-100 atable">
+                <table class='table border table-striped table-hover rounded display p-2' style="width:100%" id='detailTable'>
+                    <thead class='bg-primary'>
+                        <tr>
+                            <th>Date</th>
+                            <th>By (user)</th>
+                            <th>Reference</th>
+                            <th>Type</th>
+                            <th>Trans Qnty</th>
+                            <th>Qnty At Hand</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs %}
+                            <tr>
+                                <td><small>{{ log.timestamp }}</small></td>
+                                <td><small><span>{{ log.user }}</span></small></td>
+                                {% if log.invoice.invoice_number %}
+                                    <td data-id="{{log.invoice.id}}" id="invoice" style="cursor:pointer;"><small>{{ log.invoice.invoice_number }}</small></td>
+                                {% elif log.product_transfer %}
+                                    <td data-id="{{ log.product_transfer.id }}" id="transfer" style="cursor:pointer;"><small>{{ log.product_transfer.transfer.transfer_ref }}</small></td>
+                                {% else %}
+                                    <td data-id="{{ log.purchase_order.id }}" id="purchase_order" style="cursor:pointer;"><small>{{ log.purchase_order.order_number }}</small></td>
+                                {% endif %}
+                                <td>
+                                    <small style='width:20px !important;'>
+                                        {{ log.action }} 
+                                        {% if log.description %}({{ log.description }}){% endif %}
+                                    </small>
+                                </td>
+                                <td><small>
+                                    {% if log.action == 'stock in' or log.action == 'Update' or log.action == 'sale cancelled' or log.action == 'Stock in' %}
+                                        <span class='text-success'>{{ log.quantity|floatformat:2}}</span>
+                                        <i class='text-success bx bx-chevron-up'></i>
+                                    {% elif log.action == 'defective'%}
+                                        <span class='text-danger'>{{log.quantity}}</span>
+                                        <i class='text-danger bx bx-chevron-down'></i>
+                                    {% elif log.action == 'Decline'%}
+                                        <span class='text-danger'>{{log.quantity}}</span>
+                                        <i class='text-danger bx bxs-circle bx-rotate-90 bx-tada'></i>
+                                    {% elif log.action == 'Edit' or log.action == 'deactivated' or log.action == 'activated'%}
+                                        <span class='text-dark'>{{ log.quantity|floatformat:2}}</span>
+                                    {% else %}
+                                        <span class='text-danger'>{{ log.quantity|floatformat:2}}</span>
+                                        <i class='text-danger bx bx-chevron-down'></i>
+                                    {% endif %}
+                                    </small>
+                                </td>
+                                <td><small>{{log.total_quantity|floatformat:2}}</small></td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>  
+                <div class="modal fade" id="invoiceModal" tabindex="-1" aria-labelledby="invoiceModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <h5 class="modal-title fw-bold p-2" id="invoiceModalLabel">Invoice Details</h5>
+                            <div class="modal-body" id="invoiceDetails"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="modal fade" id="transferModal" tabindex="-1" aria-labelledby="transferModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <h5 class="modal-title fw-bold p-2" id="transferModalLabel">Transfer Details</h5>
+                            <div class="modal-body" id="transferDetails"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+   </div>
+   <script>
+        new DataTable('#detailTable')
+   </script>
+{% endblock content %}

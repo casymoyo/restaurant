@@ -5,11 +5,11 @@
 {% block content %}
    <div class="inventory">
         <div class='add-purchase-order'>
-            <div class='purchase-order-nav mt-2  d-flex justify-content-between align-items-center'>
+            <div class='border-bottom d-flex justify-content-between align-items-center'>
                 <div>
-                    <a href='{% url "inventory:products"%}' class='border btn bx bx-arrow-back fs-5'></a>
+                    <a href='{% url "inventory:purchase_orders"%}' class='border btn bx bx-arrow-back fs-5'></a>
                     <a href='/' class='bx bx-home btn border fs-5 mx-2'></a>
-                    <span class='mt-2 fs-5'>Create Purchase order</span>
+                    <span class='fs-5'>Create Purchase order</span>
                 </div>
                 <div>
                     <ul class="list-unstyled mt-3">
@@ -19,7 +19,7 @@
                     </ul>
                 </div>
             </div>
-            <div class="row mt-2 border p-2">
+            <div class="row mt-3 p-2">
                 <div class="col-9">
                     <div class="d-flex flex-column">
                         <p id="cart-title">Purchase order Items</p>
@@ -87,7 +87,7 @@
                     </div>
                 </div>
                 <div class="col-3">
-                    <div class='mt-2 shadow'>
+                    <div class='mt-2'>
                         <form class='d-flex flex-column mt-2 w-100 mt-2 w-100 px-2' method='post'>
                             {% csrf_token %}
                             <div class="mb-1">
@@ -449,7 +449,6 @@
           </div>
         </div>
    </div>   
-<!-- <script src="{% static 'js/productValidation.js'%}"></script> -->
 <script>
     let cart = [];
     let prodData = [];
@@ -648,35 +647,61 @@
             unit: document.getElementById('id_unit').value, 
             min_stock_level: parseInt(document.getElementById('id_min_stock_level').value),
             description: document.getElementById('id_description').value,
-            raw_material:document.getElementById('id_raw_material').checked,
-            finished_product:document.getElementById('id_finished_product').checked
+            raw_material: document.getElementById('id_raw_material').checked,
+            finished_product: document.getElementById('id_finished_product').checked
         };
-        console.log(data)
+
+        console.log(data);
+
+        Swal.fire({
+            title: 'Processing...',
+            text: 'Saving the product data.',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
         fetch("{% url 'inventory:product' %}", {
             method: "POST",
             headers: {
-              "Content-Type": "application/json",
-              "X-CSRFToken": getCookie("csrftoken"), 
+                "Content-Type": "application/json",
+                "X-CSRFToken": getCookie("csrftoken"),
             },
             body: JSON.stringify(data),
-          })
-          .then(response => response.json())
-          .then(data=>{
-              if (data.success) {
-                successModal.show() 
-                supplierFormModal.hide()
-                fetchProducts()
-                setTimeout(()=>{
-                    successModal.hide()
-                }, 2000)
-              } else {
-                errorEl.textContent=data.message;
-              } 
-            })
-            .catch((error) => {
-              errorEl.textContent=data.error;
+        })
+        .then(response => response.json())
+        .then(data => {
+            
+            Swal.close();
+
+            if (data.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Product Added!',
+                    text: 'The product has been successfully added.',
+                }).then(() => {
+                    supplierFormModal.hide();
+                    fetchProducts();
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: data.message,
+                });
+            }
+        })
+        .catch((error) => {
+            Swal.close();
+            
+            Swal.fire({
+                icon: 'error',
+                title: 'Oops...',
+                text: 'An error occurred while saving the product.',
             });
-    } 
+        });
+    }
 
     async function fetchProducts(){
         try {
@@ -914,7 +939,11 @@
       console.log(product, supplier, price, quantity)
       // Validation checks
       if (!product || !quantity || !price  || !supplier) {
-        addToCartError.textContent='Please fill in all the fields: Product, Quantity, Price and Supplier.';
+        Swal.fire({
+            title: "Error",
+            text: 'Please fill in all the fields: Product, Quantity, Price and Supplier.',
+            icon: "error"
+        });
           return;
       }
       const existingItem = cart.find((item) => item.product === product)
@@ -975,19 +1004,31 @@
       .then(data=>{
           if (data.success) {
             noteModal.hide()
-            poSuccessModal.show()
-            cart = []; 
-            updateCartDisplay();
-            setTimeout(()=>{
-              window.location.reload()
-            }, 1000)
+            Swal.fire({
+                title: "Success",
+                text: data.message,
+                icon: "success"
+            }).then(()=>{
+                cart = []; 
+                updateCartDisplay();
+                setTimeout(()=>{
+                window.location.reload()
+                }, 1000)
+            });
           } else {
-            cartError.textContent=data.message;
+            Swal.fire({
+                title: "Error",
+                text: data.message,
+                icon: "error"
+            })
           } 
         })
         .catch((error) => {
-          console.error("Error:", error);
-          addToCartError.textContent=data.message;
+          Swal.fire({
+            title: "Success",
+            text: error,
+            icon: "success"
+        })
         });
     }
 

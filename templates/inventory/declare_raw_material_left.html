@@ -30,7 +30,6 @@
                         <tr>
                             <th>Raw Material</th>
                             <th>Planned Quantity</th>
-                            <th>Expected Quantity</th>
                             <th>Allocated Quantity</th>
                             <th>Used Quantity</th>
                             <th>Status</th>
@@ -41,7 +40,6 @@
                         <tr data-id="{{ item.id }}"  data-raw-material="{{ item.id }}">
                             <td><small>{{ item.name }}</small></td>
                             <td><small>{{ item.quantity | floatformat:2 }}</small></td>
-                            <td><small>{{ item.expected_quantity }}</small></td>
                             <td>
                                 <small>
                                     {% for rm in allocated %}
@@ -155,7 +153,6 @@
                     const itemId = {{ production_plan.id }};
                     const rmId = tr.getAttribute('data-raw-material');
                     const usedQuantity = parseFloat(input.value);
-                    console.log(tr)
                     
                     // revisit
                     {% comment %} if (usedQuantity > actualQuantity) {

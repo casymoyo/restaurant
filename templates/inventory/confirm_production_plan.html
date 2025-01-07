@@ -10,7 +10,13 @@
     {% endif %}
  {% endblock %}
 {% block content %}
-
+<style>
+    input.loading {
+        background: url('{% static "images/loader.gif" %}') no-repeat right center;
+        background-size: 20px;
+        padding-right: 30px; 
+    }    
+</style>
 <div class="inventory">
     <div class='add-production-plan'>
         <div class='production-plan mt-2 d-flex justify-content-between align-items-center'>
@@ -45,25 +51,18 @@
         <div class="row">
             <div class="">
                 <div class="d-flex align-items-center justify-content-between border rounded p-2 bg-dark text-light">
-<<<<<<< HEAD
-                    <h5 class="fw-bold">Dishes</h5>
-=======
                     <h5 class="fw-bold">Major Raw Materials</h5>
->>>>>>> d1c14cc97287c67047ba0ba1f6f8c7790636586a
                     <h5 class="fw-bold">Total Cost: ${{ total_cost_items }}</h5>
                 </div>
                 <table class="table" id='plan_item_table' style="width:100%;">
                     <thead class="bg-primary">
                         <th>Dish</th>
-<<<<<<< HEAD
-=======
                         <th>Quantity</th>
                         <th>RM B/F Quantity</th>
                         <th>LF B/f Quantity</th>
                         <th>Actual Quantity</th>
                         <th>Declared Quantity</th>
                         <th>Portion Multiplier</th>
->>>>>>> d1c14cc97287c67047ba0ba1f6f8c7790636586a
                         <th>Portions</th>
                         <th>Total Cost</th>
                     </thead>
@@ -71,10 +70,6 @@
                         {% for item in production_plan_items  %}
                           <tr>
                             <td><small>{{ item.dish.name }}</small></td>
-<<<<<<< HEAD
-                            <td><small>{{ item.portions }} {{ item.raw_material.unit }}</small></td>
-                            <td><small>${{ item.total_cost }}</small></td>
-=======
                             <td><small>{{ item.quantity }} {{ item.raw_material.unit }}</small></td>
                             <td><small>{{ item.rm_carried_forward_quantity }} {{ item.raw_material.unit }}</small></td>
                             <td><small>{{ item.lf_carried_forward_quantity }} {{ item.raw_material.unit }}</small></td>
@@ -83,32 +78,27 @@
                             <td><small>{{ item.dish.portion_multiplier }}</small></td>
                             <td><small>{{ item.portions }} portions</small></td>
                             <td><small>{{ item.total_cost }}</small></td>
->>>>>>> d1c14cc97287c67047ba0ba1f6f8c7790636586a
                           </tr>
                         {% endfor %}
                     </tbody>
                 </table>
 
                 
-<<<<<<< HEAD
-                <div class="d-flex mt-3 align-items-center justify-content-between border rounded p-2 bg-dark text-light">
-                    <h5 class="fw-bold">Raw Materials</h5>
-=======
                 <div class=" mt-4 mb-2 d-flex align-items-center justify-content-between border rounded p-2 bg-dark text-light">
                     <h5 class="fw-bold">Minor Raw Materials</h5>
                     <h5 class="fw-bold">Total Cost: ${{ total_cost_minor_items }}</h5>
->>>>>>> d1c14cc97287c67047ba0ba1f6f8c7790636586a
                 </div>
 
                 <table class="table" id="minor">
                     <thead class="bg-primary">
                         <tr>
                             <th>Raw Material</th>
-<<<<<<< HEAD
+                            {% if confirm %}
+                                <th>Quantity B/F (In production)</th>
+                            {% endif %}
                             <th>Planned Quantity</th>
-                            <th>Quantity B/F</th>
-                            <th>Expected Quantity</th>
-                            <th>Allocated Quantity</th>
+                            <th>Expected Qnty From Inventory</th>
+                            <th>Allocated Qnty From Inventory</th>
                             {% if not confirm %}
                                 <th>Remaing Quantity (kgs)</th>
 =======
@@ -133,40 +123,6 @@
                     </thead>
                     <tbody>
                         {% for item in production_plan_minor_items %}
-<<<<<<< HEAD
-                        <tr data-id="{{ item.id }}">
-                            <td><small>{{ item.name }}</small></td>
-                            <td><small>{{ item.quantity|floatformat:2 }}</small></td>
-                            <td><small>{{ item.quantity_b_f|floatformat:2 }}</small></td>
-                            <td>
-                                <small>
-                                    {% if item.expected_quantity < 0 %}
-                                        0.0
-                                    {% else %}
-                                        {{ item.expected_quantity|floatformat:2 }}
-                                    {% endif %}
-                                </small>
-                            </td>
-                            {% if confirm %}
-                                <td>
-                                    {% csrf_token %}
-                                    <input type="number" id="quantity" min='0' class='form-control'>
-                                </td>
-                            {% else %}
-                            <td>
-                                {% for allocated in allocated_rm %}
-                                    {% if allocated.raw_material.id == item.id%}
-                                        <small>{{ allocated.quantity }}</small>
-                                    {% endif %}
-                                {% endfor %}
-                            </td>
-                            <td>
-                                {% for allocated in allocated_rm %}
-                                    {% if allocated.raw_material.name == item.name %}
-                                        <small>{{ allocated.remaining_quantity }}</small>
-                                    {% endif %}
-                                {% endfor %}
-=======
                         <tr data-id="{{ item.minor_raw_material.id }}">
                             <td><small>{{ item.minor_raw_material }}</small></td>
                             <td><small>{{ item.total_quantity_per_kg }}</small></td>
@@ -192,17 +148,13 @@
                             <td>
                                 {% csrf_token %}
                                 <input type="number" id="quantity">
->>>>>>> d1c14cc97287c67047ba0ba1f6f8c7790636586a
                             </td>
                             {% endif %}
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
-<<<<<<< HEAD
-=======
                 
->>>>>>> d1c14cc97287c67047ba0ba1f6f8c7790636586a
 
                 {% if confirm %}
                     <div class="d-flex justify-content-end mt-4">
@@ -217,101 +169,85 @@
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         new DataTable('#plan_item_table');
-        new DataTable('#minor');
-        
-<<<<<<< HEAD
-=======
-        // Function to calculate and update the actual quantity needed
-        function updateActualQuantities() {
-            document.querySelectorAll('#minor tbody tr').forEach(function (row) {
-                const expectedQuantity = parseFloat(row.querySelector('[data-expected-quantity]').textContent);
-                const kitchenRawMaterialQuantity = parseFloat(row.querySelector('[data-kitchen-quantity]').textContent) || 0;
-                console.log(expectedQuantity, kitchenRawMaterialQuantity)
-                if (!isNaN(expectedQuantity) && !isNaN(kitchenRawMaterialQuantity)) {
-                    const actualNeededQuantity = expectedQuantity - kitchenRawMaterialQuantity;
-                    row.querySelector('#actual_needed_quantity').textContent = actualNeededQuantity.toFixed(2);
-                } else {
-                    row.querySelector('#actual_needed_quantity').textContent = 'N/A'; // Handle cases where data might be missing
-                }
-            });
-        }
-
-        // Call the function to update quantities on page load
-        updateActualQuantities();
-        
->>>>>>> d1c14cc97287c67047ba0ba1f6f8c7790636586a
+        new DataTable('#minor',{paging:false});
+    
         document.querySelectorAll('#minor input[type="number"]').forEach(function (input) {
-            input.addEventListener('change', function () {
-                const quantityEntered = parseFloat(this.value);
-                const row = this.closest('tr');
-<<<<<<< HEAD
-                
+            input.addEventListener('keydown', function (event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
 
-                if (!isNaN(quantityEntered)) {
+                    const quantityEntered = parseFloat(this.value);
+                    const row = this.closest('tr');
 
-                    const rawMaterialId = row.getAttribute('data-id');
-                    
-                    fetch('{% url "inventory:confirm_minor_raw"%}', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRFToken': $('input[name="csrfmiddlewaretoken"]').val(), 
-                        },
-                        body: JSON.stringify({
-                            production_id: {{ production_plan.id }},
-=======
-                console.log(quantityEntered)
+                    if (!isNaN(quantityEntered)) {
+                        Swal.fire({
+                            title: 'Processing Allocation',
+                            text: 'Please wait...',
+                            icon: 'info',
+                            showConfirmButton: false,
+                            timer: 1500
+                        });
 
-                if (!isNaN(quantityEntered)) {
-                   console.log(quantityEntered)
-                    // Mark the row as done
-                    row.style.backgroundColor = 'lightgreen'; 
-                    
-                    // Send the confirmed quantity to the backend
-                    const rawMaterialId = row.getAttribute('data-id');
-                    console.log(row)
-                    fetch('/inventory/confirm_minor_raw_materials/', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRFToken': $('input[name="csrfmiddlewaretoken"]').val(), // ensure you include the CSRF token
-                        },
-                        body: JSON.stringify({
->>>>>>> d1c14cc97287c67047ba0ba1f6f8c7790636586a
-                            raw_material_id: rawMaterialId,
-                            quantity: quantityEntered,
-                            csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val(),
+                        input.classList.add('loading');
+                        input.disabled = true;
+
+                        const rawMaterialId = row.getAttribute('data-id');
+
+                        fetch('{% url "inventory:confirm_minor_raw"%}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': $('input[name="csrfmiddlewaretoken"]').val(),
+                            },
+                            body: JSON.stringify({
+                                production_id: {{ production_plan.id }},
+                                raw_material_id: rawMaterialId,
+                                quantity: quantityEntered,
+                                csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val(),
+                            })
                         })
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-<<<<<<< HEAD
-                            input.disabled = true; 
-                            row.style.backgroundColor = '#d3d3d3';
-                            console.log('Quantity confirmed');
-                        } else {
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                input.classList.remove('loading');
+                                // input.disabled = true;
+                                row.style.backgroundColor = '#d3d3d3';
+                                console.log('Quantity confirmed');
+                                focusNextInput(input);
+                            } else {
+                                Swal.fire({
+                                    title: "Error",
+                                    text: data.message,
+                                    icon: "error"
+                                });
+                                input.disabled = false; 
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
                             Swal.fire({
                                 title: "Error",
-                                text: data.message,
+                                text: "An error occurred during the request.",
                                 icon: "error"
                             });
-=======
-                            input.disabled = true; // This makes the input field readonly
-                            row.style.backgroundColor = '#d3d3d3';
-                            console.log('Quantity confirmed');
-                        } else {
-                            console.error('Error confirming quantity:', data.message);
->>>>>>> d1c14cc97287c67047ba0ba1f6f8c7790636586a
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                    });
+                            input.disabled = false; // Re-enable input in case of a fetch error
+                        })
+                        .finally(() => {
+                            input.classList.remove('loading');
+                        });
+                    }
                 }
             });
         });
+        function focusNextInput(currentInput) {
+            const inputs = document.querySelectorAll('#minor input[type="number"]');
+            const currentIndex = Array.prototype.indexOf.call(inputs, currentInput);
+            if (currentIndex < inputs.length - 1) {
+                inputs[currentIndex + 1].focus();
+            }
+        }
     });
+    
 </script>
 
 {% endblock content %}

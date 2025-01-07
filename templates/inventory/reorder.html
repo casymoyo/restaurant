@@ -2,17 +2,39 @@
 {% load static %}
 {% block title %}Products{% endblock title %}
 {% block content %}
-<div class="m-2">
-    <nav class='mt-2 d-flex align-items-center justify-content-between'>
+<style>
+    /* Position basket icon at bottom-right */
+    #order_basket {
+        position: fixed;
+        right: 20px;
+        bottom: 20px;
+        cursor: pointer;
+        font-size: 2rem;
+        color: #333;
+    }
+    
+    #order_basket span {
+        position: absolute;
+        top: -5px;
+        right: -5px;
+        background-color: red;
+        color: white;
+        border-radius: 50%;
+        padding: 2px 6px;
+        font-size: 12px;
+    }
+</style>
+<div>
+    <nav class='mt-2 d-flex align-items-center justify-content-between border-bottom'>
         <div>
             <ul class="list-unstyled d-flex align-items-center">
-                <li><a href='/' class='bx bx-home btn border fs-5 mt-1'></a></li>
+                <li><a href='/' class='bx bx-home btn border fs-5'></a></li>
                 <li class='mx-2 fs-5'>Reorder List</li>
             </ul>
         </div>
     </nav>
     <div class="tables">
-        <table class="table table-hover table-responsive raw" id="reorder_table" style="width: 100%;">
+        <table class="table table-hover table-bordered table-striped table-responsive raw" id="reorder_table" style="width: 100%;">
             <thead class="bg-primary">
                 <th>Name</th>
                 <th>Quantity at hand</th>
@@ -21,20 +43,19 @@
                 <th>Action/Status</th>
             </thead>
             <tbody>
-                {% for reorder in reorders  %}
+                {% for reorder in reorders %}
                     <tr>
                         <td><small>{{ reorder.product.name }}</small></td>
                         <td><small>{{ reorder.product.quantity }}</small></td>
                         <td><small>{{ reorder.approx_days}}</small></td>
-                        <td><small>{{ reorder.reorder_quantity }}</small></td>
+                        <td><small>{{ reorder.reorder_quantity | floatformat:2 }}</small></td>
                         <td>
                             {% if reorder.ordered %}
                                 <small>Ordered</small>
                             {% else %}
-                                <form method="post">
-                                    <input value='{{ reoder.product.id }}' hidden/>
-                                    <button type='submit' class='btn btn-secondary btn-sm'>order</button>
-                                </form>
+                                <button class='btn btn-secondary btn-sm' onclick="openOrderModal('{{ reorder.product.id }}', '{{ reorder.product.name }}', '{{ reorder.reorder_quantity }}')">
+                                    Order
+                                </button>
                             {% endif %}
                         </td>
                     </tr>
@@ -42,9 +63,119 @@
             </tbody>
         </table>
     </div>
-        </div>
+    <!-- Order Basket Icon -->
+    <div id='order_basket' onclick="openCartModal()">
+        <i class='bx bx-basket'></i>
+        <span id="order_count">0</span>
+    </div>
 </div>
+
+<!-- Order Modal -->
+<div class="modal fade" id="orderModal" tabindex="-1" aria-labelledby="orderModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="orderModalLabel">Order Quantity</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="orderForm">
+                    <div class="mb-3">
+                        <label for="quantity" class="form-label">Enter Ordered Quantity</label>
+                        <input type="number" class="form-control" id="ordered_quantity" required>
+                    </div>
+                    <input type="hidden" id="product_id" value="">
+                    <input type="hidden" id="product_name" value="">
+                    <button type="submit" class="btn btn-primary">Add to Cart</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cart Modal -->
+<div class="modal fade" id="cartModal" tabindex="-1" aria-labelledby="cartModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="cartModalLabel">Order Cart</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <ul id="cartItems" class="list-group">
+                    <!-- Cart items will be appended here -->
+                </ul>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success" onclick="placeOrder()">Place Order</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
+    let cart = [];
     new DataTable('#reorder_table')
+    
+    function openOrderModal(productId, productName, reorderQuantity) {
+        document.getElementById('product_id').value = productId;
+        document.getElementById('product_name').value = productName;
+        document.getElementById('ordered_quantity').value = reorderQuantity;
+        let modal = new bootstrap.Modal(document.getElementById('orderModal'));
+        modal.show();
+    }
+
+    document.getElementById('orderForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        let productId = document.getElementById('product_id').value;
+        let productName = document.getElementById('product_name').value;
+        let orderedQuantity = document.getElementById('ordered_quantity').value;
+
+        cart.push({
+            id: productId,
+            name: productName,
+            quantity: orderedQuantity
+        });
+
+        document.getElementById('order_count').textContent = cart.length;
+
+        let orderModal = bootstrap.Modal.getInstance(document.getElementById('orderModal'));
+        orderModal.hide();
+    });
+
+    function openCartModal() {
+        const cartItems = document.getElementById('cartItems');
+        cartItems.innerHTML = ''; 
+
+        if (cart.length === 0) {
+            cartItems.innerHTML = '<li class="list-group-item">No items in cart</li>';
+        } else {
+            cart.forEach(item => {
+                cartItems.innerHTML += `
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        ${item.name} - ${item.quantity} pcs
+                    </li>`;
+            });
+        }
+
+        let modal = new bootstrap.Modal(document.getElementById('cartModal'));
+        modal.show();
+    }
+
+    function placeOrder() {
+        if (cart.length === 0) {
+            alert("Your cart is empty!");
+            return;
+        }
+
+        console.log(cart); 
+
+        alert("Order placed successfully!");
+
+        cart = [];
+        document.getElementById('order_count').textContent = cart.length;
+        let cartModal = bootstrap.Modal.getInstance(document.getElementById('cartModal'));
+        cartModal.hide();
+    }
 </script>
 {% endblock content %}

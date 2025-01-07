@@ -9,9 +9,11 @@ from . models import (
     MealCategory,
     UnitOfMeasurement,
     ProductionItems,
-    TransferItems
+    TransferItems,
+    BudgetItem
 )
 from django import forms
+from datetime import date
 
 class AddProductForm(forms.ModelForm):
     class Meta:
@@ -36,6 +38,13 @@ class noteStatusForm(forms.ModelForm):
         widgets = {
             'delivery_date': forms.DateInput(attrs={'type': 'date'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super(noteStatusForm, self).__init__(*args, **kwargs)
+        
+        if not self.initial.get('delivery_date'):
+            self.initial['delivery_date'] = date.today()
+
         
 class PurchaseOrderStatus(forms.ModelForm):
     class Meta:
@@ -50,8 +59,10 @@ class UnitOfMeasurementForm(forms.ModelForm):
 class EditProductForm(forms.ModelForm):
     class Meta:
         model = Product
-        exclude = ['quantity']
-
+        fields = '__all__'
+        
+        cost = forms.DecimalField(max_digits=10, decimal_places=4)
+        
 # class productionForm(forms.ModelForm):
 #     class Meta:
 #         model = Production
@@ -75,12 +86,12 @@ class ProductionPlanInlineForm(forms.ModelForm):
 class DishForm(forms.ModelForm):
     class Meta:
         model = Dish
-        fields = ['name', 'portion_multiplier']
+        exclude = ['cost']
 
 class IngredientForm(forms.ModelForm):
     class Meta:
         model = Ingredient
-        fields = ['raw_material', 'quantity', 'note',]
+        fields = ['minor_raw_material', 'quantity', 'note',]
 
 class MealForm(forms.ModelForm):
     class Meta:
@@ -99,3 +110,11 @@ class TransferForm(forms.Form):
     class Meta:
         model = TransferItems
         fields = '__all__'
+
+
+class CreateBudgetItemForm(forms.ModelForm):
+    class Meta:
+        model = BudgetItem
+        fields = ['product', 'allocated_amount', 'quantity']
+
+        

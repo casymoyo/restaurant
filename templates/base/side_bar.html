@@ -1,0 +1,151 @@
+{% load static %}
+{% block content %}
+<style>
+    .sidebar {
+        height: 100vh;
+        position: fixed;
+        width: 250px;
+        {% comment %} background-color: #f8f9fa; {% endcomment %}
+        display: flex;
+        flex-direction: column;
+        padding-top: 20px;
+    }
+
+    .sidebar .card {
+        border: none;
+        background: transparent;
+        transition: background 0.3s, color 0.3s;
+    }
+
+    .sidebar .card-body{
+        display: flex;
+        justify-content: start;
+        align-items: center;
+        padding-left: 10px;
+        height: 3rem;
+    }
+/* 
+    .sidebar .card:hover {
+        background: #333;
+        color: white;
+    } */
+
+    .sidebar .card img {
+        margin-right: 15px;
+    }
+
+    .sidebar a {
+        text-decoration: none;
+        color: inherit;
+        margin-bottom: 10px;
+    }
+
+    .content {
+        margin-left: 270px; 
+        padding: 20px;
+    }
+</style>
+
+<div class="sidebar">
+    {% if request.user.role == 'sales'%}
+    <a href="{% url 'pos:pos'%}">
+        <div class="card">
+            <div class="card-body d-flex align-items-center">
+                <img src="{% static 'assets/pngs/sell.png'%}" alt="sell_icon" width="25rem">
+                <p>Point Of Sale</p>
+            </div>
+        </div>
+    </a>
+    {% else %}
+    <a href="{% url 'pos:pos'%}">
+        <div class="card">
+            <div class="card-body d-flex align-items-center">
+                <img src="{% static 'assets/pngs/sell.png'%}" alt="sell_icon" width="25rem">
+                <p>Point Of Sale</p>
+            </div>
+        </div>
+    </a>
+    <a href="{% url 'analytics_index' %}">
+        <div class="card">
+            <div class="card-body d-flex align-items-center">
+                <img src="{% static 'assets/pngs/dashboard.png'%}" alt="dashboard_icon" width="25rem">
+                <p>Analytics</p>
+            </div>
+        </div>
+    </a>
+    <a href="{% url 'inventory:products' %}">
+        <div class="card">
+            <div class="card-body d-flex align-items-center">
+                <img src="{% static 'assets/pngs/product.png'%}" alt="product_icon" width="25rem">
+                <p>Inventory</p>
+            </div>
+        </div>
+    </a>
+    <a href="{% url 'inventory:production_plans' %}">
+        <div class="card">
+            <div class="card-body d-flex align-items-center">
+                <img src="{% static 'assets/pngs/plan.png'%}" alt="plan_icon" width="25rem">
+                <p>Production</p>
+            </div>
+        </div>
+    </a>
+
+    <a href="{% url 'inventory:transfers' %}">
+        <div class="card">
+            <div class="card-body d-flex align-items-center">
+                <img src="{% static 'assets/pngs/settings.png'%}" alt="settings_icon" width="25rem">
+                <p>Transfers</p>
+            </div>
+        </div>
+    </a>
+    
+    <a href="{% url 'finance:finance' %}">
+        <div class="card">
+            <div class="card-body d-flex align-items-center">
+                <img src="{% static 'assets/pngs/bars.png'%}" alt="finance_icon" width="25rem">
+                <p>Finance</p>
+            </div>
+        </div>
+    </a>
+    <a href="{% url 'users:users' %}">
+        <div class="card">
+            <div class="card-body d-flex align-items-center">
+                <img src="{% static 'assets/pngs/users.png'%}" alt="users_icon" width="25rem">
+                <p>Users</p>
+            </div>
+        </div>
+    </a>
+
+    <!-- transactions logs -->
+    <a href="{% url 'finance:logs' %}">
+        <div class="card">
+            <div class="card-body d-flex align-items-center">
+                <img src="{% static 'assets/pngs/log.png'%}" alt="settings_icon" width="25rem">
+                <p>Transaction Logs</p>
+            </div>
+        </div>
+    </a>
+
+    <a href="{% url 'settings:settings' %}">
+        <div class="card">
+            <div class="card-body d-flex align-items-center">
+                <img src="{% static 'assets/pngs/settings.png'%}" alt="settings_icon" width="25rem">
+                <p>Settings</p>
+            </div>
+        </div>
+    </a>
+  
+    {% comment %} <a href="{% url 'inventory:end_of_day_list' %}">
+        <div class="card">
+            <div class="card-body d-flex align-items-center">
+                <button class='btn btn-outline-dark '>
+                    <img src="{% static 'assets/pngs/reports.jpg'%}" alt="end_of_day_icon" width="25rem">
+                    <span>End Of Day List</span>
+                </button>
+            </div>
+        </div>
+    </a> {% endcomment %}
+    {% endif %}
+</div>
+
+{% endblock content %}

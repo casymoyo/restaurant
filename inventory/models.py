@@ -1,7 +1,7 @@
 import uuid
 import datetime
 from django.db import models
-# from users.models import User
+from users.models import User
 from django.db.models import F
 from django.forms import modelformset_factory
 
@@ -41,11 +41,11 @@ class Product(models.Model):
     
     name = models.CharField(max_length=255)
     quantity = models.FloatField()
-    cost = models.DecimalField(max_digits=10, decimal_places=2)
-    price = models.DecimalField(max_digits=10, decimal_places=2, default=1) 
+    cost = models.DecimalField(max_digits=10, decimal_places=4)
+    price = models.DecimalField(max_digits=10, decimal_places=3, default=1) 
     unit = models.ForeignKey(UnitOfMeasurement, on_delete=models.CASCADE, null=True)
-    category = models.ForeignKey(Category, on_delete=models.CASCADE)
-    tax_type = models.CharField(max_length=50, choices=tax_choices)
+    category = models.ForeignKey(Category, on_delete=models.CASCADE, null=True)
+    tax_type = models.CharField(max_length=50, choices=tax_choices, null=True)
     min_stock_level = models.FloatField(default=0, null=True)
     raw_material = models.BooleanField(default=False)
     finished_product = models.BooleanField(default=False)
@@ -82,7 +82,6 @@ class Production(models.Model):
 
     def __str__(self) -> str:
         return self.production_plan_number
-
     
 class ProductionItems(models.Model):
     production = models.ForeignKey(Production, on_delete=models.CASCADE)
@@ -98,6 +97,7 @@ class ProductionItems(models.Model):
     staff_portions = models.FloatField(default=0, null=True)  
     declared_quantity = models.FloatField(default=0, null=True)
     portions_sold = models.FloatField(default=0, null=True)
+    allocated = models.BooleanField(default=False)
 
 class MinorProductionItems(models.Model):
     production = models.ForeignKey(Production, on_delete=models.CASCADE)
@@ -121,6 +121,7 @@ class AllocatedRawMaterials(models.Model):
     
     def __str__(self) -> str:
         return f'{self.production} ({self.raw_material}: ({self.quantity}))'
+    
 class ProductionInventory(models.Model):
     raw_material = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.FloatField()
@@ -132,6 +133,15 @@ class ProductionInventory(models.Model):
 class Dish(models.Model):
     name = models.CharField(max_length=100)
     portion_multiplier = models.FloatField()
+    price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    cost = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    category = models.CharField(choices=[
+        ('Fast food', 'Fast food'),
+        ('Meat', 'Meat'),
+        ('Starch', 'Starch'),
+        ('Salad', 'Salad')
+    ])
+    dish = models.BooleanField(default=True)
 
     def __str__(self) -> str:
         return self.name
@@ -159,6 +169,7 @@ class Meal(models.Model):
     dish = models.ManyToManyField(Dish, related_name='dishes')
     category = models.ForeignKey(MealCategory, on_delete=models.CASCADE, null=True)
     deactivate = models.BooleanField(default=False)
+    meal = models.BooleanField(default=True)
     
     def __str__(self) -> str:
         return self.name
@@ -256,14 +267,14 @@ class Logs(models.Model):
         ('deactivated', 'deactivated'),
         ('removed', 'removed')
     ]
-    
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    sale = models.ForeignKey('finance.sale', on_delete=models.CASCADE, null=True)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, null=True)
     user = models.ForeignKey('users.User', on_delete=models.SET_NULL, null=True)
     action = models.CharField(max_length=20, choices=ACTION_CHOICES)
     purchase_order = models.ForeignKey(PurchaseOrder, null=True, blank=True, on_delete=models.SET_NULL)
     quantity = models.FloatField()
     total_quantity = models.FloatField()
-    timestamp = models.DateField(auto_now_add=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
     description = models.CharField(max_length=255, null=True)
     
 class MinorRawMaterials(models.Model):
@@ -297,7 +308,6 @@ class EndOfDayItems(models.Model):
     def __str__(self) -> str:
         return f'{self.end_of_day.date}: {self.dish_name}'
     
-
 class Reorder(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     ordered = models.BooleanField(default=False)
@@ -337,6 +347,61 @@ class TransferItems(models.Model):
     def __str__(self):
         return f'{self.quantity} of {self.product.name}'
 
+
+class ProductionLogs(models.Model):
     
+    ACTION_CHOICES = [
+        ('sale', 'sale'),
+        ('stock in', 'stock in'),
+        ('declared', 'declared'),
+        ('to production', 'to production'),
+    ]
+    
+    product = models.ForeignKey(ProductionRawMaterials, on_delete=models.CASCADE)
+    user = models.ForeignKey('users.User', on_delete=models.SET_NULL, null=True)
+    action = models.CharField(max_length=20, choices=ACTION_CHOICES)
+    quantity = models.FloatField()
+    total_quantity = models.FloatField()
+    timestamp = models.DateField(auto_now_add=True)
+    description = models.CharField(max_length=255, null=True)   
+
+
+class Notification(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, null=True)
+    production = models.ForeignKey(Production, on_delete=models.CASCADE, null=True)
+    expense = models.ForeignKey('finance.Expense', on_delete=models.CASCADE, null=True)
+    message = models.TextField()
+    timestamp = models.DateTimeField(auto_now_add=True)
+    is_read = models.BooleanField(default=False)
+
+class CheckList(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    status = models.BooleanField(default=False)
+    date = models.DateField(auto_now_add=True)
+    
+    def __str__(self):
+        return self.product.name
+    
+class Budget(models.Model):
+    name = models.CharField(max_length=255)
+    total_amount = models.DecimalField(max_digits=15, decimal_places=2)
+    start_date = models.DateField()
+    end_date = models.DateField()
+    description = models.TextField(null=True, blank=True)
+    confirmation =  models.BooleanField(default=True)
+    user = models.ForeignKey('users.user', on_delete=models.CASCADE, related_name='budge_user')
+
+    def __str__(self) -> str:
+        return self.name
+
+class BudgetItem(models.Model):
+    budget = models.ForeignKey(Budget, on_delete=models.CASCADE, related_name='items')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    quantity = models.IntegerField()
+    allocated_amount = models.DecimalField(max_digits=15, decimal_places=2)
+    spent_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0.00)
+
+    def __str__(self) -> str:
+        return f'{self.product.name} - {self.allocated_amount}'
 
     

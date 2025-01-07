@@ -1,0 +1,15 @@
+{
+  "name": "restaurant",
+  "version": "1.0.0",
+  "description": "<figure><embed src=\"https://wakatime.com/share/@1a5b0bb3-490b-4a8c-adc0-91b67dc2a62e/dd9397ac-da43-40cf-86d4-1595434c8ad3.svg\"></embed></figure>",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "supabase": "^1.192.5"
+  }
+}

@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% load static%}
+{% load crispy_forms_tags %}
+{% block title%} Transaction Logs {% endblock%}
+{% block content %}
+<div class="Finance">
+    <nav class="d-flex align-items-center rounded mb-2 py-2 border-bottom">
+            <a href='/' class='bx bx-home btn border fs-5 mx-2'></a>
+            <span class='aria-labelledby'>Transaction Logs</span>
+        </div>
+    </nav>
+    <table class="table table-hover table-bordered table-striped table-hover" id="transaction_log" style="width: 100%;">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Receipt Number</th>
+                <th>Product(s)</th>
+                <!-- <th>Total Amount Paid</th> -->
+                <th>Total Price</th>
+                <th>Change Owed</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in transactions %}
+                {% if log.sale %}
+                    <tr>
+                        <td><small>{{ log.timestamp }}</small></td>
+                        <td>
+                            <small>
+                                {{ log.sale.receipt_number }}
+                            </small>
+                        </td>
+                        <td>
+                            {% for sale in sale_items %}
+                                {% if log.sale == sale.sale %}
+                                    <ul class="list-unstyled">
+                                        {% if sale.meal %}
+                                            <li>{{ sale.meal }} x {{ sale.quantity }}</li>
+                                        {% endif %}
+                                        {% if sale.dish %}
+                                            <li>{{ sale.dish }} x {{ sale.quantity }}</li>
+                                        {% endif %}
+                                        {% if sale.product %}
+                                            <li>{{ sale.product.name }} x {{ sale.quantity }}</li>
+                                        {% endif %}
+                                    </ul>
+                                {% endif %}
+                            {% endfor %}
+                        </td>
+                        <!-- <td>
+                            <small>
+                                {{ log.sale.amount_paid }}
+                            </small>
+                        </td> -->
+                        <td>
+                            <small>
+                                {{ log.sale.total_amount }}
+                            </small>
+                        </td>
+                        <td>
+                            <small>
+                                {{ log.sale.change }}
+                            </small>
+                        </td>
+                </tr>
+                {% endif %}
+            {% endfor %}
+        </tbody>
+    </table>
+    
+   <script>
+        new DataTable('#transaction_log',{
+            paging:false
+        })
+   </script>    
+</div>
+{% endblock %}
