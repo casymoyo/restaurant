@@ -664,28 +664,28 @@ def cash_up(request, cashier_id):
 
 
             # Send email notification in a separate thread
-            def send_email():
-                subject = 'Cash Up Report'
-                from_email = "admin@techcity.co.zw",
-                message = f"""
-                Cash Up Report for Cashier: {cashier.first_name}
+            # def send_email():
+            #     subject = 'Cash Up Report'
+            #     from_email = "admin@techcity.co.zw",
+            #     message = f"""
+            #     Cash Up Report for Cashier: {cashier.first_name}
             
-                Total Sales: {total_sales}
-                Total Expenses: {total_expenses}
-                Total Change: {total_change}
-                Cash in Hand: {cash_in_hand}
+            #     Total Sales: {total_sales}
+            #     Total Expenses: {total_expenses}
+            #     Total Change: {total_change}
+            #     Cash in Hand: {cash_in_hand}
 
-                """
-                send_mail(
-                    subject,
-                    message,
-                    from_email,
-                    ['cassymyo@gmail.com'],
-                    fail_silently=False,
-                )
+            #     """
+            #     send_mail(
+            #         subject,
+            #         message,
+            #         from_email,
+            #         ['cassymyo@gmail.com'],
+            #         fail_silently=False,
+            #     )
         
-            email_thread = threading.Thread(target=send_email)
-            email_thread.start()
+            # email_thread = threading.Thread(target=send_email)
+            # email_thread.start()
 
             return JsonResponse({'success':True})
         except Exception as e:

@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Cash Ups{% endblock title %}
+{% block content %}
+<div>
+    <nav class="d-flex justify-content-between align-items-center rounded mb-2 py-2 border-bottom">
+        <div>
+            <span class='mt-2 fs-5'>Inventory Budgets</span>
+        </div>
+        <div class="d-flex justify-content-between mt-1">
+            <ul class="list-unstyled d-flex">
+                <li>
+                    <a href="{% url 'inventory:create-budget' %}" class="btn btn-outline-dark mx-2">Create Budget</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+    
+    <div class="table-responsive">
+        <table class="table table-hover table-striped table-bordered" id="cash_up_table">
+            <thead>
+                <th>date</th>
+                <th>Description</th>
+                <th>Status</th>
+                <th>Action</th>
+            </thead>
+            <tbody>
+                {% for budget in budgets  %}
+                    <tr>
+                        <td><small>{{ budget.date }}</small></td>
+                        <td><small>{{ budget.description }}</small></td>
+                        <td><small>{{ budget.status }}</small></td>
+                        <td>
+                            <small>
+                                <a class="bx bx-show btn btn-sm"></button>
+                            </small>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

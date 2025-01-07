@@ -9,7 +9,8 @@ from . models import (
     MealCategory,
     UnitOfMeasurement,
     ProductionItems,
-    TransferItems
+    TransferItems,
+    BudgetItem
 )
 from django import forms
 from datetime import date
@@ -105,3 +106,11 @@ class TransferForm(forms.Form):
     class Meta:
         model = TransferItems
         fields = '__all__'
+
+
+class CreateBudgetItemForm(forms.ModelForm):
+    class Meta:
+        model = BudgetItem
+        fields = ['product', 'allocated_amount', 'quantity']
+
+        

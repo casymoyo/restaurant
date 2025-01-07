@@ -51,7 +51,8 @@ from . forms import (
     ProductionPlanInlineForm,
     DishForm, 
     IngredientForm,
-    TransferForm
+    TransferForm,
+    CreateBudgetItemForm
 )
 
 from utils.supplier_best_price import best_price
@@ -2293,5 +2294,25 @@ def check_check_list(request):
     
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)}, status=400)
+    
+
+@login_required
+def budget(request):
+    budgets = Budget.objects.all()
+    return render(request, 'inventory/budgets/budget.html', {
+        'budgets':budgets
+    })
+
+
+@login_required
+def createBudgetItem(request):
+    if request.method == 'GET':
+        form = CreateBudgetItemForm()
+        return render(request, 'inventory/budgets/create_budget.html', {
+            'form':form
+        })
+    
+    if request.method == 'POST':
+        pass
             
             

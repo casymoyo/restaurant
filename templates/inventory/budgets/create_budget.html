@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% load static %}
+{% load crispy_forms_tags %}
+{% block title %}Cash Ups{% endblock title %}
+{% block content %}
+<div>
+    <nav class="d-flex justify-content-between align-items-center rounded mb-2 py-2 border-bottom">
+        <div>
+            <span class='fs-5'>Create Budget</span>
+        </div>
+    </nav>
+    <div class="row">
+        <div class="col-9">
+            <p>Budget Items</p>
+            <table class="table table-hover table-striped table-bordered" id="cash_up_table">
+                <thead>
+                    <th>date</th>
+                    <th>Description</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </thead>
+                <tbody>
+                    {% for budget in budgets  %}
+                        <tr>
+                            <td><small>{{ budget.date }}</small></td>
+                            <td><small>{{ budget.description }}</small></td>
+                            <td><small>{{ budget.status }}</small></td>
+                            <td>
+                                <small>
+                                    <a class="bx bx-show btn btn-sm"></button>
+                                </small>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="col-3 border rounded-2">
+            <h5>Add Product</h5>
+            <form action="" class="mt-2">
+                {% csrf_token %}
+                {{ form | crispy }}
+                <div class="d-flex justify-content-end py-2">
+                    <button class="btn btn-sm btn-secondary mx-2">Clear</button>
+                    <button class="btn btn-sm btn-primary">Add</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -97,5 +97,9 @@ urlpatterns = [
     path('production_sales/', production_sales, name='production_sales'),
     
     # check_list
-    path('check_list/', check_check_list, name='check_check_list')
+    path('check_list/', check_check_list, name='check_check_list'),
+
+    #budgets
+    path('budgets/', budget, name='budget'),
+    path('create-budget/', createBudgetItem, name='create-budget')
 ]

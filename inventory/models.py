@@ -383,7 +383,7 @@ class Budget(models.Model):
     end_date = models.DateField()
     description = models.TextField(null=True, blank=True)
     confirmation =  models.BooleanField(default=True)
-    # user = models.ForeignKey('Users.user',)
+    user = models.ForeignKey('users.user', on_delete=models.CASCADE, related_name='budge_user')
 
     def __str__(self) -> str:
         return self.name
@@ -391,6 +391,7 @@ class Budget(models.Model):
 class BudgetItem(models.Model):
     budget = models.ForeignKey(Budget, on_delete=models.CASCADE, related_name='items')
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    quantity = models.IntegerField()
     allocated_amount = models.DecimalField(max_digits=15, decimal_places=2)
     spent_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0.00)
 
