@@ -18,3 +18,5 @@ test.png
 docker-composer.yml
 Dockerfile
 build.sh
+ssl.crt
+ssl.key
