@@ -182,3 +182,38 @@ def get_user_data(request, user_id):
 def logout_view(request):
     logout(request)
     return redirect('users:login')
+
+
+
+##################################### APIs ################################################
+
+from .serializers import LoginSerializer, LogoutSerializer
+from django.contrib.auth.models import Group
+from rest_framework import generics, status, views, permissions, viewsets
+from rest_framework.response import Response
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+
+class LoginAPIView(generics.GenericAPIView):
+    """
+        Login API end point
+    """
+    serializer_class = LoginSerializer
+
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+class LogoutAPIView(generics.GenericAPIView):
+    """
+        Logout Api End Point
+    """
+    serializer_class = LogoutSerializer
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)

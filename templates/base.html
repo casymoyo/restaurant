@@ -114,6 +114,7 @@
                                         </ul>
                                     </div>
                                 </li>
+                                <li onclick="bluetooth()" style="cursor: pointer;"><i class='bx bx-bluetooth fs-3 text-primary'></i></li>
                                 <!-- Username -->
                                 <li class="mx-2">{{ request.user }}</li>
                                 <li class='btn border btn-danger bx bx-log-out-circle mt-1 fs-3 cursor-pointer' data-bs-toggle="modal" data-bs-target="#logoutModal"></li>
@@ -124,12 +125,12 @@
                 </nav>
                     <div class="row">
                         {% if request.resolver_match.url_name != 'production_plans'%}
-                            <div class="col-2" style='background:#f8f9fa;'>
+                            <div class="col-2 d-none d-md-flex" style='background:#f8f9fa;'>
                                 {% include 'base/side_bar.html' %}
                             </div>
                         {% endif %}
                         <div class="col-10">
-                            <div class="app-area overflow">
+                            <div class="app-area">
                                 {% if messages %}
                                     {% for message in messages %}
                                         <div class="alert alert-dismissible {% if message.tags %}alert-{{ message.tags }}{% endif %}">

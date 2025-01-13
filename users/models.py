@@ -1,4 +1,5 @@
 from django.db import models
+from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 
 class CustomUserManager(BaseUserManager):
@@ -61,6 +62,14 @@ class User(AbstractUser):
     role = models.CharField(choices=USER_ROLES, max_length=50)
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="users", null=True)
     # sessio_key = models.CharField(max_length=255)
+
+    def tokens(self):
+        refresh = RefreshToken.for_user(self)
+        return {
+            'refresh': str(refresh),
+            'access': str(refresh.access_token)
+        }
+
 
     def __str__(self) -> str:
         return self.username

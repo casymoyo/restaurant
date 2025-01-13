@@ -9,7 +9,7 @@ from django.db.models import Sum
 from datetime import date, timedelta
 from django.db.models.functions import ExtractHour
 from collections import defaultdict
-
+from decimal import Decimal
 
 def analytics_view(request):
     # Get filter parameters
@@ -83,7 +83,7 @@ def analytics_view(request):
     grouped_dishes = defaultdict(lambda: {})
     staff_dishes = defaultdict(lambda: {})
 
-    sales = SaleItem.objects.filter(sale__void=False, sale__staff=False, sale__date=today).select_related('sale', 'meal', 'dish', 'product').all()
+    sales = SaleItem.objects.filter(sale__void=False, sale__staff=False).select_related('sale', 'meal', 'dish', 'product').all()
 
     staff_sales = SaleItem.objects.filter(sale__void=False, sale__staff=True).select_related('sale', 'meal', 'dish', 'product').all()
 
@@ -162,10 +162,9 @@ def analytics_view(request):
 
             if sale.meal:
                 meal_name = sale.meal.name
-                logger.info(f'{meal_name} : {sale.meal.price}')
                 if meal_name in grouped_meals[category]:
                     grouped_meals[category][meal_name]['quantity'] += sale.quantity
-                    grouped_meals[category][meal_name]['price'] += sale.meal.price * sale.quantity
+                    grouped_meals[category][meal_name]['price'] += Decimal(sale.meal.price) * sale.quantity
                 else:
 
                     grouped_meals[category][meal_name] = {
@@ -177,7 +176,6 @@ def analytics_view(request):
             elif sale.dish:
                 dish_name = sale.dish.name
                 if dish_name in grouped_dishes[category]:
-                    logger.info(f'{dish_name} : {sale.dish.price}')
 
                     grouped_dishes[category][dish_name]['quantity'] += sale.quantity
                     grouped_dishes[category][dish_name]['price'] += (sale.dish.price * sale.quantity)
@@ -187,7 +185,7 @@ def analytics_view(request):
                         'quantity': sale.quantity,
                         'price': sale.price * sale.quantity,
                     }
-                    logger.info(f'{dish_name} : {sale.dish.price}')
+                    
             elif sale.product:
                 product_name = sale.product.name
                 if product_name in grouped_dishes[category]:
@@ -203,6 +201,8 @@ def analytics_view(request):
     formatted_meals = {category: list(items.values()) for category, items in grouped_meals.items()}
     formatted_dishes = {category: list(items.values()) for category, items in grouped_dishes.items()}
     f_dishes = {category: list(items.values()) for category, items in dishes.items()}
+
+    logger.info(f'{formatted_meals}')
 
     combined_dishes = defaultdict(lambda: {})
 
@@ -222,7 +222,6 @@ def analytics_view(request):
             else:
                 combined_dishes[category][dish_name] = dish_data.copy()
 
-    # Convert combined_dishes to the desired format
     f_dishes = {category: list(items.values()) for category, items in combined_dishes.items()}
 
     data['dishes'] = dict(f_dishes)

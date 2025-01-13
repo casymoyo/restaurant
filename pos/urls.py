@@ -25,4 +25,6 @@ urlpatterns = [
     # cash up
     path('cash_up/<int:cashier_id>/', cash_up, name='cash_up'),
     path('update-cashed-amount/<int:cashup_id>/', update_cashed_amount, name='update_cashed_amount'),
+
+    path('api/v1/product_meal/', ProductMealAPIView.as_view(), name='product_meal_api'),
 ]

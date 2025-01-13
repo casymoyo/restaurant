@@ -22,12 +22,16 @@ ALLOWED_HOSTS = [
     '192.168.10.173',
     '192.168.10.38',
     '192.168.10.181',
-    'c845-196-27-126-114.ngrok-free.app'
+    'c845-196-27-126-114.ngrok-free.app',
+    '192.168.10.14',
+    '192.168.10.249'
 ]
 
 CSRF_TRUSTED_ORIGINS = [
     'https://web-production-20d8.up.railway.app'
 ]
+
+SECURE_SSL_REDIRECT = True
 
 # Application definition
 
@@ -286,3 +290,8 @@ SESSION_COOKIE_AGE = 86400 #1day
 #     },
 # }
 
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ],
+}

@@ -39,6 +39,10 @@ from users.models import User
 from django.core.mail import send_mail
 from django.conf import settings
 import threading
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from rest_framework import status
 
 # logger = logging.getLogger('restaurant')  
 
@@ -725,5 +729,34 @@ def update_cashed_amount(request, cashup_id):
             return JsonResponse({'success':False,'message':f'{e}'}, status=400)
         
     return JsonResponse({'success':False,'message':'Invalid request'}, status=500)
-        
+
+
+########################################## API views #########################################################3
+
+class ProductMealAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        meals = Meal.objects.filter(deactivate=False)
+        products = Product.objects.filter(raw_material=False).values('id', 'name', 'price', 'finished_product')
+        dishes = Dish.objects.all().values('id', 'name', 'price', 'dish')
+
+        meal_data = [
+            {
+                'name': meal.name,
+                'price': meal.price,
+                'category': meal.category.name,
+                'meal': meal.meal,
+                'id': f'm-{meal.id}'
+            }
+            for meal in meals
+        ]
+
+        combined_items = meal_data + list(products) + list(dishes)
+
+        data = {
+            'items': combined_items
+        }
+
+        return Response(data, status=status.HTTP_200_OK)
 

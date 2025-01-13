@@ -83,6 +83,81 @@
         align-items: center;
         z-index: 10000;
     }
+    body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f0f2f5;
+        }
+        
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .button {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            background: #0066ff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+        
+        .button:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+        }
+        
+        .button:hover:not(:disabled) {
+            background: #0052cc;
+        }
+        
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            text-align: center;
+        }
+        
+        .error {
+            background: #ffe6e6;
+            color: #cc0000;
+        }
+        
+        .info {
+            background: #e6f0ff;
+            color: #0052cc;
+        }
+
+        .debug-info {
+            margin-top: 20px;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            overflow-x: auto;
+        }
+
+        .debug-info h3 {
+            margin-top: 0;
+        }
 
     .loader {
         border: 16px solid #f3f3f3; 
@@ -97,90 +172,126 @@
         0% { transform: rotate(0deg); }
         100% { transform: rotate(360deg); }
     }
+
+    @media (max-width: 768px) { 
+        .row {
+            display: flex;
+        }
+
+        .col-4 {
+            /* order: 1; */
+            width: 500px;
+            height: 40vh;
+        }
+
+        .col-4 .products{
+            width: 100%;
+            height: 40vh;
+            
+        }
+
+        .col-8 {
+            /* order: 2; */
+            width: 100% !important;
+            height: 20vh !important;
+        }
+
+        .search{
+            width: 100% !important;
+            width: 700px !important;
+        }
+
+        #itemsContainer{
+            height: 40vh;
+        }
+
+        #orderDetails{
+            height: 10vh !important;
+            width: 100%;
+        }
+    }
 </style>
-    <div class="pos px-2">
-        <div class="">
-            <div class="row">
-                <div class="col-8">
-                    <div class="div" style='height:78vh;'>
-                        <div class="d-flex justify-content-between bg-dark text-light p-1 rounded mt-2 align-items-center">
-                            <h5 class="text-light">Products</h5>
-                            <!-- <select class="form-select w-25" id="food_search">
-                                {% for item in combined_items %}
-                                    <option 
-                                        value="{{ item.id }}" 
-                                        data-price="{{ item.price }}" 
-                                        data-type="{{ item.type }}">
-                                        {{ meal.name }}
-                                    </option>
-                                {% endfor %}
-                            </select> -->
-                            <input 
-                                type="text" 
-                                id="searchInput" 
-                                class="form-control form-control-sm w-25" 
-                                placeholder="Search for items..." 
-                                oninput="searchItems()"
-                            >
-                        </div>
-                        <div class="mt-4">
-                            <div class="row" id="itemsContainer" style='height:70vh; overflow-y: auto;'></div>
-                        </div>
+    <div class="pos">
+        <div class="row">
+            <div class="col-8">
+                <div class="products" style='height:78vh;'>
+                    <div class="d-flex justify-content-between bg-dark text-light p-1 rounded mt-2 align-items-center">
+                        <h5 class="text-light d-none d-md-none">Products</h5>
+                        <!-- <select class="form-select w-25" id="food_search">
+                            {% for item in combined_items %}
+                                <option 
+                                    value="{{ item.id }}" 
+                                    data-price="{{ item.price }}" 
+                                    data-type="{{ item.type }}">
+                                    {{ meal.name }}
+                                </option>
+                            {% endfor %}
+                        </select> -->
+                        <input 
+                            type="text" 
+                            id="searchInput" 
+                            class="form-control form-control-sm w-25 search" 
+                            placeholder="Search for items..." 
+                            oninput="searchItems()"
+                        >
                     </div>
-
-                    <div id="floatingButton" class="floating-button d-flex justify-content-between align-items-center">
-                        <div class="d-flex">
-                            <i class="bx bx-menu"></i> 
-                            <li><a href="{% url 'inventory:end_of_day_view' %}" class="btn btn-outline-dark w-100">End of day</a></li>
-                            <li class='mx-2'>
-                                <button class="btn btn-outline-dark w-100" id="chargeStaff">Staff</button>
-                            </li>
-                            <li>
-                                <a href='{% url "pos:change_list" %}' class="btn btn-outline-dark w-100">View Change</a>
-                            </li>
-                            <li class='mx-2'>
-                                <a href="{% url 'finance:cashier_expenses' request.user.id %}" class="btn btn-outline-dark w-100">Expenses</a>
-                            </li>
-                            <li class='mx-2'>
-                                <button onclick="cashupAuth()" class="btn btn-outline-dark w-100">Cash Up</a>
-                            </li>
-                        </div>
-                        <div>
-                            <li>
-                                <a class="btn btn-danger text-light w-100" id="void">Void</a>
-                            </li>
-                        </div>
+                    <div class="mt-4">
+                        <div class="row" id="itemsContainer" style='height:70vh; overflow-y: auto;'></div>
                     </div>
-
                 </div>
-                <div class="col-4">
-                    <div class="bg-dark text-light sidebar rounded p-4" style='width:380px;'>
-                        <h5 class="fw-bold">Order Details</h5>
-                        <div id="orderDetails" style="height:300px"></div>
-                        <hr>
-                        <div class="d-flex justify-content-between">
-                            <span>Sub Total</span>
-                            <span id="subTotal">$0.00</span>
-                        </div>
-                        <div class="d-flex justify-content-between">
-                            <span>Tax</span>
-                            <span id="tax">$0.00</span>
-                        </div>
-                        <hr>
-                        <div class="d-flex justify-content-between fw-bold">
-                            <span>Total</span>
-                            <span id="total">$0.00</span>
-                        </div>
-                        <div class="d-flex justify-content-center mt-3">
-                            <button class="btn btn-warning w-100 " id="chargeButton">Charge $0.00
-                                <span class="text-light mx-2">
-                                    Enter
-                                </span>
-                            </button>
-                        </div>
-                        <div class="mt-3">
-                            <button class="btn btn-outline-danger w-100" id="cancelBtn">Cancel</button>
-                        </div>
+
+                <div id="floatingButton" class="floating-button d-flex justify-content-between align-items-center">
+                    <div class="d-flex">
+                        <i class="bx bx-menu"></i> 
+                        <li><a href="{% url 'inventory:end_of_day_view' %}" class="btn btn-outline-dark w-100">End of day</a></li>
+                        <li class='mx-2'>
+                            <button class="btn btn-outline-dark w-100" id="chargeStaff">Staff</button>
+                        </li>
+                        <li>
+                            <a href='{% url "pos:change_list" %}' class="btn btn-outline-dark w-100">View Change</a>
+                        </li>
+                        <li class='mx-2'>
+                            <a href="{% url 'finance:cashier_expenses' request.user.id %}" class="btn btn-outline-dark w-100">Expenses</a>
+                        </li>
+                        <li class='mx-2'>
+                            <button onclick="cashupAuth()" class="btn btn-outline-dark w-100">Cash Up</a>
+                        </li>
+                    </div>
+                    <div>
+                        <li>
+                            <a class="btn btn-danger text-light w-100" id="void">Void</a>
+                        </li>
+                    </div>
+                </div>
+
+            </div>
+            <div class="col-4 d-none">
+                <div class="bg-dark text-light sidebar rounded p-4" style='width:380px;'>
+                    <h5 class="fw-bold">Order Details</h5>
+                    <div id="orderDetails" style="height:300px"></div>
+                    <hr>
+                    <div class="d-flex justify-content-between">
+                        <span>Sub Total</span>
+                        <span id="subTotal">$0.00</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Tax</span>
+                        <span id="tax">$0.00</span>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between fw-bold">
+                        <span>Total</span>
+                        <span id="total">$0.00</span>
+                    </div>
+                    <div class="d-flex justify-content-center mt-3">
+                        <button class="btn btn-warning w-100 " id="chargeButton">Charge $0.00
+                            <span class="text-light mx-2">
+                                Enter
+                            </span>
+                        </button>
+                    </div>
+                    <div class="mt-3">
+                        <button class="btn btn-outline-danger w-100" id="cancelBtn">Cancel</button>
                     </div>
                 </div>
             </div>
@@ -258,7 +369,6 @@
             </div>
         </div>
 
-    
         <!-- Modal -->
         <div class="modal fade" id="chargeModal" tabindex="-1" aria-labelledby="chargeModalLabel" aria-hidden="true">
             <div class="modal-dialog bg modal-dialog-centered">
@@ -356,6 +466,29 @@
             </div>
         </div>
 
+        <div class="modal fade" id="bluetoothModal" tabindex="-1" aria-labelledby="chargeModalLabel" aria-hidden="true">
+            <div class="modal-dialog bg modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="container">
+                        <div class="header">
+                            <h1>Bluetooth Receipt Printer</h1>
+                        </div>
+                        
+                        <div id="statusContainer"></div>
+                        <div id="errorContainer"></div>
+                        
+                        <button id="connectButton" class="button">Connect to Printer</button>
+                        <button id="printButton" class="button" disabled>Test Receipt</button>
+                        
+                        <div id="debugInfo" class="debug-info">
+                            <h3>Debug Information</h3>
+                            <div id="debugContent"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- change modal -->
         <div class="modal fade" id="customModal" tabindex="-1" aria-labelledby="customModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
@@ -366,7 +499,7 @@
                     </div>
                     <div class="modal-body">
                         <form id="customForm">
-                            <div class="mb-3s">
+                            <div class="mb-3">
                                 <label for="id_cient_name" class="form-label">Full name</label>
                                 <input type="text" class="form-control" id="client_name" required>
                             </div>
@@ -407,7 +540,8 @@
         let mealsData = []
         let orderType = ''
         let changeAmount = 0;
-        const changeData = []
+        const changeData = [];
+        let bluetoothOn  = false;
 
         const chargeModal = new bootstrap.Modal(document.getElementById('chargeModal'));
         const staffModal = new bootstrap.Modal(document.getElementById('staffModal'));
@@ -419,6 +553,171 @@
         const authenticateBtn = document.getElementById('void')
         const authenticateModal = new bootstrap.Modal(document.getElementById('authModal'));
         const search = document.getElementById('searchInput')
+        const bluetoothModal = new bootstrap.Modal(document.getElementById('bluetoothModal'))
+
+        // bluetooth configuration
+        let bluetoothDevice = null;
+        let bluetoothCharacteristic = null;
+        const connectButton = document.getElementById('connectButton');
+        const printButton = document.getElementById('printButton');
+        const statusContainer = document.getElementById('statusContainer');
+        const errorContainer = document.getElementById('errorContainer');
+        const debugContent = document.getElementById('debugContent');
+
+        function showStatus(message) {
+            statusContainer.innerHTML = `<div class="status info">${message}</div>`;
+            logDebug('Status: ' + message);
+        }
+
+        function showError(message) {
+            errorContainer.innerHTML = `<div class="status error">${message}</div>`;
+            logDebug('Error: ' + message);
+        }
+
+        function clearError() {
+            errorContainer.innerHTML = '';
+        }
+
+        function logDebug(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            debugContent.innerHTML += `[${timestamp}] ${message}\n`;
+            debugContent.scrollTop = debugContent.scrollHeight;
+        }
+
+        async function connectToPrinter() {
+            clearError();
+            try {
+                showStatus('Requesting Bluetooth device...');
+                connectButton.disabled = true;
+
+                // First, discover all available devices
+                bluetoothDevice = await navigator.bluetooth.requestDevice({
+                    acceptAllDevices: true,
+                    optionalServices: [
+                        'generic_access',
+                        '000018f0-0000-1000-8000-00805f9b34fb',
+                        '00001814-0000-1000-8000-00805f9b34fb',  
+                        '00001101-0000-1000-8000-00805f9b34fb' 
+                    ]
+                });
+
+                logDebug(`Selected device: ${bluetoothDevice.name}`);
+
+                showStatus('Connecting to device...');
+                const server = await bluetoothDevice.gatt.connect();
+                logDebug('GATT server connected');
+
+                // Get all services
+                const services = await server.getPrimaryServices();
+                logDebug(`Found ${services.length} services`);
+
+                // Log all services and their characteristics
+                for (const service of services) {
+                    logDebug(`Service: ${service.uuid}`);
+                    const characteristics = await service.getCharacteristics();
+                    for (const char of characteristics) {
+                        logDebug(`  Characteristic: ${char.uuid}`);
+                        logDebug(`  Properties: ${Object.keys(char.properties)}`);
+                        if (char.properties.write || char.properties.writeWithoutResponse) {
+                            bluetoothCharacteristic = char;
+                            logDebug('  Selected as printer characteristic');
+                        }
+                    }
+                }
+
+                if (!bluetoothCharacteristic) {
+                    throw new Error('No writable characteristic found');
+                }
+
+                showStatus(`Connected to ${bluetoothDevice.name}`);
+                connectButton.textContent = `Connected to ${bluetoothDevice.name}`;
+                printButton.disabled = false;
+
+                bluetoothDevice.addEventListener('gattserverdisconnected', onDisconnected);
+                bluetoothOn = true;
+
+            } catch (error) {
+                console.error('Connection error:', error);
+                showError(error.message);
+                connectButton.disabled = false;
+                printButton.disabled = true;
+            }
+        }
+
+        function onDisconnected() {
+            showStatus('Printer disconnected');
+            connectButton.textContent = 'Connect to Printer';
+            connectButton.disabled = false;
+            printButton.disabled = true;
+            bluetoothDevice = null;
+            bluetoothCharacteristic = null;
+            logDebug('Device disconnected');
+        }
+
+        async function printReceipt() {
+            if (!bluetoothDevice || !bluetoothCharacteristic) {
+                showError('Please connect to a printer first');
+                return;
+            }
+
+            clearError();
+            try {
+                showStatus('Printing...');
+                printButton.disabled = true;
+
+                const receiptData = [
+                    '\x1B\x40',          // Initialize printer
+                    '\x1B\x61\x01',      // Center alignment
+                    'SAMPLE RECEIPT\n',
+                    '\n',
+                    'Date: ' + new Date().toLocaleString() + '\n',
+                    '\x1B\x61\x00',      // Left alignment
+                    'Item 1............$10.00\n',
+                    'Item 2............$15.00\n',
+                    'Item 3............$20.00\n',
+                    '\n',
+                    '\x1B\x61\x01',      // Center alignment
+                    'Total: $45.00\n',
+                    '\n',
+                    'Thank You!\n',
+                    '\n\n\n',           // Feed paper
+                    '\x1D\x56\x41\x03'  // Cut paper
+                ].join('');
+
+                // Convert string to ArrayBuffer
+                const encoder = new TextEncoder();
+                const data = encoder.encode(receiptData);
+
+                logDebug(`Sending ${data.length} bytes of data`);
+
+                // Send data in chunks
+                const CHUNK_SIZE = 20;
+                for (let i = 0; i < data.length; i += CHUNK_SIZE) {
+                    const chunk = data.slice(i, i + CHUNK_SIZE);
+                    await bluetoothCharacteristic.writeValue(chunk);
+                    logDebug(`Sent chunk ${Math.floor(i/CHUNK_SIZE) + 1}`);
+                }
+                
+                showStatus('Print completed');
+            } catch (error) {
+                console.error('Printing error:', error);
+                showError(error.message);
+            } finally {
+                printButton.disabled = false;
+            }
+        }
+
+        // Check if Web Bluetooth is supported
+        if (!navigator.bluetooth) {
+            showError('Web Bluetooth is not supported in this browser');
+            connectButton.disabled = true;
+            logDebug('Web Bluetooth API not available');
+        } else {
+            logDebug('Web Bluetooth API available');
+        }
+
+        connectButton.addEventListener('click', connectToPrinter);
+        printButton.addEventListener('click', printReceipt);
 
         
         // clear search input
@@ -429,12 +728,18 @@
             const amount = document.getElementById('change_amount')
             const amountGiven = document.getElementById('change_given');
             const balance = document.getElementById('balance');
+            const change = document.getElementById('changeDisplay');
 
+            change.value = '';
             name.value = '';
             phonenumber.value = '';
             amount.value='';
             amountGiven.value='';
             balance.value='';
+        }
+
+        const bluetooth = () =>{
+            bluetoothModal.show()
         }
 
         search.addEventListener('click', ()=>{
@@ -691,6 +996,7 @@
                     change_data: changeData
                 };
 
+
                 // Show "Processing..." Swal
                 Swal.fire({
                     title: "Processing...",
@@ -715,23 +1021,32 @@
                     Swal.close(); // Close the "Processing..." Swal
                     if (data.success) {
                         console.log('Sale processed successfully:', data.data);
-                        Swal.fire({
-                            title: "Success",
-                            text: "Processing Receipt",
-                            icon: "success"
-                        })
+                        // Swal.fire({
+                        //     title: "Success",
+                        //     text: "Processing Receipt",
+                        //     icon: "success"
+                        // })
                         cart = [];
                         updateOrderDetails();
                         chargeModal.hide();
                         clearChangeData();
 
+
                         console.log('cleared')
 
-                        const receiptContent = generateReceiptContent(data.data);
-                        printReceiptSilently(receiptContent);
-                        setTimeout(function() {
-                            location.reload();
-                        },1500);
+                        
+
+                        if (bluetoothOn){
+                            generateEPOSReceipt(data.data);
+                        }else{
+                            const receiptContent = generateReceiptContent(data.data);
+                            printReceiptSilently(receiptContent);
+                            setTimeout(function() {
+                                location.reload();
+                            },1500);
+                        }
+
+                        
                         
                     } else {
                         Swal.fire({
@@ -1050,7 +1365,7 @@
             change_data: changeData
         };
 
-        console.log(saleData);
+        log(saleData);
 
         fetch('{% url "pos:process_sale" %}', {
             method: 'POST',
@@ -1239,6 +1554,77 @@
             printFrame.contentWindow.print(false);
         }, 100);
     }
+
+    async function generateEPOSReceipt(saleData) {
+        const { received_amount, items, order_type, cashier, receipt_number } = saleData;
+        const sub_total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+        const tax = sub_total * (0.15 / (1 + 0.15));
+        const total_amount = sub_total;
+        const change = received_amount - total_amount;
+
+        if (!bluetoothDevice || !bluetoothCharacteristic) {
+                showError('Please connect to a printer first');
+                return;
+            }
+
+            clearError();
+
+        try{
+            showStatus('Printing...');
+            // Start with initialization and center alignment
+            const receiptData = [
+                '\x1B\x40', // Initialize printer
+                '\x1B\x61\x01', // Center alignment
+                'Parsles Investments (Urban Eats)\n',
+                '65 Speke Ave, Harare\n',
+                'TAX NR: 220356643\n',
+                'TIN No: 2001020099\n',
+                '\n',
+                '\x1B\x61\x00', // Left alignment
+                'Date: ' + new Date().toLocaleDateString() + '\n',
+                'Time: ' + new Date().toLocaleTimeString() + '\n',
+                'Order Type: ' + order_type + '\n',
+                '\n',
+                ...items.map(item =>
+                    `${item.dish__name || item.meal__name || item.product__name} ${item.quantity} x $${item.price}\n`
+                    + `  $${(item.quantity * item.price).toFixed(2)}\n`
+                ),
+                '\n',
+                '--------------------------------\n',
+                'Subtotal -----------------$' + sub_total.toFixed(2) + '\n',
+                'Total ------------------- $' + total_amount.toFixed(2) + '\n',
+                'Received -----------------$' + received_amount.toFixed(2) + '\n',
+                'Change -------------------$' + change.toFixed(2) + '\n',
+                '\n',
+                'Cashier: ' + cashier + '\n',
+                'Receipt Number: #' + receipt_number + '\n',
+                '--------------------------------\n',
+                '\n',
+                'Thank you for your purchase!\n',
+                '\n',
+                '\x1D\x56\x41\x03' // Cut paper
+            ].join('');
+
+            const encoder = new TextEncoder();
+            const data = encoder.encode(receiptData);
+
+            const CHUNK_SIZE = 20;
+            for (let i = 0; i < data.length; i += CHUNK_SIZE) {
+                const chunk = data.slice(i, i + CHUNK_SIZE);
+                await bluetoothCharacteristic.writeValue(chunk);
+                logDebug(`Sent chunk ${Math.floor(i/CHUNK_SIZE) + 1}`);
+            }
+            
+            showStatus('Print completed');
+        } catch (error) {
+            console.error('Printing error:', error);
+            showError(error.message);
+        } finally {
+            
+        }
+    }
+    
+
 
 
     // function printReceiptSilently(content) {
