@@ -55,4 +55,4 @@ xhtml2pdf==0.2.15
 zope.interface==6.1
 # twisted[http2,tls]
 dj_database_url
-asyncio,
+
